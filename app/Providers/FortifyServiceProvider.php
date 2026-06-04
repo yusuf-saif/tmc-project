@@ -29,6 +29,14 @@ class FortifyServiceProvider extends ServiceProvider
         $this->app->singleton(LoginResponseContract::class, FortifyLoginResponse::class);
         $this->app->singleton(RegisterResponseContract::class, FortifyRegisterResponse::class);
         $this->app->singleton(VerifyEmailResponseContract::class, FortifyVerifyEmailResponse::class);
+
+        Fortify::loginView(fn () => view('auth.login'));
+        Fortify::registerView(fn () => view('auth.register'));
+        Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
+        Fortify::requestPasswordResetLinkView(fn () => view('auth.forgot-password'));
+        Fortify::resetPasswordView(fn (Request $request) => view('auth.reset-password', ['request' => $request]));
+        Fortify::verifyEmailView(fn () => view('auth.verify-email'));
+
     }
 
     /**
@@ -41,18 +49,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
-        Fortify::loginView(fn () => view('auth.login'));
-        Fortify::registerView(fn () => view('auth.register'));
-        Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
-        Fortify::requestPasswordResetLinkView(fn () => view('auth.forgot-password'));
-        Fortify::resetPasswordView(fn (Request $request) => view('auth.reset-password', ['request' => $request]));
-        Fortify::verifyEmailView(fn () => view('auth.verify-email'));
-
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
             return Limit::perMinute(5)->by($throttleKey);
         });
-
     }
 }
