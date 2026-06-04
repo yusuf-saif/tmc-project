@@ -12,12 +12,14 @@ if ($contents === false) {
     return;
 }
 
-$patched = str_replace(
-    'PDO::MYSQL_ATTR_SSL_CA',
-    "defined('Pdo\\\\Mysql::ATTR_SSL_CA') ? constant('Pdo\\\\Mysql::ATTR_SSL_CA') : \\PDO::MYSQL_ATTR_SSL_CA",
+$replacement = "                (defined('Pdo\\Mysql::ATTR_SSL_CA') ? constant('Pdo\\Mysql::ATTR_SSL_CA') : \\PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),";
+
+$patched = preg_replace(
+    "/^\s*.*MYSQL_ATTR_SSL_CA.*$/m",
+    $replacement,
     $contents,
 );
 
-if ($patched !== $contents) {
+if ($patched !== null && $patched !== $contents) {
     file_put_contents($path, $patched);
 }

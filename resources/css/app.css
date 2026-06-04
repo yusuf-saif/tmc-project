@@ -1,3 +1,120 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --teal: #1a6b72;
+        --teal-dk: #0d3f44;
+        --teal-lt: #d6edef;
+        --gold: #c8a84b;
+        --gold-lt: #e8cb7a;
+        --gold-pale: #fdf6e3;
+        --ivory: #faf8f3;
+        --ink: #1c1a17;
+        --ink-md: #3d3a35;
+        --ink-soft: #6b6760;
+        --shadow-auth: 0 4px 24px rgba(0, 0, 0, 0.06);
+        --font-display: 'Dancing Script', cursive;
+        --font-body: 'Nunito', sans-serif;
+        --font-arabic: 'Amiri', serif;
+    }
+
+    body {
+        color: var(--ink);
+        font-family: var(--font-body);
+    }
+}
+
+@layer components {
+    .tmc-auth-body {
+        @apply min-h-screen bg-ivory px-6 py-10 text-ink;
+        background-image: linear-gradient(135deg, rgba(13, 63, 68, 0.05), rgba(200, 168, 75, 0.08));
+    }
+
+    .tmc-auth-shell {
+        @apply mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-md items-center justify-center;
+    }
+
+    .tmc-auth-card {
+        @apply relative w-full overflow-hidden bg-white;
+        border-radius: 4px;
+        box-shadow: var(--shadow-auth);
+        padding: 2.5rem;
+    }
+
+    .tmc-auth-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url('/images/img4.png');
+        background-repeat: repeat;
+        background-size: 360px auto;
+        opacity: 0.05;
+        pointer-events: none;
+    }
+
+    .tmc-auth-content {
+        @apply relative z-10;
+    }
+
+    .tmc-auth-logo {
+        @apply mx-auto mb-4 h-10 w-10 object-contain;
+    }
+
+    .tmc-auth-brand {
+        @apply text-center font-display text-4xl leading-none text-teal-dk;
+    }
+
+    .tmc-auth-heading {
+        @apply mt-8 text-center font-display text-[2rem] leading-none text-teal-dk;
+    }
+
+    .tmc-auth-copy {
+        @apply mt-3 text-center text-sm font-light leading-7 text-ink-soft;
+    }
+
+    .tmc-label {
+        @apply mb-2 block text-[13px] font-medium text-ink-md;
+    }
+
+    .tmc-input {
+        @apply w-full border border-slate-200 bg-white px-4 py-3 text-sm text-ink outline-none transition;
+        border-radius: 4px;
+    }
+
+    .tmc-input:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 4px rgba(26, 107, 114, 0.15);
+    }
+
+    .tmc-button {
+        @apply inline-flex min-h-11 w-full items-center justify-center border border-transparent px-6 text-center text-[12.5px] font-semibold uppercase tracking-[1.2px] transition;
+        border-radius: 2px;
+    }
+
+    .tmc-button:hover {
+        transform: translateY(-1px);
+    }
+
+    .tmc-button-gold {
+        @apply tmc-button bg-gold text-teal-dk;
+    }
+
+    .tmc-button-gold:hover {
+        background-color: var(--gold-lt);
+        box-shadow: 0 18px 42px rgba(200, 168, 75, 0.2);
+    }
+
+    .tmc-button-outline {
+        @apply tmc-button border-teal bg-transparent text-teal;
+    }
+
+    .tmc-link {
+        @apply text-[13px] text-teal transition hover:text-teal-dk;
+    }
+
+    .tmc-error {
+        @apply mt-2 text-xs text-red-600;
+    }
+}
