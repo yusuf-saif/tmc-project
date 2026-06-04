@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Home\HomeDashboard;
 use App\Livewire\Onboarding\OnboardingWizard;
 use Illuminate\Support\Facades\Route;
 
@@ -11,5 +12,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'onboarded'])->group(function () {
-    Route::view('/home', 'home')->name('home');
+    Route::get('/home', HomeDashboard::class)->name('home');
 });
