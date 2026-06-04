@@ -32,8 +32,8 @@ One GitHub repo: landing page (live at /) + Laravel member app (/home) + Filamen
 
 ## Current phase
 <!-- Update this line as you progress -->
-Phase: 0 — Foundation & Setup
-Status: Not started
+Phase: 3 — Events & RSVP
+Status: Complete ✓
 
 ## Key services (already exist after Phase 0)
 - `App\Services\AuditLogService::log(action, model, old, new)`

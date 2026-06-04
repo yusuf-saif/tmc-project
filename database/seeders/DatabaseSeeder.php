@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             InterestSeeder::class,
             GoalSeeder::class,
+            EventSeeder::class,
         ]);
     }
 }

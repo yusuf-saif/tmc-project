@@ -10,10 +10,12 @@
         --gold: #c8a84b;
         --gold-lt: #e8cb7a;
         --gold-pale: #fdf6e3;
+        --plum-lt: #f3eaf7;
         --ivory: #faf8f3;
         --ink: #1c1a17;
         --ink-md: #3d3a35;
         --ink-soft: #6b6760;
+        --border: #e2e8f0;
         --shadow-auth: 0 4px 24px rgba(0, 0, 0, 0.06);
         --font-display: 'Dancing Script', cursive;
         --font-body: 'Nunito', sans-serif;

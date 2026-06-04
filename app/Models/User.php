@@ -104,6 +104,22 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(JannahCoinsLedger::class);
     }
 
+    public function eventRsvps(): HasMany
+    {
+        return $this->hasMany(EventRsvp::class);
+    }
+
+    public function rsvpdEvents(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'event_rsvps')
+            ->withPivot(['rsvp_at', 'cancelled_at']);
+    }
+
+    public function createdEvents(): HasMany
+    {
+        return $this->hasMany(Event::class, 'created_by');
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasAnyRole([

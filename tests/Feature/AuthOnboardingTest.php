@@ -12,7 +12,6 @@ use Database\Seeders\GoalSeeder;
 use Database\Seeders\InterestSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -31,7 +30,7 @@ class AuthOnboardingTest extends TestCase
         ]);
     }
 
-    public function test_user_can_register_verify_complete_onboarding_and_reach_home(): void
+    public function test_user_can_register_complete_onboarding_and_reach_home(): void
     {
         $response = $this->post('/register', [
             'name' => 'Aisha Member',
@@ -42,21 +41,12 @@ class AuthOnboardingTest extends TestCase
 
         $user = User::query()->where('email', 'aisha@example.com')->firstOrFail();
 
-        $response->assertRedirect(route('verification.notice'));
+        $response->assertRedirect(route('home'));
         $this->assertAuthenticatedAs($user);
         $this->assertSame('active', $user->status);
         $this->assertNotNull($user->referral_code);
         $this->assertTrue($user->hasRole('member'));
         $this->assertNotNull($user->profile);
-
-        $verifyUrl = URL::temporarySignedRoute('verification.verify', now()->addHour(), [
-            'id' => $user->id,
-            'hash' => sha1($user->getEmailForVerification()),
-        ]);
-
-        $this->actingAs($user)
-            ->get($verifyUrl)
-            ->assertRedirect('/onboarding?verified=1');
 
         $this->actingAs($user)
             ->get('/home')
@@ -117,7 +107,7 @@ class AuthOnboardingTest extends TestCase
         $this->assertSame(1, JannahCoinsLedger::query()->where('user_id', $user->id)->where('reason', 'onboarding')->count());
     }
 
-    public function test_referral_coins_are_awarded_after_referred_user_verifies_email(): void
+    public function test_referred_user_registration_tracks_the_referrer_for_future_awards(): void
     {
         $referrer = User::factory()->create([
             'email_verified_at' => now(),
@@ -133,30 +123,13 @@ class AuthOnboardingTest extends TestCase
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
             'ref' => $referrer->referral_code,
-        ])->assertRedirect(route('verification.notice'));
+        ])->assertRedirect(route('home'));
 
         $referred = User::query()->where('email', 'safiyyah@example.com')->firstOrFail();
 
-        $verifyUrl = URL::temporarySignedRoute('verification.verify', now()->addHour(), [
-            'id' => $referred->id,
-            'hash' => sha1($referred->getEmailForVerification()),
-        ]);
-
-        $this->actingAs($referred)->get($verifyUrl);
-
-        $this->assertDatabaseHas('user_referrals', [
-            'referrer_id' => $referrer->id,
-            'referred_id' => $referred->id,
-            'coins_awarded' => true,
-        ]);
-        $this->assertDatabaseHas('jannah_coins_ledger', [
-            'user_id' => $referrer->id,
-            'type' => 'earned',
-            'reason' => 'referral',
-            'amount' => 25,
-            'reference_id' => $referred->id,
-        ]);
-        $this->assertSame(1, UserReferral::query()->where('referred_id', $referred->id)->count());
+        $this->assertSame($referrer->id, $referred->referred_by);
+        $this->assertSame(0, UserReferral::query()->where('referred_id', $referred->id)->count());
+        $this->assertSame(0, JannahCoinsLedger::query()->where('user_id', $referrer->id)->where('reason', 'referral')->count());
     }
 
     public function test_unonboarded_user_is_redirected_from_home_to_onboarding(): void

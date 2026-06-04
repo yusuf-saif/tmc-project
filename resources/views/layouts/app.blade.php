@@ -31,6 +31,17 @@
         </div>
     </header>
 
+    @if (session('success'))
+        <div class="mx-4 mt-3 rounded-md px-4 py-3 text-sm font-medium" style="background:#D6EDEF;color:#1A6B72;border:1px solid #1A6B72">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mx-4 mt-3 rounded-md px-4 py-3 text-sm font-medium" style="background:#FFF5F5;color:#C53030;border:1px solid #C53030">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <main class="mx-auto w-full max-w-md px-4 pb-[calc(64px+env(safe-area-inset-bottom))] pt-4">
         {{ $slot }}
     </main>
