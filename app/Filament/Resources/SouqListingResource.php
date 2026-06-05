@@ -1,0 +1,208 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\SouqListingResource\Pages;
+use App\Jobs\SouqApprovedNotification;
+use App\Models\SouqListing;
+use App\Services\AuditLogService;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+class SouqListingResource extends Resource
+{
+    protected static ?string $model = SouqListing::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
+
+    protected static ?string $navigationGroup = 'Content';
+
+    protected static ?string $navigationLabel = 'Souq Listings';
+
+    public static function form(Form $form): Form
+    {
+        return $form->schema([
+            Forms\Components\TextInput::make('business_name')
+                ->required()
+                ->maxLength(255),
+            Forms\Components\Select::make('category')
+                ->options(SouqListing::CATEGORY_OPTIONS)
+                ->required(),
+            Forms\Components\Textarea::make('description')
+                ->required()
+                ->maxLength(300)
+                ->rows(5)
+                ->columnSpanFull(),
+            Forms\Components\TextInput::make('contact_email')
+                ->email()
+                ->required(),
+            Forms\Components\TextInput::make('phone'),
+            Forms\Components\TextInput::make('website')
+                ->url(),
+            Forms\Components\TextInput::make('instagram'),
+            Forms\Components\Select::make('status')
+                ->options(SouqListing::STATUS_OPTIONS)
+                ->required(),
+            Forms\Components\Textarea::make('admin_note')
+                ->rows(4)
+                ->columnSpanFull(),
+            Forms\Components\FileUpload::make('logo_path')
+                ->disk('public')
+                ->directory('souq/logos')
+                ->image(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('owner')->orderByDesc('created_at'))
+            ->columns([
+                Tables\Columns\TextColumn::make('business_name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('owner.name')
+                    ->label('Member')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('category')
+                    ->badge(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'approved' => 'success',
+                        'rejected' => 'danger',
+                        'archived' => 'gray',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Applied')
+                    ->dateTime('d M Y H:i')
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->default('pending')
+                    ->options(SouqListing::STATUS_OPTIONS),
+                Tables\Filters\SelectFilter::make('category')
+                    ->options(SouqListing::CATEGORY_OPTIONS),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('approve')
+                    ->label('Approve')
+                    ->color('success')
+                    ->visible(fn (SouqListing $record): bool => in_array($record->status, ['pending', 'rejected'], true))
+                    ->action(function (SouqListing $record): void {
+                        static::approveListing($record);
+
+                        Notification::make()
+                            ->title('Listing approved')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('reject')
+                    ->label('Reject')
+                    ->color('danger')
+                    ->visible(fn (SouqListing $record): bool => $record->status === 'pending')
+                    ->form([
+                        Forms\Components\Textarea::make('admin_note')
+                            ->required()
+                            ->rows(4),
+                    ])
+                    ->action(function (SouqListing $record, array $data): void {
+                        static::rejectListing($record, $data['admin_note']);
+
+                        Notification::make()
+                            ->title('Listing rejected')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('archive')
+                    ->label('Archive')
+                    ->color('gray')
+                    ->visible(fn (SouqListing $record): bool => $record->status !== 'archived')
+                    ->action(function (SouqListing $record): void {
+                        static::archiveListing($record);
+
+                        Notification::make()
+                            ->title('Listing archived')
+                            ->success()
+                            ->send();
+                    }),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListSouqListings::route('/'),
+            'edit' => Pages\EditSouqListing::route('/{record}/edit'),
+        ];
+    }
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
+    }
+
+    public static function canEdit($record): bool
+    {
+        return static::canAccess();
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function approveListing(SouqListing $record): void
+    {
+        $old = $record->status;
+
+        $record->update([
+            'status' => 'approved',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        SouqApprovedNotification::dispatch($record->owner, $record);
+        AuditLogService::log('souq_approved', $record, ['status' => $old], ['status' => 'approved']);
+    }
+
+    public static function rejectListing(SouqListing $record, string $adminNote): void
+    {
+        $old = $record->status;
+
+        $record->update([
+            'status' => 'rejected',
+            'admin_note' => $adminNote,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        AuditLogService::log('souq_rejected', $record, ['status' => $old], ['status' => 'rejected', 'admin_note' => $adminNote]);
+    }
+
+    public static function archiveListing(SouqListing $record): void
+    {
+        $old = $record->status;
+
+        $record->update([
+            'status' => 'archived',
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        AuditLogService::log('souq_archived', $record, ['status' => $old], ['status' => 'archived']);
+    }
+}

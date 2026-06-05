@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             GoalSeeder::class,
             EventSeeder::class,
             ResourceSeeder::class,
+            SouqSeeder::class,
         ]);
     }
 }

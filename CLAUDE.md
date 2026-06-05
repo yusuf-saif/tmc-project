@@ -32,8 +32,11 @@ One GitHub repo: landing page (live at /) + Laravel member app (/home) + Filamen
 
 ## Current phase
 <!-- Update this line as you progress -->
-Phase: 4 — Resources Library & Private Journal
+Phase: 5 — Souq & Wallet
 Status: Complete ✓
+
+## Deferred
+- Phase 7: Admin award/deduct coins on UserResource show page
 
 ## Key services (already exist after Phase 0)
 - `App\Services\AuditLogService::log(action, model, old, new)`

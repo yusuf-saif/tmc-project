@@ -125,6 +125,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(JournalEntry::class);
     }
 
+    public function souqListings(): HasMany
+    {
+        return $this->hasMany(SouqListing::class);
+    }
+
     public function duaListItems(): HasMany
     {
         return $this->hasMany(DuaListItem::class);

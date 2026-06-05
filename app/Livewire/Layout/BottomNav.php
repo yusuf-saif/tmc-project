@@ -60,8 +60,10 @@ class BottomNav extends Component
 
     protected function isActive(string $pathPrefix): bool
     {
-        $current = '/'.trim(request()->path(), '/');
-        return $current === $pathPrefix || Str::startsWith($current.'/', trim($pathPrefix, '/').'/');
+        $current = trim(request()->path(), '/');
+        $prefix = trim($pathPrefix, '/');
+
+        return $current === $prefix || Str::startsWith($current, $prefix.'/');
     }
 
     protected function heroicon(string $name): string

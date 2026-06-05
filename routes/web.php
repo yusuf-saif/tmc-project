@@ -7,6 +7,10 @@ use App\Livewire\Journal\JournalScreen;
 use App\Livewire\Onboarding\OnboardingWizard;
 use App\Livewire\Resources\ResourceDetail;
 use App\Livewire\Resources\ResourcesLibrary;
+use App\Livewire\Souq\ApplyForm;
+use App\Livewire\Souq\ListingDetail;
+use App\Livewire\Souq\SouqDirectory;
+use App\Livewire\Wallet\WalletScreen;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +28,10 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/resources', ResourcesLibrary::class)->name('resources');
     Route::get('/resources/{slug}', ResourceDetail::class)->name('resources.show');
     Route::get('/journal', JournalScreen::class)->name('journal');
+    Route::get('/souq', SouqDirectory::class)->name('souq');
+    Route::get('/souq/apply', ApplyForm::class)->name('souq.apply');
+    Route::get('/souq/{slug}', ListingDetail::class)->name('souq.show');
+    Route::get('/wallet', WalletScreen::class)->name('wallet');
 });
 
 Route::get('/logout', function () {

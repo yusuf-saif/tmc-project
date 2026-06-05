@@ -16,7 +16,6 @@ class UserReferral extends Model
         'referrer_id',
         'referred_id',
         'coins_awarded',
-        'created_at',
     ];
 
     protected function casts(): array
