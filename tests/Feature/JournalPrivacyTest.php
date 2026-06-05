@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\JournalEntry;
 use App\Models\User;
+use App\Livewire\Journal\JournalScreen;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Database\Seeders\RoleSeeder;
 use Tests\TestCase;
 
@@ -30,7 +32,7 @@ class JournalPrivacyTest extends TestCase
         $this->admin->assignRole('super_admin');
     }
 
-    public function test_member_can_create_journal_entry(): void
+    public function test_journal_entry_saves_with_encrypted_body(): void
     {
         JournalEntry::query()->create([
             'user_id' => $this->member->id,
@@ -45,18 +47,27 @@ class JournalPrivacyTest extends TestCase
         $this->assertStringNotContainsString('my secret', $raw);
     }
 
-    public function test_member_can_read_own_entry(): void
+    public function test_member_can_read_edit_and_delete_own_entries(): void
     {
-        JournalEntry::query()->create([
+        $entry = JournalEntry::query()->create([
             'user_id' => $this->member->id,
             'entry_date' => now()->toDateString(),
             'mood' => 'happy',
             'body' => 'my secret',
         ]);
 
-        $entry = JournalEntry::query()->where('user_id', $this->member->id)->firstOrFail();
-
         $this->assertSame('my secret', $entry->body);
+
+        Livewire::actingAs($this->member)
+            ->test(JournalScreen::class)
+            ->call('openEditEntry', $entry->id)
+            ->set('entryDate', now()->subDay()->toDateString())
+            ->set('mood', 'grateful')
+            ->set('body', 'updated secret')
+            ->call('saveEntry')
+            ->call('deleteEntry', $entry->id);
+
+        $this->assertSoftDeleted('journal_entries', ['id' => $entry->id]);
     }
 
     public function test_member_cannot_read_another_members_entry(): void
@@ -86,6 +97,11 @@ class JournalPrivacyTest extends TestCase
 
     public function test_admin_cannot_access_journal_via_http(): void
     {
+        $this->admin->profile()->create([
+            'display_name' => $this->admin->name,
+            'onboarding_completed_at' => now(),
+        ]);
+
         JournalEntry::query()->create([
             'user_id' => $this->member->id,
             'entry_date' => now()->toDateString(),
@@ -95,7 +111,7 @@ class JournalPrivacyTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get('/journal');
 
-        $this->assertNotSame(200, $response->getStatusCode());
+        $response->assertForbidden();
         $response->assertDontSee('top secret body');
     }
 

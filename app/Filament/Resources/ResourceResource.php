@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class ResourceResource extends Resource
@@ -118,6 +119,10 @@ class ResourceResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function (LibraryResource $record): void {
+                        AuditLogService::log('resource_deleted', $record, $record->only(['title', 'status', 'category', 'type']), []);
+                    }),
             ]);
     }
 
@@ -149,6 +154,16 @@ class ResourceResource extends Resource
     public static function canEdit($record): bool
     {
         return static::canAccess();
+    }
+
+    public static function canDelete($record): bool
+    {
+        return static::canAccess();
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery();
     }
 
     public static function logCreate(LibraryResource $resource): void

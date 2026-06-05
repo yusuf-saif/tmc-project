@@ -16,7 +16,6 @@ class DuaListService
         ]);
 
         $item->dua_text = $resource->body ?? $resource->title;
-        $item->label = $item->label;
 
         if ($item->trashed()) {
             $item->restore();
@@ -27,12 +26,18 @@ class DuaListService
 
     public function saveManual(User $user, string $text, ?string $label = null): void
     {
-        DuaListItem::query()->create([
+        $item = DuaListItem::withTrashed()->firstOrNew([
             'user_id' => $user->id,
             'resource_id' => null,
             'dua_text' => $text,
             'label' => $label,
         ]);
+
+        if ($item->trashed()) {
+            $item->restore();
+        }
+
+        $item->save();
     }
 
     public function remove(User $user, DuaListItem $item): void

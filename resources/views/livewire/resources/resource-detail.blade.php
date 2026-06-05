@@ -15,11 +15,11 @@
             <p class="mt-4 text-sm font-light italic leading-7 text-ink-soft">{{ $resource->description }}</p>
 
             @if (! $isSaved)
-                <button type="button" wire:click="toggleDuaList" class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal transition" style="border: 1px solid #1A6B72; border-radius: 2px;">
+                <button type="button" wire:click="saveToDuaList" class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal transition" style="border: 1px solid #1A6B72; border-radius: 2px;">
                     ✦ Save to My Du'a List
                 </button>
             @else
-                <button type="button" disabled class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk" style="background: var(--teal-lt); border-radius: 2px;">
+                <button type="button" wire:click="removeFromDuaList" class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk transition" style="background: var(--teal-lt); border: 1px solid var(--teal); border-radius: 2px;">
                     ✦ Saved to Du'a List ✓
                 </button>
             @endif

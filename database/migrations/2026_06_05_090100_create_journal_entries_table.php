@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->date('entry_date');
             $table->enum('mood', ['happy', 'grateful', 'reflective', 'sad', 'anxious', 'neutral']);
-            $table->text('body');
+            $table->longText('body');
             $table->timestamps();
             $table->softDeletes();
 

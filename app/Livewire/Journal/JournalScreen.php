@@ -4,11 +4,15 @@ namespace App\Livewire\Journal;
 
 use App\Models\JournalEntry;
 use App\Services\DuaListService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class JournalScreen extends Component
 {
+    use AuthorizesRequests;
+
     public string $tab = 'entries';
 
     public bool $showModal = false;
@@ -29,6 +33,8 @@ class JournalScreen extends Component
 
     public function mount(): void
     {
+        abort_unless(Auth::user()?->hasRole('member'), 403);
+
         $this->entryDate = now()->format('Y-m-d');
     }
 
@@ -62,6 +68,8 @@ class JournalScreen extends Component
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
+        $this->authorize('view', $entry);
+
         $this->editingId = $entry->id;
         $this->entryDate = $entry->entry_date->format('Y-m-d');
         $this->mood = $entry->mood;
@@ -82,6 +90,8 @@ class JournalScreen extends Component
                 ->where('user_id', Auth::id())
                 ->findOrFail($this->editingId);
 
+            $this->authorize('update', $entry);
+
             $entry->update([
                 'entry_date' => $this->entryDate,
                 'mood' => $this->mood,
@@ -90,6 +100,8 @@ class JournalScreen extends Component
 
             session()->flash('success', 'Your journal entry has been updated.');
         } else {
+            $this->authorize('create', JournalEntry::class);
+
             JournalEntry::query()->create([
                 'user_id' => Auth::id(),
                 'entry_date' => $this->entryDate,
@@ -106,10 +118,13 @@ class JournalScreen extends Component
 
     public function deleteEntry(int $id): void
     {
-        JournalEntry::query()
+        $entry = JournalEntry::query()
             ->where('user_id', Auth::id())
-            ->findOrFail($id)
-            ->delete();
+            ->findOrFail($id);
+
+        $this->authorize('delete', $entry);
+
+        $entry->delete();
 
         session()->flash('success', 'Journal entry deleted.');
     }
@@ -132,7 +147,9 @@ class JournalScreen extends Component
 
     public function removeDuaItem(int $id): void
     {
-        Auth::user()->duaListItems()->findOrFail($id)->delete();
+        $item = Auth::user()->duaListItems()->findOrFail($id);
+
+        app(DuaListService::class)->remove(Auth::user(), $item);
 
         session()->flash('success', 'Removed from your Du\'a List.');
     }
@@ -144,7 +161,7 @@ class JournalScreen extends Component
         $this->body = '';
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.journal.journal-screen')
             ->layout('layouts.app', ['title' => 'My Journal']);

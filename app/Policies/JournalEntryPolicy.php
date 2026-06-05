@@ -9,7 +9,7 @@ class JournalEntryPolicy
 {
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->hasRole('member');
     }
 
     public function view(User $user, JournalEntry $entry): bool
@@ -19,7 +19,7 @@ class JournalEntryPolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $user->hasRole('member');
     }
 
     public function update(User $user, JournalEntry $entry): bool
