@@ -1,16 +1,17 @@
-<div class="mx-auto flex min-h-screen w-full max-w-2xl items-center justify-center px-6 py-12" x-data="{ step: $wire.entangle('step') }">
+<div class="mx-auto flex min-h-screen w-full max-w-2xl items-center justify-center px-6 py-12">
     <section class="w-full max-w-xl rounded bg-white p-10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
         <div class="mb-8">
             <div class="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[2px] text-gold">
-                <span>Step <span x-text="step"></span> of 4</span>
+                <span>Step {{ $step }} of 4</span>
                 <span>{{ auth()->user()->name }}</span>
             </div>
             <div class="h-2 overflow-hidden rounded-sm bg-ivory">
-                <div class="h-full bg-gold transition-all duration-200" x-bind:style="`width: ${step * 25}%`"></div>
+                <div class="h-full bg-gold transition-all duration-200" style="width: {{ $this->progressPercentage }}%"></div>
             </div>
         </div>
 
-        <div x-show="step === 1" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="space-y-6">
+        @if ($step === 1)
+        <div class="space-y-6">
             <div>
                 <h1 class="font-display text-5xl leading-none text-teal-dk">Choose your interests</h1>
                 <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Select up to five areas you want your TMC experience to revolve around.</p>
@@ -30,8 +31,8 @@
                 @error('selectedInterests') <p class="tmc-error mt-0">{{ $message }}</p> @enderror
             </div>
         </div>
-
-        <div x-show="step === 2" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="space-y-6" style="display: none;">
+        @elseif ($step === 2)
+        <div class="space-y-6">
             <div>
                 <h1 class="font-display text-5xl leading-none text-teal-dk">Set your goals</h1>
                 <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Tell us what you want this season of membership to support most.</p>
@@ -55,8 +56,8 @@
 
             @error('selectedGoals') <p class="tmc-error">{{ $message }}</p> @enderror
         </div>
-
-        <div x-show="step === 3" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="space-y-6" style="display: none;">
+        @elseif ($step === 3)
+        <div class="space-y-6">
             <div>
                 <h1 class="font-display text-5xl leading-none text-teal-dk">Choose your updates</h1>
                 <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Pick the reminders and updates you want us to prioritise.</p>
@@ -73,8 +74,8 @@
                 @endforeach
             </div>
         </div>
-
-        <div x-show="step === 4" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="space-y-8 text-center" style="display: none;">
+        @elseif ($step === 4)
+        <div class="space-y-8 text-center">
             <img src="{{ asset('images/img2.png') }}" alt="The Muhsinat Club" class="mx-auto w-48 max-w-full object-contain">
             <div>
                 <h1 class="font-display text-5xl leading-none text-teal-dk">Welcome to The Muhsinat Club</h1>
@@ -84,6 +85,7 @@
 
             <button type="button" wire:click="enterClub" class="tmc-button-gold">Enter the Club →</button>
         </div>
+        @endif
 
         <div class="mt-10 flex items-center justify-between gap-4">
             <button type="button" wire:click="previousStep" class="tmc-button-outline max-w-[150px]" @disabled($step === 1)>

@@ -42,7 +42,7 @@
         </div>
     @endif
 
-    <main class="mx-auto w-full max-w-md px-4 pb-[calc(64px+env(safe-area-inset-bottom))] pt-4">
+    <main class="mx-auto w-full max-w-md px-4 pb-20 pt-4">
         {{ $slot }}
     </main>
 

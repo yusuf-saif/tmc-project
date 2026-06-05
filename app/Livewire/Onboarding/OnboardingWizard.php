@@ -25,6 +25,8 @@ class OnboardingWizard extends Component
 
     public function mount(): void
     {
+        $this->step = max(1, min($this->step, 4));
+
         if (auth()->user()->profile?->onboarding_completed_at) {
             $this->redirectRoute('home', navigate: true);
 
@@ -69,6 +71,8 @@ class OnboardingWizard extends Component
 
     public function nextStep(): void
     {
+        $this->step = max(1, min($this->step, 4));
+
         $this->validateCurrentStep();
 
         $this->persistCurrentStep();
@@ -84,14 +88,19 @@ class OnboardingWizard extends Component
 
     public function previousStep(): void
     {
-        if ($this->step > 1) {
-            $this->step--;
-        }
+        $this->step = max(1, $this->step - 1);
     }
 
     public function enterClub(): void
     {
+        $this->completeOnboarding();
+
         $this->redirectRoute('home', navigate: true);
+    }
+
+    public function getProgressPercentageProperty(): int
+    {
+        return (int) round(($this->step / 4) * 100);
     }
 
     protected function validateCurrentStep(): void
