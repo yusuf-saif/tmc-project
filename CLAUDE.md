@@ -32,7 +32,7 @@ One GitHub repo: landing page (live at /) + Laravel member app (/home) + Filamen
 
 ## Current phase
 <!-- Update this line as you progress -->
-Phase: 3 — Events & RSVP
+Phase: 4 — Resources Library & Private Journal
 Status: Complete ✓
 
 ## Key services (already exist after Phase 0)
@@ -43,8 +43,8 @@ Status: Complete ✓
 - `App\Services\PushNotificationService` (send, sendToMany)
 
 ## Middleware chain for member routes
-`auth` → `verified` → `EnsureOnboardingComplete`
-Exception: `/onboarding` only needs `auth` + `verified`
+`auth` → `EnsureOnboardingComplete`
+Exception: `/onboarding` only needs `auth`
 
 ## Before writing any code, read
 The relevant section in docs/TRD.md for the schema.

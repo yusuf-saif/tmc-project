@@ -1,0 +1,72 @@
+<div class="space-y-6">
+    <section class="space-y-2">
+        <h1 class="font-display text-[1.8rem] leading-none text-teal">Resources</h1>
+        <p class="text-sm font-light leading-7 text-ink-soft">Browse reflections, guides, du\'as, and recorded reminders to return to throughout the week.</p>
+    </section>
+
+    <section class="-mx-4 overflow-x-auto px-4">
+        <div class="flex min-w-max items-center gap-5 border-b" style="border-color: var(--border);">
+            @foreach (['all' => 'All', 'dua_book' => "Du'a Book", 'dear_allah' => 'Dear Allah', 'pocket_guide' => 'Pocket Guides', 'audio_halaqahs' => 'Audio & Halaqahs'] as $value => $label)
+                <button type="button" wire:click="setCategory('{{ $value }}')" class="border-b-2 pb-3 text-[13px] font-semibold uppercase tracking-[1.2px] transition" style="border-color: {{ $category === $value ? '#1A6B72' : 'transparent' }}; color: {{ $category === $value ? '#1A6B72' : '#6B6760' }}; border-radius: 0;">
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
+    </section>
+
+    <div>
+        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search resources..." class="w-full bg-white px-4 py-3 text-[14px] text-ink outline-none" style="border: 1px solid var(--border); border-radius: 6px;">
+    </div>
+
+    @if ($this->resources->count())
+        <section class="grid grid-cols-2 gap-4 md:grid-cols-3">
+            @foreach ($this->resources as $resource)
+                @php
+                    $badge = match ($resource->category) {
+                        'dua_book' => ['bg' => 'var(--teal-lt)', 'text' => 'var(--teal)', 'label' => "Du'a Book", 'initial' => 'D'],
+                        'dear_allah' => ['bg' => 'var(--gold-pale)', 'text' => 'var(--gold)', 'label' => 'Dear Allah', 'initial' => 'A'],
+                        'pocket_guide' => ['bg' => 'var(--plum-lt)', 'text' => '#3D1A47', 'label' => 'Pocket Guide', 'initial' => 'P'],
+                        'audio_halaqahs' => ['bg' => 'var(--mint-lt)', 'text' => 'var(--teal)', 'label' => 'Audio & Halaqahs', 'initial' => 'H'],
+                    };
+                    $icon = match ($resource->type) {
+                        'article' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75h9A2.25 2.25 0 0 1 18.75 6v12A2.25 2.25 0 0 1 16.5 20.25h-9A2.25 2.25 0 0 1 5.25 18V6A2.25 2.25 0 0 1 7.5 3.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25h7.5M8.25 12h7.5M8.25 15.75h4.5"/></svg>',
+                        'dua' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75c-1.5-1.125-3.75-1.125-6 0v10.5c2.25-1.125 4.5-1.125 6 0m0-10.5c1.5-1.125 3.75-1.125 6 0v10.5c-2.25-1.125-4.5-1.125-6 0"/></svg>',
+                        'pdf' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v3.375c0 .621-.504 1.125-1.125 1.125H5.625A1.125 1.125 0 0 1 4.5 17.625V6.375c0-.621.504-1.125 1.125-1.125h6.75L19.5 12.375Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12.75 5.25v6.75h6.75"/></svg>',
+                        'audio' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9.75v4.5m6-7.5v10.5M6 12a6 6 0 0 1 6-6m0 12a6 6 0 0 0 6-6"/></svg>',
+                        'video_link' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="m5.25 5.653 11.54 6.346a.75.75 0 0 1 0 1.313L5.25 19.658A.75.75 0 0 1 4.125 19V6.311a.75.75 0 0 1 1.125-.658Z"/></svg>',
+                        'guide' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20.25h6m-7.5-3h9A2.25 2.25 0 0 0 18.75 15V6A2.25 2.25 0 0 0 16.5 3.75h-9A2.25 2.25 0 0 0 5.25 6v9A2.25 2.25 0 0 0 7.5 17.25Z"/></svg>',
+                    };
+                @endphp
+                <a href="{{ route('resources.show', $resource->slug) }}" class="overflow-hidden rounded-[8px] bg-white no-underline" style="border: 1px solid var(--border);">
+                    @if ($resource->thumbnail_path)
+                        <img src="{{ Storage::url($resource->thumbnail_path) }}" alt="{{ $resource->title }}" class="aspect-[16/9] w-full object-cover">
+                    @else
+                        <div class="flex aspect-[16/9] w-full items-center justify-center bg-teal text-white">
+                            <span class="font-display text-5xl leading-none">{{ $badge['initial'] }}</span>
+                        </div>
+                    @endif
+                    <div class="space-y-3 p-4">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium" style="background: {{ $badge['bg'] }}; color: {{ $badge['text'] }};">
+                                {{ $badge['label'] }}
+                            </span>
+                            <span class="text-ink-soft">{!! $icon !!}</span>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-medium leading-6 text-ink">{{ $resource->title }}</h2>
+                            <p class="mt-1 line-clamp-2 text-[12px] font-light leading-6 text-ink-soft">{{ $resource->description }}</p>
+                        </div>
+                    </div>
+                </a>
+            @endforeach
+        </section>
+
+        <div>
+            {{ $this->resources->links() }}
+        </div>
+    @else
+        <section class="rounded-[8px] bg-white px-6 py-12 text-center" style="border: 1px solid var(--border);">
+            <p class="text-sm font-light leading-7 text-ink-soft">No resources found — check back soon, insha'Allah</p>
+        </section>
+    @endif
+</div>

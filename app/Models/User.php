@@ -120,6 +120,16 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Event::class, 'created_by');
     }
 
+    public function journalEntries(): HasMany
+    {
+        return $this->hasMany(JournalEntry::class);
+    }
+
+    public function duaListItems(): HasMany
+    {
+        return $this->hasMany(DuaListItem::class);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasAnyRole([
