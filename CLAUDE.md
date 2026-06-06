@@ -32,7 +32,7 @@ One GitHub repo: landing page (live at /) + Laravel member app (/home) + Filamen
 
 ## Current phase
 <!-- Update this line as you progress -->
-Phase: 5 — Souq & Wallet
+Phase: 6 — Community, Profile, Legacy Card & Announcements
 Status: Complete ✓
 
 ## Deferred

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Home;
 
+use App\Models\Announcement;
 use App\Services\CoinsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -35,16 +36,11 @@ class HomeDashboard extends Component
         return $this->phrases[$index] ?? $this->phrases[0];
     }
 
-    protected function latestAnnouncement(): ?object
+    protected function latestAnnouncement(): ?Announcement
     {
-        if (! Schema::hasTable('announcements')) {
-            return null;
-        }
-
-        return DB::table('announcements')
-            ->where('status', 'published')
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
+        return Announcement::query()
+            ->published()
+            ->latest('published_at')
             ->first();
     }
 

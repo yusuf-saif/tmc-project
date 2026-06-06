@@ -10,7 +10,7 @@
 
     <!-- B — Announcement banner (only if exists) -->
     @if($announcement)
-        <a href="/announcements/{{ $announcement->slug }}" class="block rounded-[8px] bg-gold px-4 py-3 text-teal-dk no-underline">
+        <a href="{{ route('announcements.show', $announcement->slug) }}" class="block rounded-[8px] bg-gold px-4 py-3 text-teal-dk no-underline">
             <p class="font-medium">{{ $announcement->title }}</p>
             <p class="mt-1 text-sm text-teal-dk/85">{{ \Illuminate\Support\Str::limit(strip_tags($announcement->body ?? ''), 100) }}</p>
         </a>

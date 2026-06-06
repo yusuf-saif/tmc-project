@@ -130,6 +130,22 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(SouqListing::class);
     }
 
+    public function userBadges(): HasMany
+    {
+        return $this->hasMany(UserBadge::class);
+    }
+
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->withPivot(['awarded_at', 'awarded_by']);
+    }
+
+    public function supportApplications(): HasMany
+    {
+        return $this->hasMany(SupportApplication::class);
+    }
+
     public function duaListItems(): HasMany
     {
         return $this->hasMany(DuaListItem::class);

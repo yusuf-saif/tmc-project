@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             EventSeeder::class,
             ResourceSeeder::class,
             SouqSeeder::class,
+            CommunitySeeder::class,
         ]);
     }
 }
