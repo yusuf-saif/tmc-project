@@ -1,92 +1,127 @@
-<div class="space-y-6">
-    <section class="space-y-2">
-        <h1 class="font-display text-[1.8rem] leading-none text-teal">The Souq</h1>
-        <p class="text-sm font-light leading-7 text-ink-soft">Muslim women-owned businesses, curated for the sisterhood</p>
-    </section>
+<div>
 
-    <div style="display:flex; overflow-x:auto; gap:8px; padding:0 0 8px;
-                border-bottom: 1px solid var(--border);
-                -webkit-overflow-scrolling: touch; scrollbar-width: none;">
-        @foreach (['all' => 'All', 'fashion' => 'Fashion', 'food_catering' => 'Food & Catering', 'health_beauty' => 'Health & Beauty', 'education' => 'Education', 'services' => 'Services', 'creative' => 'Creative', 'other' => 'Other'] as $value => $label)
-            <button type="button" wire:click="setCategory('{{ $value }}')"
-                    style="padding: 8px 14px; white-space: nowrap; background: none; cursor: pointer;
-                           font-family:'Nunito',sans-serif; font-size:13px; font-weight:600;
-                           text-transform:uppercase; letter-spacing:1.2px;
-                           border: none; border-bottom: 2px solid {{ $category === $value ? '#1A6B72' : 'transparent' }};
-                           color: {{ $category === $value ? '#1A6B72' : '#6B6760' }};
-                           border-radius: 0; flex-shrink: 0;">
-                {{ $label }}
-            </button>
-        @endforeach
+  {{-- Page header --}}
+  <div class="page-wrap anim-fade-up" style="margin-bottom:4px;">
+    <h1 style="font-family:var(--font-display);font-size:1.8rem;
+               color:var(--teal);line-height:1;margin-bottom:6px;">
+      The Souq
+    </h1>
+    <p style="font-size:0.875rem;font-weight:300;color:var(--ink-soft);line-height:1.6;">
+      Muslim women-owned businesses, curated for the sisterhood
+    </p>
+  </div>
+
+  {{-- Category pill tabs --}}
+  <div class="anim-slide-down"
+       style="display:flex;overflow-x:auto;gap:6px;
+              padding:10px 16px 12px;scrollbar-width:none;
+              -webkit-overflow-scrolling:touch;
+              border-bottom:1px solid var(--border);">
+    @foreach(['all' => 'All', 'fashion' => 'Fashion', 'food_catering' => 'Food & Catering',
+              'health_beauty' => 'Health & Beauty', 'education' => 'Education',
+              'services' => 'Services', 'creative' => 'Creative', 'other' => 'Other']
+             as $value => $label)
+      <button type="button"
+              wire:click="setCategory('{{ $value }}')"
+              style="padding:6px 14px;border-radius:20px;
+                     font-family:var(--font-body);font-size:11px;
+                     font-weight:600;text-transform:uppercase;
+                     letter-spacing:0.5px;white-space:nowrap;
+                     cursor:pointer;transition:all 0.2s;flex-shrink:0;
+                     background:{{ $category === $value ? 'var(--teal)' : 'var(--white)' }};
+                     color:{{ $category === $value ? 'white' : 'var(--ink-soft)' }};
+                     border:1.5px solid {{ $category === $value ? 'var(--teal)' : 'var(--border)' }};">
+        {{ $label }}
+      </button>
+    @endforeach
+  </div>
+
+  {{-- Search + List My Business --}}
+  <div class="page-pad anim-fade-up delay-1"
+       style="padding-top:12px;padding-bottom:4px;">
+    <input type="text"
+           wire:model.live.debounce.300ms="search"
+           placeholder="Search businesses..."
+           class="input"
+           style="margin-bottom:10px;">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:4px;">
+      <a href="{{ route('souq.apply') }}"
+         style="padding:7px 16px;background:var(--gold);color:var(--teal-dk);
+                border-radius:6px;font-family:var(--font-body);
+                font-size:11px;font-weight:600;letter-spacing:0.5px;
+                text-transform:uppercase;text-decoration:none;
+                display:inline-block;">
+        List My Business
+      </a>
     </div>
+  </div>
 
-    <div>
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search businesses..." class="w-full bg-white px-4 py-3 text-[14px] text-ink outline-none" style="border: 1px solid var(--border); border-radius: 6px;">
-    </div>
-
-    <div style="display:flex; justify-content:flex-end;">
-        <a href="{{ route('souq.apply') }}"
-           style="padding: 8px 18px; background: #C8A84B; color: #0D3F44;
-                  border-radius: 6px; font-family:'Nunito',sans-serif;
-                  font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
-                  text-transform: uppercase; text-decoration: none;
-                  display: block; width: fit-content;">
-            List My Business
-        </a>
-    </div>
-
+  {{-- Listings grid --}}
+  <div class="page-pad anim-fade-up delay-2"
+       style="padding-top:8px;">
     @if ($this->souqListings->count())
-        <section class="grid grid-cols-2 gap-4 md:grid-cols-3">
-            @foreach ($this->souqListings as $listing)
-                @php
-                    $badge = match ($listing->category) {
-                        'fashion' => ['bg' => 'var(--plum-lt)', 'text' => '#3D1A47'],
-                        'food_catering' => ['bg' => 'var(--gold-pale)', 'text' => 'var(--gold)'],
-                        'health_beauty' => ['bg' => 'var(--teal-lt)', 'text' => 'var(--teal)'],
-                        'education' => ['bg' => 'var(--mint-lt)', 'text' => 'var(--teal)'],
-                        'services' => ['bg' => 'var(--ivory)', 'text' => 'var(--ink-soft)'],
-                        'creative' => ['bg' => 'var(--plum-lt)', 'text' => '#3D1A47'],
-                        default => ['bg' => '#F1F5F9', 'text' => 'var(--ink-soft)'],
-                    };
-                @endphp
-                <a href="{{ route('souq.show', $listing->slug) }}" class="rounded-[8px] bg-white p-4 no-underline" style="border: 1px solid var(--border);">
-                    <div>
-                        @if ($listing->logo_path)
-                            <img src="{{ Storage::url($listing->logo_path) }}" alt="{{ $listing->business_name }}"
-                                 style="width:56px; height:56px; border-radius:50%;
-                                        object-fit:cover; border:1px solid #E2E8F0;
-                                        margin: 0 auto 10px; display:block;">
-                        @else
-                            <div style="width:56px; height:56px; border-radius:50%;
-                                        background: #1A6B72; display:flex;
-                                        align-items:center; justify-content:center;
-                                        margin: 0 auto 10px;">
-                                <span style="font-family:'Dancing Script',cursive;
-                                             font-size:1.4rem; color:white; line-height:1">
-                                    {{ strtoupper(mb_substr($listing->business_name, 0, 1)) }}
-                                </span>
-                            </div>
-                        @endif
-                    </div>
-                    <div class="mt-3 space-y-2 text-center">
-                        <h2 class="text-sm font-semibold leading-6 text-ink">{{ $listing->business_name }}</h2>
-                        <div>
-                            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium" style="background: {{ $badge['bg'] }}; color: {{ $badge['text'] }};">
-                                {{ $listing->categoryLabel() }}
-                            </span>
-                        </div>
-                        <p class="line-clamp-2 text-[12px] font-light leading-6 text-ink-soft">{{ $listing->description }}</p>
-                    </div>
-                </a>
-            @endforeach
-        </section>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+        @foreach ($this->souqListings as $listing)
+          @php
+            $badge = match ($listing->category) {
+              'fashion'        => ['bg' => 'var(--plum-lt)',  'text' => 'var(--plum)'],
+              'food_catering'  => ['bg' => 'var(--gold-pale)', 'text' => '#8A6A1A'],
+              'health_beauty'  => ['bg' => 'var(--teal-lt)',  'text' => 'var(--teal)'],
+              'education'      => ['bg' => 'var(--mint-lt)',  'text' => '#1A6B5A'],
+              'services'       => ['bg' => '#F0EDE8',         'text' => 'var(--ink-soft)'],
+              'creative'       => ['bg' => 'var(--plum-lt)',  'text' => 'var(--plum)'],
+              default          => ['bg' => '#F0EDE8',         'text' => 'var(--ink-soft)'],
+            };
+          @endphp
+          <a href="{{ route('souq.show', $listing->slug) }}" class="souq-card">
+            @if ($listing->logo_path)
+              <img src="{{ Storage::url($listing->logo_path) }}"
+                   alt="{{ $listing->business_name }}"
+                   class="souq-logo">
+            @else
+              <div class="souq-logo-fallback">
+                <span style="font-family:var(--font-display);font-size:1.4rem;
+                             color:white;line-height:1;">
+                  {{ strtoupper(mb_substr($listing->business_name, 0, 1)) }}
+                </span>
+              </div>
+            @endif
 
-        <div>
-            {{ $this->souqListings->links() }}
-        </div>
+            <p style="font-size:0.875rem;font-weight:600;color:var(--ink);
+                      line-height:1.3;margin-bottom:6px;">
+              {{ $listing->business_name }}
+            </p>
+            <span style="display:inline-flex;padding:3px 8px;border-radius:20px;
+                         font-size:10px;font-weight:600;text-transform:uppercase;
+                         letter-spacing:0.4px;margin-bottom:8px;
+                         background:{{ $badge['bg'] }};color:{{ $badge['text'] }};">
+              {{ $listing->categoryLabel() }}
+            </span>
+            <p style="font-size:12px;font-weight:300;color:var(--ink-soft);
+                      line-height:1.5;display:-webkit-box;
+                      -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+              {{ $listing->description }}
+            </p>
+          </a>
+        @endforeach
+      </div>
+
+      <div style="margin-top:16px;">
+        {{ $this->souqListings->links() }}
+      </div>
+
     @else
-        <section class="rounded-[8px] bg-white px-6 py-12 text-center" style="border: 1px solid var(--border);">
-            <p class="text-sm font-light leading-7 text-ink-soft">No businesses found — check back soon, insha'Allah</p>
-        </section>
+      <div class="card anim-scale-in"
+           style="padding:48px 24px;text-align:center;">
+        <p style="font-family:var(--font-display);font-size:1.1rem;
+                  color:var(--teal);margin-bottom:4px;">
+          No businesses found
+        </p>
+        <p style="font-size:0.875rem;font-weight:300;color:var(--ink-soft);">
+          Check back soon, insha'Allah
+        </p>
+      </div>
     @endif
+  </div>
+
 </div>

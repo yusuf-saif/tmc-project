@@ -1,89 +1,125 @@
-<div class="space-y-6 px-4">
-    <section class="space-y-2">
-        <h1 class="font-display text-[1.8rem] leading-none text-teal">Halaqahs &amp; Events</h1>
-        <p class="text-sm font-light leading-7 text-ink-soft">Stay close to the gatherings, reminders, and sisterhood moments ahead.</p>
-    </section>
+<div>
 
-    <section class="flex overflow-x-auto border-b" style="border-color: var(--border); gap: 0;">
-        @foreach (['upcoming' => 'Upcoming', 'past' => 'Past', 'my_rsvps' => 'My RSVPs'] as $value => $label)
-            <button
-                type="button"
-                wire:click="switchTab('{{ $value }}')"
-                class="border-b-2 transition"
-                style="padding: 10px 16px; font-family:'Nunito',sans-serif; font-size:13px;
-                       font-weight:500; text-transform:uppercase; letter-spacing:0.5px;
-                       white-space:nowrap; background:none; cursor:pointer;
-                       border-color: {{ $tab === $value ? '#1A6B72' : 'transparent' }};
-                       color: {{ $tab === $value ? '#1A6B72' : '#6B6760' }};
-                       border-radius: 0;"
-            >
-                {{ $label }}
-            </button>
-        @endforeach
-    </section>
+  {{-- Page header --}}
+  <div class="page-wrap anim-fade-up" style="margin-bottom:12px;">
+    <h1 style="font-family:var(--font-display);font-size:1.8rem;
+               color:var(--teal);line-height:1;margin-bottom:6px;">
+      Halaqahs &amp; Events
+    </h1>
+    <p style="font-size:0.875rem;font-weight:300;color:var(--ink-soft);line-height:1.6;">
+      Stay close to the gatherings and sisterhood moments ahead.
+    </p>
+  </div>
+
+  {{-- Tab bar --}}
+  <div class="tab-bar anim-slide-down">
+    @foreach (['upcoming' => 'Upcoming', 'past' => 'Past', 'my_rsvps' => 'My RSVPs'] as $value => $label)
+      <button
+        type="button"
+        wire:click="switchTab('{{ $value }}')"
+        class="tab-item {{ $tab === $value ? 'active' : '' }}"
+      >{{ $label }}</button>
+    @endforeach
+  </div>
+
+  {{-- Event list --}}
+  <div class="page-pad" style="padding-top:16px;">
 
     @if ($this->events->isNotEmpty())
-        <section class="space-y-3">
-            @foreach ($this->events as $event)
-                <article class="overflow-hidden rounded-[12px] bg-white transition hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]" style="border: 1px solid var(--border);">
-                    @if ($event->cover_image_path)
-                        <img src="{{ asset('storage/'.$event->cover_image_path) }}" alt="{{ $event->title }}"
-                             style="width:100%; height:140px; object-fit:cover; border-radius:10px 10px 0 0; display:block;">
-                    @else
-                        <div style="width:100%; height:100px;
-                                    background: linear-gradient(135deg, #1A6B72, #2A8A93);
-                                    border-radius:10px 10px 0 0;
-                                    display: flex; align-items: center; justify-content: center;">
-                            <span style="font-family:'Dancing Script',cursive;
-                                         font-size:1.2rem; color:rgba(255,255,255,0.7)">TMC</span>
-                        </div>
-                    @endif
 
-                    <div class="space-y-4 p-4">
-                        <div class="space-y-3">
-                            <h2 class="text-[0.95rem] font-semibold text-ink">{{ $event->title }}</h2>
-                            <div class="flex items-center gap-2 text-[12px] font-light text-ink-soft">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[14px] w-[14px]"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                <span>{{ $event->event_date->format('d M Y, g:ia') }}</span>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="inline-flex rounded-full px-3 py-1 text-[11px] font-medium" style="background: {{ $event->location_type === 'online' ? '#D6EDEF' : ($event->location_type === 'in_person' ? '#FDF6E3' : '#F3EAF7') }}; color: {{ $event->location_type === 'online' ? '#1A6B72' : ($event->location_type === 'in_person' ? '#C8A84B' : '#3D1A47') }};">
-                                    {{ match($event->location_type) { 'online' => 'Online', 'in_person' => 'In Person', 'hybrid' => 'Hybrid' } }}
-                                </span>
-                                <span class="text-[11px] text-ink-soft">{{ $event->active_rsvps_count }} going</span>
-                            </div>
-                        </div>
+      @foreach ($this->events as $event)
+      <div class="event-card anim-fade-up"
+           style="animation-delay:{{ $loop->index * 0.06 }}s;">
 
-                        <div class="flex items-center justify-between gap-3">
-                            <a href="{{ route('events.show', $event->slug) }}" class="text-[12px] font-medium text-teal no-underline">
-                                View Details
-                            </a>
+        {{-- Cover image or gradient placeholder --}}
+        @if ($event->cover_image_path)
+          <img src="{{ asset('storage/'.$event->cover_image_path) }}"
+               alt="{{ $event->title }}"
+               style="width:100%;height:140px;object-fit:cover;display:block;">
+        @else
+          <div class="event-card__placeholder">
+            <span>TMC</span>
+          </div>
+        @endif
 
-                            @if ($tab === 'upcoming')
-                                @if ($this->isRsvpd($event->id))
-                                    <button type="button" disabled class="inline-flex min-h-10 items-center justify-center px-4 text-[12px] font-semibold uppercase text-teal" style="background: #D6EDEF; border: 1px solid #1A6B72; border-radius: 6px;">
-                                        Going ✓
-                                    </button>
-                                @else
-                                    <button type="button" wire:click="rsvp({{ $event->id }})" class="inline-flex min-h-10 items-center justify-center bg-teal px-4 text-[12px] font-semibold uppercase text-white transition" style="border-radius: 6px;">
-                                        RSVP
-                                    </button>
-                                @endif
-                            @endif
+        <div class="event-card__body">
+          <p class="event-card__title">{{ $event->title }}</p>
 
-                            @if ($tab === 'my_rsvps')
-                                <button type="button" wire:click="cancelRsvp({{ $event->id }})" class="inline-flex min-h-10 items-center justify-center px-4 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-ink-md transition" style="border: 1px solid var(--border); border-radius: 2px;">
-                                    Cancel RSVP
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-                </article>
-            @endforeach
-        </section>
+          <div class="event-card__meta">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+            </svg>
+            <span>{{ $event->event_date->format('D d M Y · g:ia') }}</span>
+          </div>
+
+          <div class="event-card__footer">
+            <div style="display:flex;align-items:center;gap:6px;">
+              @php
+                $badgeClass = match($event->location_type) {
+                  'in_person' => 'badge-gold',
+                  'hybrid'    => 'badge-plum',
+                  default     => 'badge-teal',
+                };
+                $locationLabel = match($event->location_type) {
+                  'online'    => 'Online',
+                  'in_person' => 'In Person',
+                  'hybrid'    => 'Hybrid',
+                  default     => ucfirst($event->location_type),
+                };
+              @endphp
+              <span class="badge {{ $badgeClass }}">{{ $locationLabel }}</span>
+              <span style="font-size:11px;color:var(--ink-soft);">
+                {{ $event->active_rsvps_count }} going
+              </span>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:center;">
+              <a href="{{ route('events.show', $event->slug) }}"
+                 style="font-size:12px;font-weight:500;color:var(--teal);
+                        text-decoration:none;">
+                Details
+              </a>
+
+              @if ($tab === 'upcoming')
+                @if ($this->isRsvpd($event->id))
+                  <span class="btn btn-sm btn-teal-ol"
+                        style="cursor:default;opacity:0.8;">Going ✓</span>
+                @else
+                  <button type="button"
+                          wire:click="rsvp({{ $event->id }})"
+                          class="btn btn-teal btn-sm">
+                    RSVP
+                  </button>
+                @endif
+              @endif
+
+              @if ($tab === 'my_rsvps')
+                <button type="button"
+                        wire:click="cancelRsvp({{ $event->id }})"
+                        wire:confirm="Cancel your RSVP?"
+                        class="btn btn-sm btn-teal-ol">
+                  Cancel
+                </button>
+              @endif
+            </div>
+          </div>
+        </div>
+      </div>
+      @endforeach
+
     @else
-        <section class="rounded-[8px] bg-white px-6 py-12 text-center" style="border: 1px solid var(--border);">
-            <p class="text-sm font-light leading-7 text-ink-soft">{{ $this->emptyStateMessage() }}</p>
-        </section>
+      <div class="card anim-scale-in"
+           style="padding:48px 24px;text-align:center;">
+        <p style="font-family:var(--font-display);font-size:1.2rem;
+                  color:var(--teal);margin-bottom:8px;">
+          {{ $this->emptyStateMessage() }}
+        </p>
+      </div>
     @endif
+
+  </div>
 </div>
