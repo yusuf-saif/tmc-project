@@ -1,5 +1,5 @@
 <nav aria-label="Bottom navigation"
-     class="fixed bottom-0 left-0 right-0 z-50 bg-white"
+     class="bottom-nav fixed bottom-0 left-0 right-0 z-50 bg-white"
      style="height: 64px; border-top: 1px solid var(--border);">
     <div class="mx-auto flex h-full w-full max-w-md items-center">
         @foreach ($tabs as $tab)

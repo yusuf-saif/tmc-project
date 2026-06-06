@@ -52,14 +52,14 @@ class AuthOnboardingTest extends TestCase
             ->get('/home')
             ->assertRedirect(route('onboarding'));
 
-        $interestIds = Interest::query()->orderBy('sort_order')->limit(2)->pluck('id')->all();
-        $goalIds = Goal::query()->orderBy('id')->limit(2)->pluck('id')->all();
+        $interestSlugs = Interest::query()->orderBy('sort_order')->limit(2)->pluck('slug')->all();
+        $goalSlugs = Goal::query()->orderBy('id')->limit(2)->pluck('slug')->all();
 
         Livewire::actingAs($user)
             ->test(OnboardingWizard::class)
-            ->set('selectedInterests', $interestIds)
+            ->set('selectedInterests', $interestSlugs)
             ->call('nextStep')
-            ->set('selectedGoals', $goalIds)
+            ->set('selectedGoals', $goalSlugs)
             ->call('nextStep')
             ->set('notificationPreferences.announcements', false)
             ->call('nextStep')
@@ -95,9 +95,9 @@ class AuthOnboardingTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(OnboardingWizard::class)
-            ->set('selectedInterests', Interest::query()->limit(1)->pluck('id')->all())
+            ->set('selectedInterests', Interest::query()->limit(1)->pluck('slug')->all())
             ->call('nextStep')
-            ->set('selectedGoals', Goal::query()->limit(1)->pluck('id')->all())
+            ->set('selectedGoals', Goal::query()->limit(1)->pluck('slug')->all())
             ->call('nextStep')
             ->call('nextStep')
             ->assertSet('step', 4)

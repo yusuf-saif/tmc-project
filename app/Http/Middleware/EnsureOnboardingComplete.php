@@ -10,14 +10,25 @@ class EnsureOnboardingComplete
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user();
+        if (auth()->check()) {
+            $user = auth()->user();
 
-        if (! $user || $request->routeIs('onboarding')) {
-            return $next($request);
-        }
+            if ($user->hasAnyRole([
+                'super_admin',
+                'admin',
+                'moderator',
+                'content_editor',
+            ])) {
+                if (! $request->is('admin') && ! $request->is('admin/*')) {
+                    return redirect('/admin');
+                }
 
-        if (! $user->profile?->onboarding_completed_at) {
-            return redirect()->route('onboarding');
+                return $next($request);
+            }
+
+            if (! $user->profile?->onboarding_completed_at) {
+                return redirect()->route('onboarding');
+            }
         }
 
         return $next($request);

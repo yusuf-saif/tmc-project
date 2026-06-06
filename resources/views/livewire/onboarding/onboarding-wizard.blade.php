@@ -19,8 +19,8 @@
 
             <div class="flex flex-wrap gap-3">
                 @foreach ($interests as $interest)
-                    @php($selected = in_array($interest->id, $selectedInterests, true))
-                    <button type="button" wire:click="toggleInterest({{ $interest->id }})" class="px-4 py-3 text-sm font-semibold transition {{ $selected ? 'bg-teal text-white' : 'border border-slate-200 bg-ivory text-ink-md' }}" style="border-radius: 2px;">
+                    @php($selected = in_array($interest->slug, $selectedInterests, true))
+                    <button type="button" wire:click="toggleInterest('{{ $interest->slug }}')" class="px-4 py-3 text-sm font-semibold transition text-ink-md" style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#1A6B72' : '#FAF8F3' }}; color: {{ $selected ? '#FFFFFF' : '#3D3A35' }}; border-radius: 999px;">
                         {{ $interest->name }}
                     </button>
                 @endforeach
@@ -40,21 +40,22 @@
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 @foreach ($goals as $goal)
-                    @php($selected = in_array($goal->id, $selectedGoals, true))
-                    <button type="button" wire:click="toggleGoal({{ $goal->id }})" class="border p-5 text-left transition {{ $selected ? 'border-teal bg-teal-lt' : 'border-slate-200 bg-white' }}" style="border-radius: 2px;">
-                        <p class="text-xs font-semibold uppercase tracking-[1.4px] text-gold">Goal</p>
-                        <h2 class="mt-3 font-display text-3xl text-teal-dk">{{ $goal->name }}</h2>
-                        <p class="mt-2 text-sm font-light leading-7 text-ink-soft">{{ match($goal->slug) {
+                    @php($selected = in_array($goal->slug, $selectedGoals, true))
+                    <div wire:click="toggleGoal('{{ $goal->slug }}')" class="cursor-pointer rounded-lg p-4 transition" style="cursor: pointer; border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#D6EDEF' : '#FFFFFF' }}; border-radius: 8px; padding: 1rem; transition: all 0.2s;">
+                        <span style="font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #C8A84B;">GOAL</span>
+                        <h3 style="font-family: 'Dancing Script', cursive; font-size: 1.4rem; color: #0D3F44; margin: 4px 0;">{{ $goal->name }}</h3>
+                        <p style="font-size: 0.875rem; color: #6B6760; line-height: 1.6; margin: 0;">{{ match($goal->slug) {
                             'community' => 'Build deeper sisterhood and belonging.',
                             'learning' => 'Stay rooted in beneficial reminders and study.',
                             'business' => 'Grow ideas, service, and sustainable income.',
                             'volunteering' => 'Offer time and skills in meaningful ways.',
                         } }}</p>
-                    </button>
+                    </div>
                 @endforeach
             </div>
 
             @error('selectedGoals') <p class="tmc-error">{{ $message }}</p> @enderror
+            @error('goals') <p class="tmc-error">{{ $message }}</p> @enderror
         </div>
         @elseif ($step === 3)
         <div class="space-y-6">

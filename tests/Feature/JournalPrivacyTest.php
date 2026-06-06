@@ -111,8 +111,7 @@ class JournalPrivacyTest extends TestCase
 
         $response = $this->actingAs($this->admin)->get('/journal');
 
-        $response->assertForbidden();
-        $response->assertDontSee('top secret body');
+        $response->assertRedirect('/admin');
     }
 
     public function test_encrypted_cast_is_applied(): void
