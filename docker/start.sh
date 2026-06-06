@@ -15,6 +15,11 @@ php artisan route:clear
 php artisan view:clear
 php artisan optimize
 
+# Create runtime asset links and publish package assets
+php artisan storage:link || true
+php artisan filament:assets || true
+php artisan livewire:publish --assets || true
+
 # Run migrations
 echo "Running migrations..."
 php artisan migrate --force

@@ -16,6 +16,8 @@ services:
         generateValue: true
       - key: APP_URL
         value: https://tmc-app.onrender.com
+      - key: ASSET_URL
+        value: https://tmc-app.onrender.com
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
