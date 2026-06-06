@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.3-fpm-alpine
 
 # System dependencies
 RUN apk add --no-cache \
@@ -13,10 +13,13 @@ RUN apk add --no-cache \
     unzip \
     postgresql-dev \
     oniguruma-dev \
-    supervisor
+    supervisor \
+    icu-dev \
+    icu-libs
 
 # PHP extensions
-RUN docker-php-ext-install \
+RUN docker-php-ext-configure intl && \
+    docker-php-ext-install \
     pdo \
     pdo_pgsql \
     pgsql \
@@ -24,7 +27,8 @@ RUN docker-php-ext-install \
     zip \
     gd \
     bcmath \
-    opcache
+    opcache \
+    intl
 
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
