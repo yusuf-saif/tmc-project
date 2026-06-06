@@ -1,6 +1,6 @@
 @php use Illuminate\Support\Str; @endphp
 
-<div x-data="{ showModal: $wire.entangle('showModal'), showDuaForm: $wire.entangle('showDuaForm') }" class="space-y-6">
+<div x-data="{ showModal: $wire.entangle('showModal'), showDuaForm: $wire.entangle('showDuaForm') }" class="space-y-6 px-4">
     <section class="space-y-2">
         <h1 class="font-display text-[1.8rem] leading-none text-teal">My Journal</h1>
         <p class="text-sm font-light leading-7 text-ink-soft">Keep a private space for your reflections and the du'as you return to most.</p>
@@ -15,11 +15,19 @@
     </section>
 
     @if ($tab === 'entries')
-        <div class="flex justify-end">
-            <button type="button" wire:click="openNewEntry" class="inline-flex min-h-11 items-center justify-center bg-gold px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk transition" style="border-radius: 2px;">
-                + New Entry
-            </button>
-        </div>
+        <button type="button" wire:click="openNewEntry"
+                style="position: fixed; bottom: 80px; right: calc(50% - 220px);
+                       width: 48px; height: 48px; border-radius: 50%;
+                       background: #C8A84B; border: none; cursor: pointer;
+                       display: flex; align-items:center; justify-content:center;
+                       box-shadow: 0 4px 16px rgba(200,168,75,0.4);
+                       z-index: 30;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                 stroke="white" stroke-width="2" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+        </button>
 
         @if ($this->entries->isNotEmpty())
             <div class="space-y-4">
@@ -34,13 +42,13 @@
                             default => '😐',
                         };
                     @endphp
-                    <article class="group flex items-start gap-4 rounded-[8px] bg-white p-4" style="border: 1px solid var(--border);">
-                        <div class="text-[1.5rem]">{{ $emoji }}</div>
+                    <article class="group flex items-start gap-4 rounded-[12px] bg-white p-4" style="border: 1px solid var(--border);">
+                        <div class="text-[1.8rem]">{{ $emoji }}</div>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm font-medium text-ink">{{ $entry->entry_date->format('d M Y') }}</p>
-                            <p class="mt-1 text-[12px] font-light leading-6 text-ink-soft">{{ Str::limit($entry->body, 80) }}</p>
+                            <p class="text-[0.875rem] font-semibold text-ink">{{ $entry->entry_date->format('d M Y') }}</p>
+                            <p class="mt-1 line-clamp-2 text-[0.8rem] font-light leading-6 text-ink-soft">{{ Str::limit($entry->body, 80) }}</p>
                         </div>
-                        <div class="flex items-center gap-3 text-ink-soft transition group-hover:text-ink-md">
+                        <div class="flex items-center gap-3 text-ink-soft opacity-0 transition group-hover:opacity-100 group-hover:text-ink-md">
                             <button type="button" wire:click="openEditEntry({{ $entry->id }})" aria-label="Edit entry">✎</button>
                             <button type="button" wire:click="deleteEntry({{ $entry->id }})" wire:confirm="Delete this entry?" aria-label="Delete entry">🗑</button>
                         </div>
@@ -48,8 +56,11 @@
                 @endforeach
             </div>
         @else
-            <section class="rounded-[8px] bg-white px-6 py-12 text-center" style="border: 1px solid var(--border);">
-                <p class="text-sm font-light leading-7 text-ink-soft">Your journal is waiting — write your first reflection</p>
+            <section class="rounded-[12px] bg-white px-6 py-12 text-center" style="border: 1px solid var(--border); padding: 3rem 1rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mx-auto h-12 w-12 text-teal"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V18a2.25 2.25 0 0 1-2.25 2.25H7.5A2.25 2.25 0 0 1 5.25 18V5.25A1.5 1.5 0 0 1 6.75 3.75h9.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25h4.5M9 12h3"/></svg>
+                <p class="mt-4 font-display text-[1.3rem] text-teal">Your journal is waiting</p>
+                <p class="mt-2 text-[0.875rem] font-light leading-7 text-ink-soft">Begin your first reflection, insha'Allah</p>
+                <button type="button" wire:click="openNewEntry" class="tmc-button-gold mx-auto mt-5 max-w-[180px]">New Entry</button>
             </section>
         @endif
     @else
@@ -98,10 +109,11 @@
         @endif
     @endif
 
-    <div x-show="showModal" x-transition.opacity class="fixed inset-0 z-40 bg-black/40" x-cloak></div>
-    <div x-show="showModal" x-transition class="fixed inset-x-0 bottom-0 z-50 max-h-screen overflow-y-auto rounded-t-2xl bg-white p-6" x-cloak>
+    <div x-show="showModal" x-transition.opacity class="fixed inset-0 z-40 bg-black/50" x-cloak></div>
+    <div x-show="showModal" x-transition class="fixed inset-x-0 bottom-0 z-50 max-h-screen overflow-y-auto rounded-t-[24px] bg-white p-6" x-cloak>
         <div class="space-y-5">
             <div>
+                <div class="mx-auto mb-4 h-1 w-8 rounded-full bg-slate-300"></div>
                 <h2 class="font-display text-[1.5rem] leading-none text-teal">{{ $editingId ? 'Edit Entry' : 'New Entry' }}</h2>
             </div>
 
@@ -114,7 +126,7 @@
                 <label class="tmc-label">How are you feeling?</label>
                 <div class="grid grid-cols-6 gap-2">
                     @foreach (['happy' => '😊', 'grateful' => '🤲', 'reflective' => '🌙', 'sad' => '😔', 'anxious' => '😟', 'neutral' => '😐'] as $value => $emoji)
-                        <button type="button" wire:click="$set('mood', '{{ $value }}')" class="flex h-10 w-10 items-center justify-center text-xl" style="border: 2px solid {{ $mood === $value ? '#1A6B72' : '#E2E8F0' }}; background: {{ $mood === $value ? '#D6EDEF' : '#FFFFFF' }}; border-radius: 6px;">
+                        <button type="button" wire:click="$set('mood', '{{ $value }}')" class="flex h-12 w-12 items-center justify-center text-xl transition-all duration-150 ease-in-out" style="border: {{ $mood === $value ? '2px solid #1A6B72' : '1px solid #E2E8F0' }}; background: {{ $mood === $value ? '#D6EDEF' : '#FFFFFF' }}; border-radius: 6px;">
                             {{ $emoji }}
                         </button>
                     @endforeach
