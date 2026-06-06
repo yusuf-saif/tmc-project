@@ -93,6 +93,7 @@ button, a { cursor: pointer; }
 .nav-links a::after { background: var(--gold); bottom: -5px; content: ''; height: 1px; left: 0; position: absolute; transform: scaleX(0); transform-origin: left; transition: transform .26s ease; width: 100%; }
 .nav-links a:hover::after { transform: scaleX(1); }
 .nav-links a:hover { color: var(--gold); }
+.nav-actions { display: flex; gap: .75rem; }
 .nav-cta { border-radius: 4px; min-height: 40px; padding-inline: 22px; }
 
 .pattern-gold, .pattern-teal { position: relative; }
@@ -255,6 +256,7 @@ button, a { cursor: pointer; }
   .brand-name { font-size: 1.15rem; }
   .nav-logo-img { height: 32px; width: 32px; }
   .nav-right { gap: .75rem; }
+  .nav-actions { gap: .5rem; }
   .nav-cta { font-size: 11px; min-height: 38px; padding-inline: 16px; }
   .hero-left { min-height: 720px; padding-top: 7rem; }
   .hero-proof { bottom: 2rem; left: 1.5rem; right: 1.5rem; }
@@ -278,6 +280,7 @@ button, a { cursor: pointer; }
   .preloader-name { font-size: 1.35rem; }
   .brand { gap: .55rem; min-width: 0; }
   .brand-name { font-size: 1.02rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-actions { gap: .4rem; }
   .nav-cta { font-size: 10px; letter-spacing: .6px; min-height: 36px; padding-inline: 12px; }
   .hero-left { min-height: 700px; padding: 6.5rem 1.25rem 8rem; }
   .hero-title { font-size: clamp(3.1rem, 16vw, 3.75rem); line-height: 1; }
@@ -348,7 +351,11 @@ button, a { cursor: pointer; }
       <li><a href="#community">Sisterhood</a></li>
       <li><a href="#about">About</a></li>
     </ul>
-    <a class="btn btn-gold nav-cta" href="#join">Join Now</a>
+    <div class="nav-actions">
+      <a class="btn btn-outline nav-cta" href="{{ url('/admin') }}">Admin</a>
+      <a class="btn btn-gold nav-cta" href="{{ url('/register') }}">Register</a>
+      <a class="btn btn-ghost nav-cta" href="{{ url('/login') }}">Login</a>
+    </div>
   </div>
 </nav>
 
