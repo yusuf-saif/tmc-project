@@ -2,10 +2,6 @@
 
 use Illuminate\Support\Str;
 
-$mysqlSslCaAttribute = defined('Pdo\\Mysql::ATTR_SSL_CA')
-    ? constant('Pdo\\Mysql::ATTR_SSL_CA')
-    : \PDO::MYSQL_ATTR_SSL_CA;
-
 return [
 
     /*
@@ -61,9 +57,6 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                $mysqlSslCaAttribute => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
         ],
 
         'mariadb' => [
@@ -81,9 +74,6 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                $mysqlSslCaAttribute => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
         ],
 
         'pgsql' => [
