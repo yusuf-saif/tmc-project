@@ -17,6 +17,23 @@ class FortifyLoginResponse implements LoginResponseContract
 
     protected function redirectPath(?object $user): string
     {
+        if (! $user) {
+            return '/home';
+        }
+
+        if ($user->hasAnyRole([
+            'super_admin',
+            'admin',
+            'moderator',
+            'content_editor',
+        ])) {
+            return '/admin';
+        }
+
+        if (! $user->profile?->onboarding_completed_at) {
+            return '/onboarding';
+        }
+
         return '/home';
     }
 }

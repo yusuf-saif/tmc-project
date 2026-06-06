@@ -19,10 +19,6 @@ class EnsureOnboardingComplete
                 'moderator',
                 'content_editor',
             ])) {
-                if (! $request->is('admin') && ! $request->is('admin/*')) {
-                    return redirect('/admin');
-                }
-
                 return $next($request);
             }
 

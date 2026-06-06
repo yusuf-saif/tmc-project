@@ -1,13 +1,13 @@
 @php($displayName = auth()->user()->profile->display_name ?? auth()->user()->name)
 
 <div class="flex min-h-[calc(100vh-3.5rem-1rem)] flex-col items-center justify-center py-8">
-    <div class="w-full max-w-[340px] text-center">
+    <div class="w-full text-center" style="max-width:min(340px, calc(100vw - 2rem)); margin:auto; filter: drop-shadow(0 0 40px rgba(200,168,75,0.2));">
         <div class="relative overflow-hidden rounded-[16px] border px-6 py-10 text-center" style="background: rgba(250,248,243,0.06); border-color: rgba(200,168,75,0.3); backdrop-filter: blur(8px);">
             <div class="pointer-events-none absolute inset-0 opacity-[0.08]" style="background-image: url('/images/img4.png'); background-size: 300px; border-radius: inherit;"></div>
             <div class="relative z-10">
                 <img src="{{ asset('images/img1.png') }}" alt="TMC" class="mx-auto mb-4 h-[52px] w-[52px] object-contain">
                 <div class="mx-auto mb-4 h-px w-12" style="background: var(--gold); opacity: 0.6;"></div>
-                <p class="font-arabic text-[2.8rem] font-bold leading-[1.2]" dir="rtl" style="color: #E8CB7A;">المحسنات</p>
+                <p dir="rtl" style="font-family:'Amiri',serif; font-weight:700; font-size:2.8rem; direction:rtl; color:#E8CB7A; line-height:1.2;">المحسنات</p>
                 <div class="mx-auto mb-5 mt-3 h-px w-12" style="background: var(--gold); opacity: 0.6;"></div>
                 <p class="font-display text-[1.6rem] text-white">{{ $displayName }}</p>
                 <p class="mt-2 text-[11px] uppercase tracking-[1.5px] text-white/50">TMC Member</p>
