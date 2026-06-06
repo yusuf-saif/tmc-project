@@ -1,42 +1,54 @@
 # TMC Repo Notes For OpenCode
 
-## Current App Surface
-- This repo is a Laravel 11 app with Fortify auth, Livewire member screens, and a Filament admin panel.
-- Public routes in `routes/web.php`: `GET /` -> `resources/views/landing.blade.php`, `GET /offline` -> `resources/views/offline.blade.php`.
-- Member flow is already wired: `/onboarding` uses `auth` + `verified`; `/home` adds the `onboarded` middleware alias from `bootstrap/app.php`.
-- Filament is mounted at `/admin` in `app/Providers/Filament/AdminPanelProvider.php`.
+## Ignore First
+- `README.md` is still the stock Laravel README. Treat `routes/`, `app/`, config files, and this file as the real source of truth.
+
+## App Surface
+- This is one Laravel 11 app with three surfaces: public landing page at `/`, member app on Livewire routes in `routes/web.php`, and Filament admin at `/admin`.
+- `GET /` must keep serving `resources/views/landing.blade.php`. That page is a large inline-styled Blade file, not a normal Vite/Tailwind screen.
+- Member routes are not controller-based by default; most screens are mounted directly as Livewire components from `routes/web.php`.
+- `/onboarding` is behind `auth` only. `/home` and the rest of the member area use the `onboarded` middleware alias from `bootstrap/app.php`.
 
 ## Commands
 - Install deps: `composer install && npm install`
-- Run the full local stack: `composer dev`
-- Frontend dev server only: `npm run dev`
-- Build frontend assets: `npm run build`
-- Run all tests: `php artisan test`
-- Run the main feature flow only: `php artisan test --filter AuthOnboardingTest`
-- Seed local roles, admin, interests, and goals: `php artisan migrate --seed`
+- Full local stack: `composer dev`
+- Frontend only: `npm run dev`
+- Production assets: `npm run build`
+- Format PHP: `./vendor/bin/pint`
+- Full test suite: `php artisan test`
+- Focused auth/onboarding regression: `php artisan test --filter AuthOnboardingTest`
+- Seed local data set: `php artisan migrate --seed`
+- Seed Playwright login user: `php artisan db:seed --class=PlaywrightSeeder`
+- Playwright expects the app at `http://127.0.0.1:8000`: `npm run test:e2e`
 
-## Auth And Routing Quirks
-- Fortify is installed and uses custom Blade views from `resources/views/auth/*`; do not assume starter Laravel auth UI.
-- `app/Providers/FortifyServiceProvider.php` overrides Fortify responses: register redirects to `verification.notice`, email verification redirects to `/onboarding?verified=1`, and login redirects to `/home` or `/onboarding` depending on profile completion.
-- Fortify features currently enabled in `config/fortify.php`: registration, password reset, email verification. Two-factor/passkey migrations exist, but those features are not enabled.
-- Referral coins are awarded on the `Verified` event via `app/Listeners/AwardReferralCoins.php`, registered in `app/Providers/AppServiceProvider.php`.
+## Auth And Redirects
+- Fortify uses custom Blade views in `resources/views/auth/*`; do not swap in starter-kit assumptions.
+- Login redirect logic is custom in `app/Http/Responses/FortifyLoginResponse.php`: admin-capable roles go to `/admin`, members without completed onboarding go to `/onboarding`, everyone else goes to `/home`.
+- Register redirect is custom too: `app/Http/Responses/FortifyRegisterResponse.php` sends browser requests straight to `/home`.
+- Referral awards are wired off `Illuminate\Auth\Events\Verified` in `app/Providers/AppServiceProvider.php`, even though `config/fortify.php` currently does not enable the email verification feature.
 
-## Frontend And Brand Constraints
-- Keep `GET /` serving the existing landing page. The landing page is a large inline-styled Blade file, not a Vite/Tailwind screen, so avoid “cleaning it up” casually.
-- Brand tokens live in both `resources/views/landing.blade.php` and `resources/css/app.css`; auth/member UI should match those tokens, not default Laravel or Filament styling.
-- Brand image usage is hard-coded from `public/images/`: landing uses `img1`-`img4`, and Filament branding depends on `img1.png` and `img2.png`.
-- If you are implementing a phase from the product docs, read `docs/BUILD_PHASES.md`, then the relevant schema in `docs/TRD.md`, then the UI spec in `docs/DESIGN_GUIDE.md`.
+## Brand And UI Constraints
+- Keep landing-page styling decisions in `resources/views/landing.blade.php` unless the task is specifically about that page.
+- Shared app/auth styling tokens live in `resources/css/app.css` and `tailwind.config.js`; match those tokens instead of default Laravel or Filament styling.
+- Brand image names are fixed in `public/images/`: landing uses `img1`-`img4`, and Filament branding uses `img1.png` and `img2.png` in `AdminPanelProvider`.
 
-## Data And Permissions
+## Data, Roles, And Permissions
 - Roles are seeded by `database/seeders/RoleSeeder.php`: `super_admin`, `admin`, `moderator`, `content_editor`, `volunteer`, `member`.
-- `database/seeders/AdminUserSeeder.php` creates `admin@themuhsinatclub.com` with password `Change1234!` and assigns `super_admin`.
-- `app/Models/User.php` gates Filament access through `canAccessPanel()` and only allows `super_admin`, `admin`, `moderator`, and `content_editor`.
-- Preserve repo-level product constraints from the docs and `CLAUDE.md`: landing page at `/` must remain intact, journal bodies must stay encrypted, permissions must be enforced server-side, and admin mutations should call `AuditLogService::log()`.
+- Local admin seed is `admin@themuhsinatclub.com` / `Change1234!` from `database/seeders/AdminUserSeeder.php`.
+- Filament access is gated in `App\Models\User::canAccessPanel()` to `super_admin`, `admin`, `moderator`, and `content_editor`.
+- Journal privacy is enforced in code: `App\Models\JournalEntry` casts `body` as `encrypted`.
+- Server-side authorization is required. Example: `JournalEntryPolicy` is registered in `app/Providers/AuthServiceProvider.php` and enforced from the Livewire screen.
+- Admin-side mutations are expected to call `App\Services\AuditLogService::log()`; existing Filament resources/pages already follow that pattern.
 
-## Testing And Env Gotchas
-- `phpunit.xml` uses in-memory SQLite for tests and forces `QUEUE_CONNECTION=sync` plus `SESSION_DRIVER=array`.
-- `tests/bootstrap.php` creates a temporary `.env` with only an `APP_KEY` if no `.env` exists, so tests can boot without local env setup.
-- The main end-to-end coverage is `tests/Feature/AuthOnboardingTest.php`; it seeds roles, interests, and goals and exercises registration, verification, onboarding, referral awards, and `/home` access.
+## Tests And Env Gotchas
+- `phpunit.xml` uses in-memory SQLite and forces `QUEUE_CONNECTION=sync` and `SESSION_DRIVER=array`; avoid writing tests that depend on MySQL/Postgres-specific behavior unless necessary.
+- `tests/bootstrap.php` writes a temporary `.env` with only `APP_KEY` when none exists so tests can boot in a clean checkout.
+- `tests/Feature/AuthOnboardingTest.php` is the highest-value feature flow: registration, onboarding, referral wiring, reward issuance, and `/home` protection.
+- Playwright uses `tests/e2e/setup/auth.setup.js` to log in as `member@test.com` / `password` and stores state in `tests/e2e/.auth/member.json`.
 
-## Tooling Gotcha
-- Composer `post-autoload-dump` runs `scripts/patch-laravel-framework-config.php` before package discovery and `artisan filament:upgrade`; do not remove or bypass that vendor patch casually.
+## Tooling And Deploy Gotchas
+- Composer `post-autoload-dump` runs `scripts/patch-laravel-framework-config.php` before package discovery and `artisan filament:upgrade`; do not remove or bypass that patch casually.
+- `render.yaml` is the checked-in deploy recipe. Production there is PostgreSQL, while tests are SQLite.
+
+## Product Docs
+- For feature work, read `docs/BUILD_PHASES.md` first, then `docs/TRD.md`, then the relevant UI doc in `docs/DESIGN_GUIDE.md` or `docs/DESIGN_SYSTEM.md`.
