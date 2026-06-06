@@ -32,11 +32,8 @@ One GitHub repo: landing page (live at /) + Laravel member app (/home) + Filamen
 
 ## Current phase
 <!-- Update this line as you progress -->
-Phase: 6 — Community, Profile, Legacy Card & Announcements
+Phase: 7 — Admin Dashboard
 Status: Complete ✓
-
-## Deferred
-- Phase 7: Admin award/deduct coins on UserResource show page
 
 ## Key services (already exist after Phase 0)
 - `App\Services\AuditLogService::log(action, model, old, new)`

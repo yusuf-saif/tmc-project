@@ -27,4 +27,9 @@ class Goal extends Model
     {
         return $this->belongsToMany(User::class, 'user_goals');
     }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 }

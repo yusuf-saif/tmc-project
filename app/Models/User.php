@@ -146,6 +146,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(SupportApplication::class);
     }
 
+    public function roleHistory(): HasMany
+    {
+        return $this->hasMany(UserRoleHistory::class);
+    }
+
     public function duaListItems(): HasMany
     {
         return $this->hasMany(DuaListItem::class);

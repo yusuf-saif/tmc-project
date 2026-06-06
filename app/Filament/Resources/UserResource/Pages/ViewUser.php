@@ -1,0 +1,86 @@
+<?php
+
+namespace App\Filament\Resources\UserResource\Pages;
+
+use App\Filament\Resources\UserResource;
+use Filament\Actions;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ViewRecord;
+
+class ViewUser extends ViewRecord
+{
+    protected static string $resource = UserResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('suspend')
+                ->label('Suspend')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->status === 'active')
+                ->form([
+                    \Filament\Forms\Components\Textarea::make('reason')
+                        ->label('Reason for suspension')
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    UserResource::suspend($this->record, $data['reason']);
+                    Notification::make()->title('Member suspended')->success()->send();
+                }),
+            Actions\Action::make('reactivate')
+                ->label('Reactivate')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn (): bool => $this->record->status === 'suspended')
+                ->action(function (): void {
+                    UserResource::reactivate($this->record);
+                    Notification::make()->title('Member reactivated')->success()->send();
+                }),
+            Actions\Action::make('awardBadge')
+                ->label('Award Badge')
+                ->form([
+                    \Filament\Forms\Components\Select::make('badge_id')
+                        ->options(UserResource::badgeOptions())
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    UserResource::awardBadge($this->record, (int) $data['badge_id']);
+                    Notification::make()->title('Badge awarded')->success()->send();
+                }),
+            Actions\Action::make('changeRole')
+                ->label('Change Role')
+                ->visible(fn (): bool => UserResource::canChangeRole(auth()->user()))
+                ->form([
+                    \Filament\Forms\Components\Select::make('new_role')
+                        ->options(UserResource::roleOptions())
+                        ->required(),
+                    \Filament\Forms\Components\Textarea::make('reason'),
+                ])
+                ->action(function (array $data): void {
+                    UserResource::changeRole($this->record, $data['new_role'], $data['reason'] ?? null);
+                    Notification::make()->title('Role updated')->success()->send();
+                }),
+            Actions\Action::make('awardCoins')
+                ->label('Award Coins')
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('amount')->numeric()->minValue(1)->required(),
+                    \Filament\Forms\Components\Textarea::make('reason')->required(),
+                ])
+                ->action(function (array $data): void {
+                    UserResource::awardCoins($this->record, (int) $data['amount'], $data['reason']);
+                    Notification::make()->title('Coins awarded')->success()->send();
+                }),
+            Actions\Action::make('deductCoins')
+                ->label('Deduct Coins')
+                ->color('danger')
+                ->form([
+                    \Filament\Forms\Components\TextInput::make('amount')->numeric()->minValue(1)->required(),
+                    \Filament\Forms\Components\Textarea::make('reason')->required(),
+                ])
+                ->action(function (array $data): void {
+                    UserResource::deductCoins($this->record, (int) $data['amount'], $data['reason']);
+                    Notification::make()->title('Coins deducted')->success()->send();
+                }),
+        ];
+    }
+}

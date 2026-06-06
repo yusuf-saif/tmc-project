@@ -18,7 +18,7 @@ class SupportApplicationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-hand-raised';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'Community';
 
     protected static ?string $navigationLabel = 'Support Applications';
 

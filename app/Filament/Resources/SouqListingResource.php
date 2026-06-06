@@ -19,7 +19,7 @@ class SouqListingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = 'Commerce';
 
     protected static ?string $navigationLabel = 'Souq Listings';
 
