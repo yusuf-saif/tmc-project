@@ -1,0 +1,17 @@
+.git
+.gitignore
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+tests/
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+docker-compose*
+*.md
+.phpunit.result.cache
+playwright-report/
+tests/e2e/
