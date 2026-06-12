@@ -31,9 +31,18 @@ One GitHub repo: landing page (live at /) + Laravel member app (/home) + Filamen
 - Phase prompts (what to build) → docs/BUILD_PHASES.md
 
 ## Current phase
-<!-- Update this line as you progress -->
 Phase: 7 — Admin Dashboard
 Status: Complete ✓
+UI Rebuild: Complete ✓ (commit d375fe2d)
+
+## Deployment target
+Platform: Laravel Cloud
+Config: laravel-cloud.yaml
+Status: Ready to deploy
+
+## Pending
+Phase 8: Push Notifications & PWA
+Phase 9: QA & Final Deployment
 
 ## Key services (already exist after Phase 0)
 - `App\Services\AuditLogService::log(action, model, old, new)`

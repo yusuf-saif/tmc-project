@@ -27,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        if (app()->environment('local')) {
+            \Illuminate\Database\Eloquent\Model::preventLazyLoading();
+        }
+
         Event::listen(Verified::class, AwardReferralCoins::class);
     }
 }
