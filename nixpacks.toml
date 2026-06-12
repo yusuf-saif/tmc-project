@@ -1,4 +1,3 @@
-# nixpacks.toml for Railway Laravel 10
 [phases.setup]
 php = "8.4"
 nodejs = "22"

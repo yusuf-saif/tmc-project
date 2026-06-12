@@ -1,9 +1,10 @@
-# Dockerfile for Laravel 10 deployment on Railway
+# Dockerfile for Laravel 10 deployment on Railway cloud
 FROM php:8.4-cli
 
+# Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git unzip zip curl libpq-dev libzip-dev libicu-dev g++ \
     && docker-php-ext-install pdo pdo_pgsql zip intl bcmath opcache
@@ -11,15 +12,15 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install PHP dependencies
+# Copy composer files and install dependencies
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Copy app files
+# Copy the full app
 COPY . .
 
-# Clear Laravel caches
-RUN php artisan optimize:clear || true
+# Do NOT run optimize:clear to avoid DB errors at build
+# Optional: you can run optimize after deployment if DB exists
 
-# Default start command
-CMD php artisan serve --host=0.0.0.0 --port=${PORT}
+# Start Laravel server using Railway PORT
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=${PORT}"]
