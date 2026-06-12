@@ -1,48 +1,33 @@
+# Dockerfile for Laravel 10 deployment on Railway
 FROM php:8.2-cli
 
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    curl \
-    zip \
     unzip \
+    zip \
+    curl \
     libpq-dev \
     libzip-dev \
     libicu-dev \
-    libxml2-dev \
-    libonig-dev \
-    libsodium-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-    pdo \
-    pdo_pgsql \
-    pgsql \
-    mbstring \
-    zip \
-    bcmath \
-    intl \
-    xml \
-    ctype \
-    opcache \
-    gd \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    g++ \
+    && docker-php-ext-install pdo pdo_pgsql zip intl bcmath opcache
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
-
+# Copy composer files and install dependencies
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
+# Copy app files
 COPY . .
 
-RUN composer dump-autoload --no-dev --optimize
-
+# Clear caches gracefully
 RUN php artisan optimize:clear || true
 
-EXPOSE 8000
-
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
+# Default command
+CMD php artisan serve --host=0.0.0.0 --port=${PORT}
