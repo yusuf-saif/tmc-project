@@ -1,11 +1,9 @@
-# nixpacks.toml for Railway
+# nixpacks.toml for Railway Laravel 10
 [phases.setup]
-# Use PHP 8.4 and Node 22
 php = "8.4"
 nodejs = "22"
 
 [phases.install]
-# Composer install (without dev)
 install_commands = [
     "composer install --no-dev --optimize-autoloader --no-scripts"
 ]
