@@ -1,5 +1,5 @@
 # Dockerfile for Laravel 10 deployment on Railway
-FROM php:8.2-cli
+FROM php:8.4-cli
 
 # Set working directory
 WORKDIR /app
