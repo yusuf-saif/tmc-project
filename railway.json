@@ -1,20 +1,29 @@
 {
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": null
+  },
   "deploy": {
-    "startCommand": "php-fpm"
+    "startCommand": "php artisan octane:start --server=swoole --host=0.0.0.0 --port=$PORT",
+    "healthcheckPath": "/up",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   },
   "plugins": [
     {
       "type": "postgresql",
-      "name": "PostgreSQL",
-      "settings": {
-        "DATABASE_URL": "${DATABASE_URL}"
-      }
+      "name": "railway-postgres"
     }
   ],
   "env": {
     "APP_KEY": "",
     "DB_CONNECTION": "pgsql",
     "APP_ENV": "production",
-    "APP_DEBUG": "false"
+    "APP_DEBUG": "false",
+    "OCTANE_SERVER": "swoole",
+    "OCTANE_HTTPS": "true",
+    "OCTANE_WORKERS": "auto"
   }
 }

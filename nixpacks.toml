@@ -1,18 +1,43 @@
-# nixpacks.toml for Laravel 11 production on Railway
+# ============================================================
+# nixpacks.toml — Laravel 11 + Octane + Swoole on Railway
+# ============================================================
+
+[variables]
+NIXPACKS_PHP_ROOT_DIR = "/app/public"
+
 [phases.setup]
-php = "8.4"
-nodejs = "22"
+nixPkgs = [
+  "php84",
+  "php84Packages.composer",
+  "php84Extensions.pdo",
+  "php84Extensions.pdo_pgsql",
+  "php84Extensions.pgsql",
+  "php84Extensions.mbstring",
+  "php84Extensions.zip",
+  "php84Extensions.gd",
+  "php84Extensions.bcmath",
+  "php84Extensions.opcache",
+  "php84Extensions.intl",
+  "php84Extensions.xml",
+  "php84Extensions.tokenizer",
+  "php84Extensions.ctype",
+  "php84Extensions.curl",
+  "php84Extensions.sodium",
+  "php84Extensions.swoole",
+  "nodejs_22"
+]
 
 [phases.install]
-install_commands = [
-    "composer install --no-dev --optimize-autoloader --no-scripts"
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+  "npm ci"
 ]
 
 [phases.build]
-build_commands = [
-    "php artisan optimize"
+cmds = [
+  "npm run build",
+  "php artisan optimize"
 ]
 
-[phases.start]
-# PHP-FPM will serve, Railway routes HTTP traffic to container port
-start_command = "php-fpm"
+[start]
+cmd = "php artisan octane:start --server=swoole --host=0.0.0.0 --port=$PORT"
