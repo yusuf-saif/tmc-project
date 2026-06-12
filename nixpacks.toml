@@ -1,4 +1,4 @@
-# nixpacks.toml for Laravel + Octane on Railway
+# nixpacks.toml for Laravel 11 production on Railway
 [phases.setup]
 php = "8.4"
 nodejs = "22"
@@ -14,4 +14,5 @@ build_commands = [
 ]
 
 [phases.start]
-start_command = "php artisan octane:start --server=swoole --host=0.0.0.0 --port=$PORT"
+# PHP-FPM will serve, Railway routes HTTP traffic to container port
+start_command = "php-fpm"

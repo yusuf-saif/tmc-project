@@ -1,9 +1,10 @@
-# Dockerfile for Laravel 10 + Octane deployment on Railway
-FROM php:8.4-cli
+# Laravel 11 Production Dockerfile for Railway
+FROM php:8.4-fpm
 
+# Set working directory
 WORKDIR /app
 
-# System dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git unzip zip curl libpq-dev libzip-dev libicu-dev g++ \
     && docker-php-ext-install pdo pdo_pgsql zip intl bcmath opcache
@@ -15,14 +16,14 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Copy the full app
+# Copy the full application
 COPY . .
 
-# Install Octane Swoole dependencies
-RUN composer require laravel/octane --with-all-dependencies && php artisan octane:install --server=swoole
+# Clear caches (do this only after deployment if DB ready)
+# RUN php artisan optimize:clear || true
 
-# Expose the default Railway port
+# Expose port for Railway
 EXPOSE 8000
 
-# Start Laravel Octane with Swoole on Railway PORT
-CMD ["php", "artisan", "octane:start", "--server=swoole", "--host=0.0.0.0", "--port=${PORT}"]
+# Start PHP-FPM
+CMD ["php-fpm"]
