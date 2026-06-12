@@ -1,10 +1,10 @@
-# nixpacks.toml
+# nixpacks.toml - Minimal working build only
+
 [variables]
-# Laravel public folder
 NIXPACKS_PHP_ROOT_DIR = "/app/public"
 
 [phases.setup]
-# PHP 8.4, Composer, all extensions + NodeJS for frontend
+# PHP 8.4 + Composer + required extensions + NodeJS
 nixPkgs = [
   "php84",
   "php84Packages.composer",
@@ -37,5 +37,5 @@ cmds = [
 ]
 
 [start]
-# Runtime command: migrations + optimize + serve
-cmd = "php artisan migrate --force && php artisan optimize && php artisan serve --host=0.0.0.0 --port=$PORT"
+# Runtime only serves the app; migrations/seeding will be manual
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
