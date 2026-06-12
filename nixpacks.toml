@@ -38,4 +38,4 @@ cmds = [
 
 [start]
 # Runtime only serves the app; migrations/seeding will be manual
-cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+# cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
