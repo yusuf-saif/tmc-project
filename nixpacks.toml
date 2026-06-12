@@ -1,16 +1,35 @@
+[variables]
+NIXPACKS_PHP_ROOT_DIR = "/app/public"
+
 [phases.setup]
-php = "8.4"
-nodejs = "22"
+nixPkgs = [
+  "php84",
+  "php84Packages.composer",
+  "php84Extensions.pdo",
+  "php84Extensions.pdo_pgsql",
+  "php84Extensions.pgsql",
+  "php84Extensions.mbstring",
+  "php84Extensions.zip",
+  "php84Extensions.gd",
+  "php84Extensions.bcmath",
+  "php84Extensions.opcache",
+  "php84Extensions.intl",
+  "php84Extensions.xml",
+  "php84Extensions.tokenizer",
+  "php84Extensions.ctype",
+  "php84Extensions.curl",
+  "php84Extensions.sodium",
+  "nodejs_22"
+]
 
 [phases.install]
-install_commands = [
-    "composer install --no-dev --optimize-autoloader --no-scripts"
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+  "npm ci"
 ]
 
 [phases.build]
-build_commands = [
-    "php artisan optimize"
-]
+cmds = ["npm run build"]
 
-[phases.start]
-start_command = "php artisan serve --host=0.0.0.0 --port=$PORT"
+[start]
+cmd = "php artisan migrate --force && php artisan optimize && php artisan serve --host=0.0.0.0 --port=$PORT

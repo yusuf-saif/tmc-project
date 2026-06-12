@@ -22,4 +22,4 @@ COPY . .
 # You can run optimize manually after deployment
 
 # Start Laravel server with Railway PORT (avoids string+int errors)
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=${PORT}"]
+# CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=${PORT}"]
