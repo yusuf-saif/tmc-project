@@ -1,10 +1,7 @@
-# nixpacks.toml - Minimal working build only
-
 [variables]
 NIXPACKS_PHP_ROOT_DIR = "/app/public"
 
 [phases.setup]
-# PHP 8.4 + Composer + required extensions + NodeJS
 nixPkgs = [
   "php84",
   "php84Packages.composer",
@@ -37,5 +34,5 @@ cmds = [
 ]
 
 [start]
-# Runtime only serves the app; migrations/seeding will be manual
-# cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+# Serve the app at runtime only
+cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
