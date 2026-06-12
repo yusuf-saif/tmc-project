@@ -24,3 +24,4 @@ class AdminUserSeeder extends Seeder
         $user->assignRole('super_admin');
     }
 }
+/*End of file AdminUserSeeder.php*/
