@@ -1,35 +1,17 @@
-[variables]
-NIXPACKS_PHP_ROOT_DIR = "/app/public"
-
+# nixpacks.toml for Laravel + Octane on Railway
 [phases.setup]
-nixPkgs = [
-  "php84",
-  "php84Packages.composer",
-  "php84Extensions.pdo",
-  "php84Extensions.pdo_pgsql",
-  "php84Extensions.pgsql",
-  "php84Extensions.mbstring",
-  "php84Extensions.zip",
-  "php84Extensions.gd",
-  "php84Extensions.bcmath",
-  "php84Extensions.opcache",
-  "php84Extensions.intl",
-  "php84Extensions.xml",
-  "php84Extensions.tokenizer",
-  "php84Extensions.ctype",
-  "php84Extensions.curl",
-  "php84Extensions.sodium",
-  "nodejs_22"
-]
+php = "8.4"
+nodejs = "22"
 
 [phases.install]
-cmds = [
-  "composer install --no-dev --optimize-autoloader --no-interaction",
-  "npm ci"
+install_commands = [
+    "composer install --no-dev --optimize-autoloader --no-scripts"
 ]
 
 [phases.build]
-cmds = ["npm run build"]
+build_commands = [
+    "php artisan optimize"
+]
 
-[start]
-cmd = "php artisan migrate --force && php artisan optimize && php artisan serve --host=0.0.0.0 --port=$PORT
+[phases.start]
+start_command = "php artisan octane:start --server=swoole --host=0.0.0.0 --port=$PORT"

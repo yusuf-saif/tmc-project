@@ -1,6 +1,6 @@
 {
   "deploy": {
-    "startCommand": "php artisan serve --host=0.0.0.0 --port=$PORT"
+    "startCommand": "php artisan octane:start --server=swoole --host=0.0.0.0 --port=$PORT"
   },
   "plugins": [
     {
