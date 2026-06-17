@@ -1,7 +1,7 @@
 @extends('layouts.auth', ['title' => 'Login'])
 
 @section('content')
-    <h1 class="tmc-auth-heading">Welcome back</h1>
+    <h1 class="tmc-auth-heading">Welcome back Muhsinah</h1>
     <p class="tmc-auth-copy">Sign in to continue your journey with The Muhsinat Club.</p>
 
     @if (session('status'))

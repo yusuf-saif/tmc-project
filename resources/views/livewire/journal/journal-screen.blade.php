@@ -1,6 +1,9 @@
 @php use Illuminate\Support\Str; @endphp
 
-<div x-data="{ showModal: $wire.entangle('showModal'), showDuaForm: $wire.entangle('showDuaForm') }" class="space-y-6 px-4">
+<div x-data="{ showModal: false, showDuaForm: $wire.entangle('showDuaForm') }"
+     x-on:open-modal.window="showModal = true"
+     x-on:close-modal.window="showModal = false"
+     class="space-y-6 px-4">
     <section class="space-y-2">
         <h1 class="font-display text-[1.8rem] leading-none text-teal">My Journal</h1>
         <p class="text-sm font-light leading-7 text-ink-soft">Keep a private space for your reflections and the du'as you return to most.</p>
@@ -16,7 +19,7 @@
 
     @if ($tab === 'entries')
         <button type="button" wire:click="openNewEntry"
-                style="position: fixed; bottom: 80px; right: calc(50% - 220px);
+                style="position: fixed; bottom: 80px; right: max(16px, calc((100vw - 480px) / 2 + 16px));
                        width: 48px; height: 48px; border-radius: 50%;
                        background: #C8A84B; border: none; cursor: pointer;
                        display: flex; align-items:center; justify-content:center;
@@ -141,7 +144,7 @@
             <button type="button" wire:click="saveEntry" class="inline-flex min-h-11 w-full items-center justify-center bg-gold px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk transition" style="border-radius: 2px;">
                 Save Entry
             </button>
-            <button type="button" wire:click="$set('showModal', false)" class="text-sm text-teal">Cancel</button>
+            <button type="button" @click="showModal = false" class="text-sm text-teal">Cancel</button>
         </div>
     </div>
 </div>

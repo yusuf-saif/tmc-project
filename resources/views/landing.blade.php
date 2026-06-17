@@ -51,7 +51,7 @@ button, a { cursor: pointer; }
 }
 
 .preloader { align-items: center; background: var(--teal-hero); display: flex; inset: 0; justify-content: center; opacity: 1; overflow: hidden; position: fixed; transition: opacity .75s ease, visibility .75s ease; visibility: visible; z-index: 10000; }
-.preloader::before { animation: patternDrift 25s linear infinite; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23C8A84B' stroke-width='1' opacity='.12'%3E%3Cpath d='M60 8 112 60 60 112 8 60Z'/%3E%3Ccircle cx='60' cy='60' r='31'/%3E%3Cpath d='M60 29 91 60 60 91 29 60Z'/%3E%3Cpath d='M31 9 60 38 89 9M111 31 82 60 111 89M89 111 60 82 31 111M9 89 38 60 9 31'/%3E%3C/g%3E%3C/svg%3E"); content: ''; inset: 0; position: absolute; }
+.preloader::before { animation: patternDrift 40s linear infinite; background-image: url('{{ asset('images/img4.png') }}'); background-repeat: repeat; background-size: 300px auto; content: ''; inset: 0; opacity: 0.08; position: absolute; }
 .preloader::after { animation: preloaderGlow 5s ease-in-out infinite; background: radial-gradient(circle, rgba(200,168,75,.2), transparent 62%); border-radius: 50%; content: ''; height: 38rem; position: absolute; width: 38rem; }
 .preloader.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
 .preloader-card { align-items: center; border: 1px solid rgba(200,168,75,.28); display: flex; flex-direction: column; gap: .8rem; max-width: calc(100vw - 2rem); padding: 3rem clamp(2rem, 5vw, 4.5rem); position: relative; text-align: center; z-index: 1; }
@@ -99,11 +99,8 @@ button, a { cursor: pointer; }
 .pattern-gold, .pattern-teal { position: relative; }
 .pattern-gold::before, .pattern-teal::before { background-position: 0 0; content: ''; inset: 0; pointer-events: none; position: absolute; }
 .pattern-gold::before { animation: patternDrift 25s linear infinite; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23C8A84B' stroke-width='1' opacity='.14'%3E%3Cpath d='M60 8 112 60 60 112 8 60Z'/%3E%3Ccircle cx='60' cy='60' r='31'/%3E%3Cpath d='M60 29 91 60 60 91 29 60Z'/%3E%3Cpath d='M31 9 60 38 89 9M111 31 82 60 111 89M89 111 60 82 31 111M9 89 38 60 9 31'/%3E%3C/g%3E%3C/svg%3E"); }
-.pattern-teal::before { animation: patternDrift 25s linear infinite; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='112' height='112' viewBox='0 0 112 112'%3E%3Cg fill='none' stroke='%231A6B72' stroke-width='1' opacity='.07'%3E%3Cpath d='M56 7 105 56 56 105 7 56Z'/%3E%3Ccircle cx='56' cy='56' r='29'/%3E%3Cpath d='M56 27 85 56 56 85 27 56Z'/%3E%3Cpath d='M28 7 56 35 84 7M105 28 77 56 105 84M84 105 56 77 28 105M7 84 35 56 7 28'/%3E%3C/g%3E%3C/svg%3E"); }
+.pattern-teal::before { animation: patternDrift 40s linear infinite; background-image: url('{{ asset('images/img4.png') }}'); background-repeat: repeat; background-size: 400px auto; opacity: 0.06; }
 @keyframes patternDrift { to { background-position: 120px 120px; } }
-
-/* CHANGE 5: features section img4 pattern overrides pattern-teal for this section only */
-.features::before { animation: patternDrift 40s linear infinite; background-image: url('{{ asset('images/img4.png') }}'); background-repeat: repeat; background-size: 500px auto; content: ''; inset: 0; opacity: 0.4; pointer-events: none; position: absolute; z-index: 0; }
 
 .hero { display: grid; grid-template-columns: 60% 40%; min-height: 100vh; overflow: hidden; }
 .hero-left { align-items: center; background: var(--teal-hero); display: flex; min-height: 100vh; overflow: hidden; padding: 8rem clamp(1.5rem, 6vw, 6rem) 4.5rem; position: relative; }
@@ -354,7 +351,7 @@ button, a { cursor: pointer; }
     <div class="nav-actions">
       <a class="btn btn-outline nav-cta" href="{{ url('/admin') }}">Admin</a>
       <a class="btn btn-gold nav-cta" href="{{ url('/register') }}">Register</a>
-      <a class="btn btn-ghost nav-cta" href="{{ url('/login') }}">Login</a>
+      <a class="btn btn-gold nav-cta" href="{{ url('/login') }}">Login</a>
     </div>
   </div>
 </nav>
@@ -380,7 +377,7 @@ button, a { cursor: pointer; }
         <div class="avatars" aria-hidden="true">
           <span class="avatar">A</span>
           <span class="avatar">F</span>
-          <span class="avatar">Z</span>
+          <span class="avatar">y</span>
           <span class="avatar">K</span>
         </div>
         <p class="proof-text">Sisters across the community are already inside</p>
@@ -391,7 +388,7 @@ button, a { cursor: pointer; }
         <div class="rule" aria-hidden="true"></div>
         <div class="hero-arabic-word ar">المحسنات</div>
         <div class="rule" aria-hidden="true"></div>
-        <p class="translation">The Doers of Good</p>
+        <p class="translation">Striving for Excelllence.</p>
         <svg class="star" viewBox="0 0 100 100" aria-hidden="true">
           <path fill="currentColor" d="M50 0 61 32 93 7 68 39 100 50 68 61 93 93 61 68 50 100 39 68 7 93 32 61 0 50 32 39 7 7 39 32Z"/>
         </svg>
@@ -410,25 +407,28 @@ button, a { cursor: pointer; }
 
   <section class="stats-bar" aria-label="The Muhsinat Club statistics">
     <div class="stat">
-      <div class="stat-number" data-count="500" data-suffix="+">0</div>
+      <div class="stat-number" data-count="350" data-suffix="+">0</div>
       <div class="stat-label">Sisters &amp; growing</div>
     </div>
     <div class="stat">
       <div class="stat-number" data-count="12">0</div>
       <div class="stat-label">Halaqahs this year</div>
     </div>
-    <div class="stat">
-      <div class="stat-number" data-count="340">0</div>
-      <div class="stat-label">Average coins on join</div>
+    {{-- <div class="stat">
+      <div class="stat-number" data-count="5" data-suffix="+">0</div>
+      <div class="stat-label">Community Spaces</div>
+    </div> --}}
+     <div class="stat">
+      <div class="stat-number" data-count="5000" data-suffix="+">0</div>
+      <div class="stat-label">Total Coins Awarded</div>
     </div>
   </section>
 
-  <!-- CHANGE 5: features section uses img4 via .features::before CSS override above -->
   <section class="section features pattern-teal" id="features">
     <div class="section-inner">
       <div class="fade-up">
         <span class="eyebrow">The Platform</span>
-        <h2 class="section-heading">Everything a sister needs, in one <em>sacred space.</em></h2>
+        <h2 class="section-heading">Everything a <em>Muhsinah</em> needs, in one <em>sacred space.</em></h2>
       </div>
       <div class="features-grid">
         <article class="feature-card wide">
@@ -541,8 +541,9 @@ button, a { cursor: pointer; }
       <h2 class="cta-heading">Your seat in the <em>sisterhood</em> is waiting.</h2>
       <p class="cta-body">Step into a warm, refined space for worship, learning, reflection, rewards, and sincere companionship built for Muslim women.</p>
       <div class="cta-actions">
-        <a class="btn btn-gold" href="#top">Create Your Account</a>
-        <a class="btn btn-outline" href="#features">See the platform</a>
+        <a class="btn btn-gold" href="{{ url('/login') }}">Sign In</a>
+        <a class="btn btn-gold nav-cta" href="{{ url('/register') }}">Create Your Account</a>
+        {{-- <a class="btn btn-outline" href="#features">See the platform</a> --}}
       </div>
     </div>
   </section>
@@ -558,7 +559,7 @@ button, a { cursor: pointer; }
           <p class="footer-brand">The Muhsinat Club</p>
         </div>
         <p class="footer-tagline">Ajr Hunting for the Home in Jannah</p>
-        <p class="footer-arabic ar">المحسنات نادي</p>
+        {{-- <p class="footer-arabic ar">المحسنات نادي</p> --}}
         <p class="footer-desc">A premium faith-based community platform for Muslim women pursuing goodness, sisterhood, knowledge, and lasting reward.</p>
       </div>
       <div>

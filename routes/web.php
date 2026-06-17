@@ -78,3 +78,7 @@ Route::get('/logout', function () {
 
     return redirect('/login');
 })->middleware(['auth']);
+
+Route::get('/password/change', fn () => view('auth.change-password'))
+    ->middleware(['auth'])
+    ->name('password.change');

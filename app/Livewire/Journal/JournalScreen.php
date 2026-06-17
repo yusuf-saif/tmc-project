@@ -15,8 +15,6 @@ class JournalScreen extends Component
 
     public string $tab = 'entries';
 
-    public bool $showModal = false;
-
     public ?int $editingId = null;
 
     public string $entryDate = '';
@@ -58,8 +56,9 @@ class JournalScreen extends Component
     {
         $this->resetEntryForm();
         $this->entryDate = now()->format('Y-m-d');
-        $this->showModal = true;
         $this->editingId = null;
+
+        $this->dispatch('open-modal');
     }
 
     public function openEditEntry(int $id): void
@@ -74,7 +73,8 @@ class JournalScreen extends Component
         $this->entryDate = $entry->entry_date->format('Y-m-d');
         $this->mood = $entry->mood;
         $this->body = $entry->body;
-        $this->showModal = true;
+
+        $this->dispatch('open-modal');
     }
 
     public function saveEntry(): void
@@ -112,8 +112,9 @@ class JournalScreen extends Component
             session()->flash('success', 'Your journal entry has been saved.');
         }
 
-        $this->showModal = false;
         $this->resetEntryForm();
+
+        $this->dispatch('close-modal');
     }
 
     public function deleteEntry(int $id): void

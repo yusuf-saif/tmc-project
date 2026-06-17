@@ -146,7 +146,7 @@
       <span>Notification Preferences</span>
       <span style="color:var(--teal);font-size:18px;line-height:1;">›</span>
     </a>
-    <a href="/password/edit"
+    <a href="{{ route('password.change') }}"
        style="display:flex;align-items:center;justify-content:space-between;
               border-bottom:1px solid var(--border);padding:14px 16px;
               font-size:14px;color:var(--ink);text-decoration:none;">

@@ -645,12 +645,27 @@
   margin: 0 auto 12px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(13,63,68,0.25);
+  box-shadow: 0 8px 32px rgba(200,168,75,0.15);
   cursor: pointer;
   transition: transform 0.2s ease;
 }
 
 .legacy-card-preview:active { transform: scale(0.97); }
+
+.legacy-card-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(15,107,115,0.2);
+  box-shadow: 0 0 16px rgba(15,107,115,0.1);
+  padding: 12px;
+}
+
+.legacy-card-qr img {
+  height: 90px;
+  width: 90px;
+}
 
 /* ── JOURNAL ────────────────────────────────────────── */
 .journal-entry-card {
