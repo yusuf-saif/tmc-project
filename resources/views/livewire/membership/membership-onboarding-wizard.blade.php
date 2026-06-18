@@ -8,6 +8,28 @@
             <div class="h-2 overflow-hidden rounded-sm bg-ivory">
                 <div class="h-full bg-gold transition-all duration-200" style="width: {{ $this->progressPercentage }}%"></div>
             </div>
+            {{-- Step labels --}}
+            <div class="mt-2 flex items-center justify-between text-[10px] text-ink-soft" style="letter-spacing:0.5px;">
+                <span style="color:{{ $step >= 1 ? 'var(--teal)' : 'var(--ink-soft)' }};">Info</span>
+                <span style="color:{{ $step >= 2 ? 'var(--teal)' : 'var(--ink-soft)' }};">Location</span>
+                <span style="color:{{ $step >= 3 ? 'var(--teal)' : 'var(--ink-soft)' }};">Interests</span>
+                <span style="color:{{ $step >= 4 ? 'var(--teal)' : 'var(--ink-soft)' }};">Goals</span>
+                <span style="color:{{ $step >= 5 ? 'var(--teal)' : 'var(--ink-soft)' }};">Social</span>
+                <span style="color:{{ $step >= 6 ? 'var(--teal)' : 'var(--ink-soft)' }};">Review</span>
+            </div>
+            {{-- Estimated time --}}
+            <div class="mt-3 text-center" wire:poll.10s="pingAutoSave">
+                <span style="font-size:11px;color:var(--ink-soft);">
+                  @if($step < 6)
+                    ~{{ (6 - $step) * 1 }} min remaining
+                  @else
+                    Ready to submit
+                  @endif
+                </span>
+                <span wire:loading wire:target="nextStep,previousStep,submit" style="margin-left:8px;font-size:11px;color:var(--teal);">
+                  Saving...
+                </span>
+            </div>
         </div>
 
         @if ($step === 1)

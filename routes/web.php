@@ -19,7 +19,6 @@ use App\Livewire\Resources\ResourcesLibrary;
 use App\Livewire\Souq\ApplyForm;
 use App\Livewire\Souq\ListingDetail;
 use App\Livewire\Souq\SouqDirectory;
-use App\Livewire\Wallet\WalletScreen;
 use App\Models\Announcement;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
@@ -47,9 +46,10 @@ Route::middleware(['auth'])->prefix('membership')->name('membership.')->group(fu
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('/onboarding', '/membership/onboarding')->name('onboarding');
+    Route::redirect('/wallet', '/profile?tab=wallet')->name('wallet');
 });
 
-Route::middleware(['auth', 'onboarded'])->group(function () {
+Route::middleware(['auth', 'ensure.user.state'])->group(function () {
     Route::get('/home', HomeDashboard::class)->name('home');
     Route::get('/events', EventsList::class)->name('events');
     Route::get('/events/{slug}', EventDetail::class)->name('events.show');
@@ -68,7 +68,6 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/souq', SouqDirectory::class)->name('souq');
     Route::get('/souq/apply', ApplyForm::class)->name('souq.apply');
     Route::get('/souq/{slug}', ListingDetail::class)->name('souq.show');
-    Route::get('/wallet', WalletScreen::class)->name('wallet');
     Route::get('/profile', ProfileScreen::class)->name('profile');
     Route::get('/profile/edit', EditProfile::class)->name('profile.edit');
     Route::get('/profile/legacy-card', LegacyCard::class)->name('profile.legacy-card');

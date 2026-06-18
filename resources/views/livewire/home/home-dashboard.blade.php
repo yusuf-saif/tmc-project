@@ -37,7 +37,7 @@
   @endif
 
   {{-- Coins card --}}
-  <a href="{{ route('wallet') }}" class="coins-card anim-fade-up delay-1">
+  <a href="{{ url('/profile?tab=wallet') }}" class="coins-card anim-fade-up delay-1">
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="width:36px;height:36px;border-radius:50%;
                   background:linear-gradient(135deg,#C8A84B,#E8CB7A);

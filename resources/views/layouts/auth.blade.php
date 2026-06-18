@@ -10,6 +10,7 @@
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
+    @livewireStyles
 </head>
 <body class="tmc-auth-body">
     <main class="tmc-auth-shell">
@@ -24,5 +25,6 @@
             </div>
         </section>
     </main>
+    @livewireScripts
 </body>
 </html>

@@ -5,6 +5,7 @@ namespace App\Livewire\Membership;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
+use App\Services\NotificationService;
 use App\Services\OnboardingService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -305,12 +306,17 @@ class MembershipOnboardingWizard extends Component
 
         $profile = $this->onboardingService()->submitForReview(auth()->user(), $this->payload());
 
-        app(\App\Services\NotificationService::class)->notifyAdminsAboutSubmission($profile);
-        app(\App\Services\NotificationService::class)->notifyApplicantUnderReview($profile);
+        app(NotificationService::class)->notifyAdminsAboutSubmission($profile);
+        app(NotificationService::class)->notifyApplicantUnderReview($profile);
 
         session()->flash('membership_submitted', true);
 
         $this->redirectRoute('membership.pending', navigate: true);
+    }
+
+    public function pingAutoSave(): void
+    {
+        // No-op: used by wire:poll to confirm the component is alive
     }
 
     public function render()

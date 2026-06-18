@@ -4,6 +4,7 @@
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
 use App\Http\Middleware\EnsureMembershipComplete;
+use App\Http\Middleware\EnsureUserStateRedirect;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use Illuminate\Foundation\Application;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'onboarded' => EnsureMembershipComplete::class,
+            'ensure.user.state' => EnsureUserStateRedirect::class,
         ]);
     })
     ->withProviders([

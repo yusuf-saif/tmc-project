@@ -162,6 +162,13 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(DuaListItem::class);
     }
 
+    public function dismissedAnnouncements(): BelongsToMany
+    {
+        return $this->belongsToMany(InAppAnnouncement::class, 'dismissed_announcements')
+            ->withPivot('dismissed_at')
+            ->withTimestamps();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasAnyRole([

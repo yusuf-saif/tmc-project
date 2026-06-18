@@ -2,8 +2,8 @@
 
 namespace App\Actions\Fortify;
 
-use App\Models\User;
 use App\Models\MemberProfile;
+use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;

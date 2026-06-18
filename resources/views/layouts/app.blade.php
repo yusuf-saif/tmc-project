@@ -101,6 +101,8 @@
   </div>
 @endif
 
+<livewire:announcement-popup />
+
 @livewireScripts
 </body>
 </html>

@@ -30,6 +30,13 @@ class FortifyLoginResponse implements LoginResponseContract
             return '/admin';
         }
 
+        // Refresh to get latest state from DB (in case approval happened this session)
+        $user->refresh();
+
+        if ($user->status === 'suspended') {
+            return '/login';
+        }
+
         $memberProfile = $user->memberProfile;
         $legacyProfile = $user->profile;
         $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status ?? $user->status;
@@ -46,10 +53,14 @@ class FortifyLoginResponse implements LoginResponseContract
             return route('membership.onboarding');
         }
 
-        if (in_array($status, ['approved', 'active', 'approved_pending_payment', 'payment_submitted'], true)) {
+        if (in_array($status, ['approved_pending_payment', 'payment_submitted'], true)) {
+            return route('membership.payment');
+        }
+
+        if (in_array($status, ['approved', 'active'], true)) {
             return '/home';
         }
 
-        return '/home';
+        return route('membership.onboarding');
     }
 }
