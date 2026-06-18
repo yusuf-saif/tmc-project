@@ -23,7 +23,7 @@ class MembershipApplicationSubmitted extends Notification
     {
         return [
             'title' => 'New Membership Application',
-            'body' => "{$this->applicant->name} has submitted a membership application for review.",
+            'body' => "{$this->applicant->name} has submitted membership onboarding for review.",
             'action_url' => '/admin/membership-applications',
             'applicant_id' => $this->applicant->id,
         ];

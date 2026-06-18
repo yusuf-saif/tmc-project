@@ -54,6 +54,37 @@ class MembershipApplicationTest extends TestCase
         ];
     }
 
+    protected function completeApplication(User $user, array $data): void
+    {
+        Livewire::actingAs($user)
+            ->test(MembershipOnboardingWizard::class)
+            ->assertSet('step', 1)
+            ->set('firstName', $data['first_name'])
+            ->set('lastName', $data['last_name'])
+            ->set('nickname', $data['nickname'])
+            ->call('nextStep')
+            ->assertSet('step', 2)
+            ->set('country', $data['country'])
+            ->set('state', $data['state'])
+            ->set('ageGroup', $data['age_group'])
+            ->set('maritalStatus', $data['marital_status'])
+            ->set('phone', $data['phone'])
+            ->call('nextStep')
+            ->assertSet('step', 3)
+            ->set('selectedInterests', $data['selected_interests'])
+            ->call('nextStep')
+            ->assertSet('step', 4)
+            ->set('selectedGoals', $data['selected_goals'])
+            ->call('nextStep')
+            ->assertSet('step', 5)
+            ->set('instagramUsername', $data['instagram_username'])
+            ->set('xUsername', $data['x_username'])
+            ->call('nextStep')
+            ->assertSet('step', 6)
+            ->call('submit')
+            ->assertRedirect(route('membership.pending'));
+    }
+
     public function test_user_can_save_draft_and_resume_later(): void
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
@@ -65,10 +96,13 @@ class MembershipApplicationTest extends TestCase
             ->assertSet('step', 1)
             ->set('firstName', 'Aisha')
             ->set('lastName', 'Member')
+            ->set('ageGroup', '25_34')
+            ->set('maritalStatus', 'married')
             ->call('nextStep')
             ->assertSet('step', 2)
             ->set('country', 'Nigeria')
             ->set('state', 'Lagos')
+            ->set('phone', '+2348000000000')
             ->call('nextStep')
             ->assertSet('step', 3);
 
@@ -114,21 +148,7 @@ class MembershipApplicationTest extends TestCase
 
         $data = $this->getCompletedDraftData();
 
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->set('firstName', $data['first_name'])
-            ->set('lastName', $data['last_name'])
-            ->set('nickname', $data['nickname'])
-            ->set('country', $data['country'])
-            ->set('state', $data['state'])
-            ->set('ageGroup', $data['age_group'])
-            ->set('maritalStatus', $data['marital_status'])
-            ->set('phone', $data['phone'])
-            ->set('selectedInterests', $data['selected_interests'])
-            ->set('selectedGoals', $data['selected_goals'])
-            ->set('instagramUsername', $data['instagram_username'])
-            ->set('xUsername', $data['x_username'])
-            ->call('submit');
+        $this->completeApplication($user, $data);
 
         Notification::assertSentTo(
             [$admin],
@@ -148,35 +168,22 @@ class MembershipApplicationTest extends TestCase
 
         $data = $this->getCompletedDraftData();
 
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->set('firstName', $data['first_name'])
-            ->set('lastName', $data['last_name'])
-            ->set('nickname', $data['nickname'])
-            ->set('country', $data['country'])
-            ->set('state', $data['state'])
-            ->set('ageGroup', $data['age_group'])
-            ->set('maritalStatus', $data['marital_status'])
-            ->set('phone', $data['phone'])
-            ->set('selectedInterests', $data['selected_interests'])
-            ->set('selectedGoals', $data['selected_goals'])
-            ->set('instagramUsername', $data['instagram_username'])
-            ->set('xUsername', $data['x_username'])
-            ->call('submit');
+        $this->completeApplication($user, $data);
 
-        $profile = $user->fresh()->profile;
-        $this->assertEquals('submitted', $profile->membership_status);
+        $profile = $user->fresh()->memberProfile;
+        $this->assertEquals('pending_review', $profile->onboarding_status);
         $this->assertNull($profile->membership_id);
 
         $this->actingAs($admin);
-        MembershipApplicationResource::approve($profile);
+        MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->membership_status);
+        $this->assertEquals('approved', $profile->onboarding_status);
+        $this->assertEquals('M', $profile->membership_type);
         $this->assertNotNull($profile->membership_id);
         $this->assertStringStartsWith('TMC-M-', $profile->membership_id);
-        $this->assertNotNull($profile->approved_at);
-        $this->assertEquals($admin->id, $profile->approved_by);
+        $this->assertNotNull($profile->reviewed_at);
+        $this->assertEquals($admin->id, $profile->reviewed_by);
     }
 
     public function test_membership_id_serial_increments_correctly_per_type_and_hijri_year(): void
@@ -255,9 +262,9 @@ class MembershipApplicationTest extends TestCase
             ->call('submit')
             ->assertRedirect(route('membership.pending'));
 
-        $this->assertDatabaseHas('user_profiles', [
+        $this->assertDatabaseHas('member_profiles', [
             'user_id' => $user->id,
-            'membership_status' => 'submitted',
+            'onboarding_status' => 'pending_review',
         ]);
 
         $freshUser = $user->fresh();

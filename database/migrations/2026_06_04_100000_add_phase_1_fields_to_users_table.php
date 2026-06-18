@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('status', ['active', 'suspended'])->default('active')->after('password');
+            $table->string('status')->default('draft')->after('password');
             $table->timestamp('suspended_at')->nullable()->after('status');
             $table->text('suspended_reason')->nullable()->after('suspended_at');
             $table->string('referral_code', 8)->unique()->nullable()->after('suspended_reason');

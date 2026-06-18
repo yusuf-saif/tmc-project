@@ -2,11 +2,11 @@
     <section class="w-full max-w-xl rounded bg-white p-10 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
         <img src="{{ asset('images/img2.png') }}" alt="The Muhsinat Club" class="mx-auto mb-6 w-36 max-w-full object-contain">
 
-        <h1 class="font-display text-4xl leading-none text-teal-dk">Application Submitted</h1>
-        <p class="mt-4 font-display text-2xl text-gold">JazakAllahu Khairan</p>
+        <h1 class="font-display text-4xl leading-none text-teal-dk">Thank you</h1>
+        <p class="mt-4 font-display text-2xl text-gold">Your submission is under review</p>
         <p class="mt-4 text-sm font-light leading-7 text-ink-soft">
-            Your membership application has been received and is awaiting review by our team.
-            You will be notified once a decision has been made. This usually takes 1–3 business days.
+            Your membership onboarding has been received and is awaiting review by our team.
+            You will be notified once a decision has been made.
         </p>
 
         <div class="mt-8 rounded-sm bg-ivory p-6">

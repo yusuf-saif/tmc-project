@@ -58,7 +58,7 @@ button, a { cursor: pointer; }
 .preloader-card::before, .preloader-card::after { background: var(--gold); content: ''; height: 1px; opacity: .72; position: absolute; width: 68px; }
 .preloader-card::before { top: 1.25rem; }
 .preloader-card::after { bottom: 1.25rem; }
-.preloader-mark { align-items: center; border: 1px solid rgba(200,168,75,.45); border-radius: 50%; color: var(--gold-lt); display: flex; font-size: 1.35rem; height: 46px; justify-content: center; margin-bottom: .2rem; width: 46px; }
+.preloader-mark { height: 52px; margin-bottom: .2rem; object-fit: contain; width: 52px; }
 .preloader-arabic { color: rgba(200,168,75,.9); font-size: clamp(3rem, 9vw, 5.8rem); font-weight: 700; line-height: 1; }
 .preloader-name { color: var(--white); font-family: var(--display); font-size: 1.55rem; line-height: 1; }
 .preloader-tag { color: rgba(255,255,255,.52); font-family: var(--display); font-size: 1rem; font-style: italic; }
@@ -325,7 +325,7 @@ button, a { cursor: pointer; }
 <body class="loading">
 <div class="preloader" id="preloader" role="status" aria-live="polite" aria-label="Loading The Muhsinat Club">
   <div class="preloader-card">
-    <div class="preloader-mark ar">م</div>
+    <img src="{{ asset('images/img1.png') }}" alt="TMC" class="preloader-mark">
     <div class="preloader-arabic ar">المحسنات</div>
     <div class="preloader-name">The Muhsinat Club</div>
     <div class="preloader-tag">Ajr Hunting for the Home in Jannah</div>
@@ -339,7 +339,7 @@ button, a { cursor: pointer; }
 <nav class="site-nav" id="site-nav" aria-label="Primary navigation">
   <a class="brand" href="#top" aria-label="The Muhsinat Club home">
     <!-- CHANGE 2: real brand logo replacing generated circle -->
-    <img src="{{ asset('public/images/img1.png') }}" alt="TMC" class="nav-logo-img">
+    <img src="{{ asset('images/img1.png') }}" alt="TMC" class="nav-logo-img">
     <span class="brand-name">The Muhsinat Club</span>
   </a>
   <div class="nav-right">
@@ -349,7 +349,7 @@ button, a { cursor: pointer; }
       <li><a href="#about">About</a></li>
     </ul>
     <div class="nav-actions">
-      <a class="btn btn-outline nav-cta" href="{{ url('/admin') }}">Admin</a>
+      <a class="btn btn-outline nav-cta" href="{{ url('/admin/login') }}">Admin</a>
       <a class="btn btn-gold nav-cta" href="{{ url('/register') }}">Register</a>
       <a class="btn btn-gold nav-cta" href="{{ url('/login') }}">Login</a>
     </div>

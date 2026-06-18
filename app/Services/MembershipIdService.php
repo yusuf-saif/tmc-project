@@ -8,24 +8,30 @@ use Illuminate\Support\Facades\DB;
 
 class MembershipIdService
 {
-    public static function getTypeCode(string $membershipType): string
+    public static function normalizeType(string $membershipType): string
     {
         return match ($membershipType) {
-            'junior_member' => 'SM',
-            'exco' => 'E',
+            'member', 'M' => 'M',
+            'student_member', 'junior_member', 'SM' => 'SM',
+            'exco', 'E' => 'E',
             default => 'M',
         };
     }
 
+    public static function getTypeCode(string $membershipType): string
+    {
+        return self::normalizeType($membershipType);
+    }
+
     public static function determineMembershipType(User $user): string
     {
-        $profile = $user->profile;
+        $profile = $user->memberProfile ?? $user->profile;
 
         if ($profile?->age_group === 'under_18') {
-            return 'junior_member';
+            return 'SM';
         }
 
-        return 'member';
+        return 'M';
     }
 
     public static function getCurrentHijriYear(): int
@@ -41,6 +47,7 @@ class MembershipIdService
 
     public static function generate(string $membershipType): array
     {
+        $membershipType = self::normalizeType($membershipType);
         $hijriYear = self::getCurrentHijriYear();
         $typeCode = self::getTypeCode($membershipType);
 
@@ -68,7 +75,7 @@ class MembershipIdService
                 'membership_id' => $membershipId,
                 'membership_serial' => $serial,
                 'membership_hijri_year' => $hijriYear,
-                'membership_type' => $membershipType,
+                'membership_type' => $typeCode,
             ];
         });
     }

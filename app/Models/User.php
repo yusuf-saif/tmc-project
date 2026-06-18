@@ -64,6 +64,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasOne(UserProfile::class);
     }
 
+    public function memberProfile(): HasOne
+    {
+        return $this->hasOne(MemberProfile::class);
+    }
+
     public function interests(): BelongsToMany
     {
         return $this->belongsToMany(Interest::class, 'user_interests');

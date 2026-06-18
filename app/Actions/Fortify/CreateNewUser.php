@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Models\MemberProfile;
 use App\Models\UserProfile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -51,7 +52,7 @@ class CreateNewUser implements CreatesNewUsers
                 'name' => $input['name'],
                 'email' => $input['email'],
                 'password' => Hash::make($input['password']),
-                'status' => 'active',
+                'status' => 'draft',
                 'referral_code' => $this->generateReferralCode(),
                 'referred_by' => $referredBy,
             ]);
@@ -69,6 +70,15 @@ class CreateNewUser implements CreatesNewUsers
                 UserProfile::create([
                     'user_id' => $user->id,
                     'display_name' => $user->name,
+                ]);
+            }
+
+            if (Schema::hasTable('member_profiles')) {
+                MemberProfile::create([
+                    'user_id' => $user->id,
+                    'location_country' => 'Nigeria',
+                    'onboarding_step' => 1,
+                    'onboarding_status' => 'draft',
                 ]);
             }
 

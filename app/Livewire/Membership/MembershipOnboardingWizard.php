@@ -4,11 +4,8 @@ namespace App\Livewire\Membership;
 
 use App\Models\Goal;
 use App\Models\Interest;
-use App\Models\MembershipApplicationDraft;
-use App\Models\User;
-use App\Notifications\MembershipApplicationSubmitted;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
+use App\Models\MemberProfile;
+use App\Services\OnboardingService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -22,9 +19,15 @@ class MembershipOnboardingWizard extends Component
 
     public string $nickname = '';
 
+    public string $locationCountry = 'Nigeria';
+
     public string $country = 'Nigeria';
 
+    public string $locationState = '';
+
     public string $state = '';
+
+    public string $locationInternational = '';
 
     public string $outsideNigeriaLocation = '';
 
@@ -38,7 +41,11 @@ class MembershipOnboardingWizard extends Component
 
     public array $selectedGoals = [];
 
+    public string $igUsername = '';
+
     public string $instagramUsername = '';
+
+    public string $fbUsername = '';
 
     public string $facebookUsername = '';
 
@@ -56,10 +63,10 @@ class MembershipOnboardingWizard extends Component
 
     public array $ageGroups = [
         'under_18' => 'Under 18',
-        '18_24' => '18 – 24',
-        '25_34' => '25 – 34',
-        '35_44' => '35 – 44',
-        '45_54' => '45 – 54',
+        '18_24' => '18 - 24',
+        '25_34' => '25 - 34',
+        '35_44' => '35 - 44',
+        '45_54' => '45 - 54',
         '55_above' => '55+',
     ];
 
@@ -70,105 +77,131 @@ class MembershipOnboardingWizard extends Component
         'widowed' => 'Widowed',
     ];
 
+    protected ?MemberProfile $profile = null;
+
+    protected function onboardingService(): OnboardingService
+    {
+        return app(OnboardingService::class);
+    }
+
+    protected function profile(): MemberProfile
+    {
+        return $this->profile ??= $this->onboardingService()->resolveForUser(auth()->user());
+    }
+
     public function mount(): void
     {
         $user = auth()->user();
-        $profile = $user->profile;
+        $this->profile = $this->onboardingService()->resolveForUser($user);
 
-        if ($profile && in_array($profile->membership_status, ['active', 'approved_pending_payment', 'payment_submitted'], true)) {
-            $this->redirectRoute('home', navigate: true);
-
-            return;
-        }
-
-        $draft = MembershipApplicationDraft::query()
-            ->where('user_id', $user->id)
-            ->whereNull('submitted_at')
-            ->first();
-
-        if ($draft) {
-            $this->step = $draft->current_step;
-            $this->restoreFromDraft($draft->data);
+        if (in_array($this->profile()->onboarding_status, ['pending_review', 'approved', 'active'], true)) {
+            $this->redirectRoute('membership.pending', navigate: true);
 
             return;
         }
 
-        $this->loadExistingProfileData($user);
+        $this->step = max(1, (int) ($this->profile()->onboarding_step ?: 1));
+        $this->loadStateFromProfile($user);
     }
 
-    protected function loadExistingProfileData($user): void
+    public function updated($name): void
     {
-        $profile = $user->profile;
+        if ($name === 'country') {
+            $this->locationCountry = $this->country;
+        }
 
-        if (! $profile) {
+        if ($name === 'state') {
+            $this->locationState = $this->state;
+        }
+
+        if ($name === 'outsideNigeriaLocation') {
+            $this->locationInternational = $this->outsideNigeriaLocation;
+        }
+
+        if ($name === 'instagramUsername') {
+            $this->igUsername = $this->instagramUsername;
+        }
+
+        if ($name === 'facebookUsername') {
+            $this->fbUsername = $this->facebookUsername;
+        }
+
+        if (! in_array($name, [
+            'firstName', 'lastName', 'nickname', 'locationCountry', 'locationState', 'locationInternational',
+            'ageGroup', 'maritalStatus', 'phone', 'igUsername', 'fbUsername', 'xUsername', 'tiktokUsername',
+            'selectedInterests', 'selectedGoals', 'country', 'state', 'outsideNigeriaLocation', 'instagramUsername', 'facebookUsername',
+        ], true)) {
             return;
         }
 
-        $this->firstName = $profile->first_name ?? '';
-        $this->lastName = $profile->last_name ?? '';
-        $this->nickname = $profile->nickname ?? '';
-        $this->country = $profile->country ?? 'Nigeria';
-        $this->state = $profile->state ?? '';
-        $this->outsideNigeriaLocation = $profile->outside_nigeria_location ?? '';
-        $this->ageGroup = $profile->age_group ?? '';
-        $this->maritalStatus = $profile->marital_status ?? '';
-        $this->phone = $profile->phone ?? '';
-        $this->instagramUsername = $profile->instagram_username ?? '';
-        $this->facebookUsername = $profile->facebook_username ?? '';
-        $this->xUsername = $profile->x_username ?? '';
-        $this->tiktokUsername = $profile->tiktok_username ?? '';
+        $this->autoSave();
+    }
+
+    protected function loadStateFromProfile($user): void
+    {
+        $legacy = $user->profile;
+
+        $this->firstName = $this->profile->first_name ?? $legacy?->first_name ?? '';
+        $this->lastName = $this->profile->last_name ?? $legacy?->last_name ?? '';
+        $this->nickname = $this->profile->nickname ?? $legacy?->nickname ?? '';
+        $this->locationCountry = $this->profile->location_country ?? $legacy?->country ?? 'Nigeria';
+        $this->country = $this->locationCountry;
+        $this->locationState = $this->profile->location_state ?? $legacy?->state ?? '';
+        $this->state = $this->locationState;
+        $this->locationInternational = $this->profile->location_international ?? $legacy?->outside_nigeria_location ?? '';
+        $this->outsideNigeriaLocation = $this->locationInternational;
+        $this->ageGroup = $this->profile->age_group ?? $legacy?->age_group ?? '';
+        $this->maritalStatus = $this->profile->marital_status ?? $legacy?->marital_status ?? '';
+        $this->phone = $this->profile->phone ?? $legacy?->phone ?? '';
+        $this->igUsername = $this->profile->ig_username ?? $legacy?->instagram_username ?? '';
+        $this->instagramUsername = $this->igUsername;
+        $this->fbUsername = $this->profile->fb_username ?? $legacy?->facebook_username ?? '';
+        $this->facebookUsername = $this->fbUsername;
+        $this->xUsername = $this->profile->x_username ?? $legacy?->x_username ?? '';
+        $this->tiktokUsername = $this->profile->tiktok_username ?? $legacy?->tiktok_username ?? '';
 
         $user->loadMissing(['interests:id,slug', 'goals:id,slug']);
         $this->selectedInterests = $user->interests->pluck('slug')->all();
         $this->selectedGoals = $user->goals->pluck('slug')->all();
     }
 
-    protected function restoreFromDraft(array $data): void
-    {
-        $this->firstName = $data['first_name'] ?? '';
-        $this->lastName = $data['last_name'] ?? '';
-        $this->nickname = $data['nickname'] ?? '';
-        $this->country = $data['country'] ?? 'Nigeria';
-        $this->state = $data['state'] ?? '';
-        $this->outsideNigeriaLocation = $data['outside_nigeria_location'] ?? '';
-        $this->ageGroup = $data['age_group'] ?? '';
-        $this->maritalStatus = $data['marital_status'] ?? '';
-        $this->phone = $data['phone'] ?? '';
-        $this->selectedInterests = $data['selected_interests'] ?? [];
-        $this->selectedGoals = $data['selected_goals'] ?? [];
-        $this->instagramUsername = $data['instagram_username'] ?? '';
-        $this->facebookUsername = $data['facebook_username'] ?? '';
-        $this->xUsername = $data['x_username'] ?? '';
-        $this->tiktokUsername = $data['tiktok_username'] ?? '';
-    }
-
-    protected function getDraftData(): array
+    protected function payload(): array
     {
         return [
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'nickname' => $this->nickname,
-            'country' => $this->country,
-            'state' => $this->state,
-            'outside_nigeria_location' => $this->outsideNigeriaLocation,
+            'location_country' => $this->locationCountry,
+            'location_state' => $this->locationState,
+            'location_international' => $this->locationInternational,
             'age_group' => $this->ageGroup,
             'marital_status' => $this->maritalStatus,
             'phone' => $this->phone,
-            'selected_interests' => $this->selectedInterests,
-            'selected_goals' => $this->selectedGoals,
-            'instagram_username' => $this->instagramUsername,
-            'facebook_username' => $this->facebookUsername,
+            'ig_username' => $this->igUsername,
+            'fb_username' => $this->fbUsername,
             'x_username' => $this->xUsername,
             'tiktok_username' => $this->tiktokUsername,
+            'selected_interests' => $this->selectedInterests,
+            'selected_goals' => $this->selectedGoals,
+            'interest_ids' => Interest::query()->whereIn('slug', $this->selectedInterests)->pluck('id')->all(),
+            'goal_ids' => Goal::query()->whereIn('slug', $this->selectedGoals)->pluck('id')->all(),
         ];
+    }
+
+    protected function autoSave(): void
+    {
+        if (in_array($this->profile()->onboarding_status, ['pending_review', 'approved', 'active'], true)) {
+            return;
+        }
+
+        $this->onboardingService()->saveProgress(auth()->user(), $this->payload(), $this->step);
     }
 
     public function toggleInterest(string $slug): void
     {
         if (in_array($slug, $this->selectedInterests, true)) {
-            $this->selectedInterests = array_values(
-                array_filter($this->selectedInterests, fn ($selected): bool => $selected !== $slug),
-            );
+            $this->selectedInterests = array_values(array_filter($this->selectedInterests, fn ($selected): bool => $selected !== $slug));
+            $this->autoSave();
 
             return;
         }
@@ -178,25 +211,26 @@ class MembershipOnboardingWizard extends Component
         }
 
         $this->selectedInterests[] = $slug;
+        $this->autoSave();
     }
 
     public function toggleGoal(string $slug): void
     {
         if (in_array($slug, $this->selectedGoals, true)) {
-            $this->selectedGoals = array_values(
-                array_filter($this->selectedGoals, fn ($selected): bool => $selected !== $slug),
-            );
+            $this->selectedGoals = array_values(array_filter($this->selectedGoals, fn ($selected): bool => $selected !== $slug));
+            $this->autoSave();
 
             return;
         }
 
         $this->selectedGoals[] = $slug;
+        $this->autoSave();
     }
 
     public function nextStep(): void
     {
         $this->validateCurrentStep();
-        $this->saveDraft();
+        $this->autoSave();
 
         if ($this->step < 6) {
             $this->step++;
@@ -208,83 +242,9 @@ class MembershipOnboardingWizard extends Component
         $this->step = max(1, $this->step - 1);
     }
 
-    public function submit(): void
-    {
-        $this->validateAllSteps();
-
-        $user = auth()->user();
-
-        DB::transaction(function () use ($user): void {
-            $profile = $user->profile()->updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'first_name' => $this->firstName,
-                    'last_name' => $this->lastName,
-                    'nickname' => $this->nickname,
-                    'display_name' => $this->firstName.' '.$this->lastName,
-                    'country' => $this->country,
-                    'state' => $this->country === 'Nigeria' ? $this->state : null,
-                    'outside_nigeria_location' => $this->country !== 'Nigeria' ? $this->outsideNigeriaLocation : null,
-                    'age_group' => $this->ageGroup,
-                    'marital_status' => $this->maritalStatus,
-                    'phone' => $this->phone,
-                    'instagram_username' => $this->instagramUsername,
-                    'facebook_username' => $this->facebookUsername,
-                    'x_username' => $this->xUsername,
-                    'tiktok_username' => $this->tiktokUsername,
-                    'membership_status' => 'submitted',
-                    'application_submitted_at' => now(),
-                ],
-            );
-
-            $interestIds = Interest::query()
-                ->whereIn('slug', $this->selectedInterests)
-                ->pluck('id')
-                ->all();
-
-            $user->interests()->sync($interestIds);
-
-            $goalIds = Goal::query()
-                ->whereIn('slug', $this->selectedGoals)
-                ->pluck('id')
-                ->all();
-
-            $user->goals()->sync($goalIds);
-
-            $profile->updateQuietly([
-                'goals' => Goal::query()->whereIn('slug', $this->selectedGoals)->pluck('slug')->values()->all(),
-            ]);
-
-            MembershipApplicationDraft::query()
-                ->where('user_id', $user->id)
-                ->whereNull('submitted_at')
-                ->update(['submitted_at' => now()]);
-        });
-
-        $admins = User::role(['super_admin', 'admin', 'moderator'])->get();
-        Notification::send($admins, new MembershipApplicationSubmitted($user));
-
-        session()->flash('membership_submitted', true);
-
-        $this->redirectRoute('membership.pending', navigate: true);
-    }
-
     public function getProgressPercentageProperty(): int
     {
         return (int) round(($this->step / 6) * 100);
-    }
-
-    protected function saveDraft(): void
-    {
-        $user = auth()->user();
-
-        MembershipApplicationDraft::query()->updateOrCreate(
-            ['user_id' => $user->id, 'submitted_at' => null],
-            [
-                'current_step' => $this->step,
-                'data' => $this->getDraftData(),
-            ],
-        );
     }
 
     protected function validateCurrentStep(): void
@@ -296,66 +256,70 @@ class MembershipOnboardingWizard extends Component
                 'nickname' => ['nullable', 'string', 'max:255'],
             ],
             2 => [
-                'country' => ['required', 'string'],
-                'state' => [Rule::requiredIf(fn () => $this->country === 'Nigeria'), 'nullable', 'string'],
-                'outsideNigeriaLocation' => [Rule::requiredIf(fn () => $this->country !== 'Nigeria'), 'nullable', 'string', 'max:500'],
+                'locationCountry' => ['required', 'string', 'max:255'],
+                'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
+                'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
+                'ageGroup' => ['required', 'string', 'max:50'],
+                'maritalStatus' => ['required', 'string', 'max:50'],
+                'phone' => ['nullable', 'string', 'max:30'],
             ],
             3 => [
-                'phone' => ['nullable', 'string', 'max:30'],
-                'ageGroup' => ['required', 'string'],
-                'maritalStatus' => ['required', 'string'],
+                'selectedInterests' => ['array', 'min:1', 'max:5'],
             ],
             4 => [
-                'instagramUsername' => ['nullable', 'string', 'max:255'],
-                'facebookUsername' => ['nullable', 'string', 'max:255'],
-                'xUsername' => ['nullable', 'string', 'max:255'],
-                'tiktokUsername' => ['nullable', 'string', 'max:255'],
+                'selectedGoals' => ['array', 'min:1'],
             ],
             5 => [
-                'selectedInterests' => ['array', 'min:1', 'max:5'],
-                'selectedGoals' => ['array', 'min:1'],
+                'igUsername' => ['nullable', 'string', 'max:255'],
+                'fbUsername' => ['nullable', 'string', 'max:255'],
+                'xUsername' => ['nullable', 'string', 'max:255'],
+                'tiktokUsername' => ['nullable', 'string', 'max:255'],
             ],
             default => [],
         };
 
-        $this->validate($rules);
+        if ($rules !== []) {
+            $this->validate($rules);
+        }
     }
 
-    protected function validateAllSteps(): void
+    public function submit(): void
     {
         $this->validate([
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'nickname' => ['nullable', 'string', 'max:255'],
-            'country' => ['required', 'string'],
-            'state' => [Rule::requiredIf(fn () => $this->country === 'Nigeria'), 'nullable', 'string'],
-            'outsideNigeriaLocation' => [Rule::requiredIf(fn () => $this->country !== 'Nigeria'), 'nullable', 'string', 'max:500'],
+            'locationCountry' => ['required', 'string', 'max:255'],
+            'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
+            'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
+            'ageGroup' => ['required', 'string', 'max:50'],
+            'maritalStatus' => ['required', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'ageGroup' => ['required', 'string'],
-            'maritalStatus' => ['required', 'string'],
-            'instagramUsername' => ['nullable', 'string', 'max:255'],
-            'facebookUsername' => ['nullable', 'string', 'max:255'],
-            'xUsername' => ['nullable', 'string', 'max:255'],
-            'tiktokUsername' => ['nullable', 'string', 'max:255'],
             'selectedInterests' => ['array', 'min:1', 'max:5'],
             'selectedGoals' => ['array', 'min:1'],
+            'igUsername' => ['nullable', 'string', 'max:255'],
+            'fbUsername' => ['nullable', 'string', 'max:255'],
+            'xUsername' => ['nullable', 'string', 'max:255'],
+            'tiktokUsername' => ['nullable', 'string', 'max:255'],
         ]);
-    }
 
-    public function updatedCountry(): void
-    {
-        if ($this->country !== 'Nigeria') {
-            $this->state = '';
-        }
+        $profile = $this->onboardingService()->submitForReview(auth()->user(), $this->payload());
+
+        app(\App\Services\NotificationService::class)->notifyAdminsAboutSubmission($profile);
+        app(\App\Services\NotificationService::class)->notifyApplicantUnderReview($profile);
+
+        session()->flash('membership_submitted', true);
+
+        $this->redirectRoute('membership.pending', navigate: true);
     }
 
     public function render()
     {
-        return view('livewire.membership.membership-onboarding-wizard', [
+        return view('livewire.membership.onboarding-wizard', [
             'interests' => Interest::query()->where('is_active', true)->orderBy('sort_order')->get(),
             'goals' => Goal::query()->where('is_active', true)->orderBy('id')->get(),
         ])->layout('layouts.guest-livewire', [
-            'title' => 'Membership Application',
+            'title' => 'Onboarding',
         ]);
     }
 }

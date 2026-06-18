@@ -14,6 +14,7 @@ class MembershipApproved extends Notification
     public function __construct(
         public User $user,
         public string $membershipId,
+        public string $membershipType = 'M',
     ) {}
 
     public function via(object $notifiable): array
@@ -24,20 +25,21 @@ class MembershipApproved extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Membership Application Approved')
+            ->subject('Membership Approved')
             ->greeting("Assalamu Alaikum {$this->user->name},")
             ->line('Your membership application has been approved.')
-            ->line("Your Membership ID: **{$this->membershipId}**")
-            ->line('Please complete your membership fee payment to activate your account.')
-            ->action('Complete Payment', url('/membership/payment'));
+            ->line("Membership Type: {$this->membershipType}")
+            ->line("Membership ID: {$this->membershipId}")
+            ->line('You can now log in and access the full member area.')
+            ->action('Log In', url('/login'));
     }
 
     public function toDatabase(object $notifiable): array
     {
         return [
             'title' => 'Membership Approved',
-            'body' => "Your membership application has been approved. Your ID: {$this->membershipId}. Please complete your payment.",
-            'action_url' => '/membership/payment',
+            'body' => "Your membership has been approved. ID: {$this->membershipId}.",
+            'action_url' => '/home',
         ];
     }
 }

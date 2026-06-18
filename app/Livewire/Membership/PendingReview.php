@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Membership;
 
+use App\Models\MemberProfile;
 use Livewire\Component;
 
 class PendingReview extends Component
@@ -9,7 +10,7 @@ class PendingReview extends Component
     public function mount(): void
     {
         $user = auth()->user();
-        $profile = $user->profile;
+        $profile = $user->memberProfile ?? $user->profile;
 
         if (! $profile) {
             $this->redirectRoute('membership.onboarding', navigate: true);
@@ -17,28 +18,46 @@ class PendingReview extends Component
             return;
         }
 
-        if (in_array($profile->membership_status, ['draft', null], true)) {
-            $this->redirectRoute('membership.onboarding', navigate: true);
+        if ($profile instanceof MemberProfile) {
+            if (in_array($profile->onboarding_status, ['draft', 'in_progress', 'rejected'], true)) {
+                $this->redirectRoute('membership.onboarding', navigate: true);
 
-            return;
-        }
+                return;
+            }
 
-        if ($profile->membership_status === 'active') {
-            $this->redirectRoute('home', navigate: true);
+            if (in_array($profile->onboarding_status, ['approved', 'active'], true)) {
+                $this->redirectRoute('home', navigate: true);
 
-            return;
-        }
+                return;
+            }
 
-        if ($profile->membership_status === 'approved_pending_payment') {
-            $this->redirectRoute('membership.payment', navigate: true);
+            if ($profile->onboarding_status === 'pending_review') {
+                return;
+            }
+        } else {
+            if (in_array($profile->membership_status, ['draft', null], true)) {
+                $this->redirectRoute('membership.onboarding', navigate: true);
 
-            return;
-        }
+                return;
+            }
 
-        if (in_array($profile->membership_status, ['rejected', 'needs_correction'], true)) {
-            $this->redirectRoute('membership.onboarding', navigate: true);
+            if ($profile->membership_status === 'active') {
+                $this->redirectRoute('home', navigate: true);
 
-            return;
+                return;
+            }
+
+            if ($profile->membership_status === 'approved_pending_payment') {
+                $this->redirectRoute('membership.payment', navigate: true);
+
+                return;
+            }
+
+            if (in_array($profile->membership_status, ['rejected', 'needs_correction'], true)) {
+                $this->redirectRoute('membership.onboarding', navigate: true);
+
+                return;
+            }
         }
     }
 

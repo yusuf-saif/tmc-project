@@ -43,10 +43,12 @@ class AuthOnboardingTest extends TestCase
 
         $response->assertRedirect(route('membership.onboarding'));
         $this->assertAuthenticatedAs($user);
-        $this->assertSame('active', $user->status);
+        $this->assertSame('draft', $user->status);
         $this->assertNotNull($user->referral_code);
         $this->assertTrue($user->hasRole('member'));
         $this->assertNotNull($user->profile);
+        $this->assertNotNull($user->memberProfile);
+        $this->assertSame('draft', $user->memberProfile->onboarding_status);
 
         $this->actingAs($user)
             ->get('/home')
@@ -79,26 +81,28 @@ class AuthOnboardingTest extends TestCase
             ->assertSet('step', 2)
             ->set('country', 'Nigeria')
             ->set('state', 'Lagos')
-            ->call('nextStep')
-            ->assertSet('step', 3)
             ->set('ageGroup', '25_34')
             ->set('maritalStatus', 'married')
             ->set('phone', '+2348000000000')
             ->call('nextStep')
+            ->assertSet('step', 3)
+            ->set('selectedInterests', $interestSlugs)
+            ->call('nextStep')
             ->assertSet('step', 4)
-            ->set('instagramUsername', 'aisha_m')
+            ->set('selectedGoals', $goalSlugs)
             ->call('nextStep')
             ->assertSet('step', 5)
-            ->set('selectedInterests', $interestSlugs)
-            ->set('selectedGoals', $goalSlugs)
+            ->set('instagramUsername', 'aisha_m')
+            ->set('xUsername', 'aisha_x')
             ->call('nextStep')
             ->assertSet('step', 6)
             ->call('submit')
             ->assertRedirect(route('membership.pending'));
 
         $freshUser = $user->fresh();
-        $this->assertEquals('submitted', $freshUser->profile->membership_status);
-        $this->assertNotNull($freshUser->profile->application_submitted_at);
+        $this->assertEquals('pending_review', $freshUser->memberProfile->onboarding_status);
+        $this->assertNotNull($freshUser->memberProfile->submitted_at);
+        $this->assertEquals('pending_review', $freshUser->status);
     }
 
     public function test_referred_user_registration_tracks_the_referrer_for_future_awards(): void

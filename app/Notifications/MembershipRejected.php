@@ -22,11 +22,10 @@ class MembershipRejected extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Membership Application Update')
-            ->line('Thank you for your interest in The Muhsinat Club.')
-            ->line('After careful review, we regret to inform you that your membership application has been rejected.')
+            ->subject('Membership Application Rejected')
+            ->line('Your membership submission was reviewed and rejected.')
             ->when($this->reason, fn ($message) => $message->line("Reason: {$this->reason}"))
-            ->line('If you have any questions, please contact us.');
+            ->line('You can log in and resubmit after updating your details.');
     }
 
     public function toDatabase(object $notifiable): array
@@ -34,7 +33,7 @@ class MembershipRejected extends Notification
         return [
             'title' => 'Membership Application Rejected',
             'body' => $this->reason ? "Your application has been rejected. Reason: {$this->reason}" : 'Your application has been rejected.',
-            'action_url' => null,
+            'action_url' => '/membership/onboarding',
         ];
     }
 }
