@@ -27,12 +27,14 @@ class HomeDashboard extends Component
     {
         $user = Auth::user();
         $first = trim(Str::of($user?->name ?? 'Sister')->before(' '));
+
         return "Assalamu Alaykum, {$first}";
     }
 
     public function getDailyPhrase(): string
     {
         $index = Carbon::now()->dayOfWeek; // 0..6
+
         return $this->phrases[$index] ?? $this->phrases[0];
     }
 

@@ -3,12 +3,12 @@
 // Suppress Laravel 11 vendor deprecations on PHP 8.5 until the framework line is upgraded.
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
+use App\Http\Middleware\EnsureMembershipComplete;
+use App\Providers\AppServiceProvider;
+use App\Providers\FortifyServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\EnsureOnboardingComplete;
-use App\Providers\AppServiceProvider;
-use App\Providers\FortifyServiceProvider;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->alias([
-            'onboarded' => EnsureOnboardingComplete::class,
+            'onboarded' => EnsureMembershipComplete::class,
         ]);
     })
     ->withProviders([

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\AwardReferralCoins;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -28,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         if (app()->environment('local')) {
-            \Illuminate\Database\Eloquent\Model::preventLazyLoading();
+            Model::preventLazyLoading();
         }
 
         Event::listen(Verified::class, AwardReferralCoins::class);

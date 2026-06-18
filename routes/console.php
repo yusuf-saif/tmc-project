@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Announcement;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -9,7 +10,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::call(function () {
-    \App\Models\Announcement::query()
+    Announcement::query()
         ->where('status', 'scheduled')
         ->where('publish_at', '<=', now())
         ->update([

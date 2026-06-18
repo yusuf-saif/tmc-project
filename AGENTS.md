@@ -19,6 +19,7 @@
 - Focused auth/onboarding regression: `php artisan test --filter AuthOnboardingTest`
 - Seed local data set: `php artisan migrate --seed`
 - Seed Playwright login user: `php artisan db:seed --class=PlaywrightSeeder`
+- Production fix sequence after membership flow deploy: `php artisan migrate --force && php artisan db:seed --class=RoleSeeder --force && php artisan db:seed --class=AdminUserSeeder --force && php artisan optimize:clear && php artisan permission:cache-reset`
 - Playwright expects the app at `http://127.0.0.1:8000`: `npm run test:e2e`
 
 ## Auth And Redirects

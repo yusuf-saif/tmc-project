@@ -9,14 +9,21 @@ use Filament\Pages\Page;
 class SettingsPage extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+
     protected static ?string $navigationLabel = 'Settings';
+
     protected static ?string $navigationGroup = 'Configuration';
+
     protected static string $view = 'filament.pages.settings-page';
+
     protected static ?string $slug = 'settings';
 
     public string $bankDetails = '';
+
     public string $donateMessage = '';
+
     public int $starterCoinsAmount = 50;
+
     public int $referralCoinsAmount = 25;
 
     public static function canAccess(): bool

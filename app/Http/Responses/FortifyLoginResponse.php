@@ -30,8 +30,22 @@ class FortifyLoginResponse implements LoginResponseContract
             return '/admin';
         }
 
-        if (! $user->profile?->onboarding_completed_at) {
-            return '/onboarding';
+        $profile = $user->profile;
+
+        if (! $profile || ! $profile->membership_status || $profile->membership_status === 'draft') {
+            return route('membership.onboarding');
+        }
+
+        if (in_array($profile->membership_status, ['submitted', 'under_review'], true)) {
+            return route('membership.pending');
+        }
+
+        if (in_array($profile->membership_status, ['rejected', 'needs_correction'], true)) {
+            return route('membership.onboarding');
+        }
+
+        if (in_array($profile->membership_status, ['approved_pending_payment', 'payment_submitted'], true)) {
+            return route('membership.payment');
         }
 
         return '/home';

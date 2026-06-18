@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Resources\ResourceDetail;
 use App\Models\Resource;
 use App\Models\User;
-use App\Livewire\Resources\ResourceDetail;
 use App\Services\DuaListService;
 use Database\Seeders\ResourceSeeder;
 use Database\Seeders\RoleSeeder;
@@ -38,6 +38,7 @@ class ResourcesTest extends TestCase
         $this->member->assignRole('member');
         $this->member->profile()->create([
             'display_name' => $this->member->name,
+            'membership_status' => 'active',
             'onboarding_completed_at' => now(),
         ]);
     }

@@ -30,6 +30,12 @@ class PlaywrightSeeder extends Seeder
             ['user_id' => $user->id],
             [
                 'display_name' => 'Test Member',
+                'first_name' => 'Test',
+                'last_name' => 'Member',
+                'country' => 'Nigeria',
+                'state' => 'Lagos',
+                'membership_status' => 'active',
+                'membership_id' => 'TMC-M-1447-001',
                 'onboarding_completed_at' => now(),
             ],
         );

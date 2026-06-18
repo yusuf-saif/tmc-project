@@ -11,6 +11,7 @@ class UserBadge extends Model
     use HasFactory;
 
     public const CREATED_AT = 'awarded_at';
+
     public const UPDATED_AT = null;
 
     protected $fillable = [

@@ -8,8 +8,11 @@ use Livewire\Component;
 class NotificationPreferences extends Component
 {
     public bool $events = true;
+
     public bool $announcements = true;
+
     public bool $coins = true;
+
     public bool $community = true;
 
     public function mount(): void

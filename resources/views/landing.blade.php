@@ -339,7 +339,7 @@ button, a { cursor: pointer; }
 <nav class="site-nav" id="site-nav" aria-label="Primary navigation">
   <a class="brand" href="#top" aria-label="The Muhsinat Club home">
     <!-- CHANGE 2: real brand logo replacing generated circle -->
-    <img src="{{ asset('images/img1.png') }}" alt="TMC" class="nav-logo-img">
+    <img src="{{ asset('public/images/img1.png') }}" alt="TMC" class="nav-logo-img">
     <span class="brand-name">The Muhsinat Club</span>
   </a>
   <div class="nav-right">

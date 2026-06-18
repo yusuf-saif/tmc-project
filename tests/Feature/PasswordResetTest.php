@@ -66,7 +66,7 @@ class PasswordResetTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $this->get('/reset-password/' . $token . '?email=' . urlencode($user->email))
+        $this->get('/reset-password/'.$token.'?email='.urlencode($user->email))
             ->assertOk()
             ->assertSee('Choose a new password')
             ->assertSee('New Password')

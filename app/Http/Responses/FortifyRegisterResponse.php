@@ -9,8 +9,16 @@ class FortifyRegisterResponse implements RegisterResponseContract
 {
     public function toResponse($request)
     {
-        return $request->wantsJson()
-            ? new JsonResponse('', 201)
-            : redirect()->route('home');
+        if ($request->wantsJson()) {
+            return new JsonResponse('', 201);
+        }
+
+        $user = $request->user();
+
+        if ($user && $user->hasAnyRole(['super_admin', 'admin', 'moderator', 'content_editor'])) {
+            return redirect('/admin');
+        }
+
+        return redirect()->route('membership.onboarding');
     }
 }

@@ -4,6 +4,9 @@ namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
 use Filament\Actions;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
@@ -19,7 +22,7 @@ class ViewUser extends ViewRecord
                 ->color('danger')
                 ->visible(fn (): bool => $this->record->status === 'active')
                 ->form([
-                    \Filament\Forms\Components\Textarea::make('reason')
+                    Textarea::make('reason')
                         ->label('Reason for suspension')
                         ->required(),
                 ])
@@ -39,7 +42,7 @@ class ViewUser extends ViewRecord
             Actions\Action::make('awardBadge')
                 ->label('Award Badge')
                 ->form([
-                    \Filament\Forms\Components\Select::make('badge_id')
+                    Select::make('badge_id')
                         ->options(UserResource::badgeOptions())
                         ->required(),
                 ])
@@ -51,10 +54,10 @@ class ViewUser extends ViewRecord
                 ->label('Change Role')
                 ->visible(fn (): bool => UserResource::canChangeRole(auth()->user()))
                 ->form([
-                    \Filament\Forms\Components\Select::make('new_role')
+                    Select::make('new_role')
                         ->options(UserResource::roleOptions())
                         ->required(),
-                    \Filament\Forms\Components\Textarea::make('reason'),
+                    Textarea::make('reason'),
                 ])
                 ->action(function (array $data): void {
                     UserResource::changeRole($this->record, $data['new_role'], $data['reason'] ?? null);
@@ -63,8 +66,8 @@ class ViewUser extends ViewRecord
             Actions\Action::make('awardCoins')
                 ->label('Award Coins')
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('amount')->numeric()->minValue(1)->required(),
-                    \Filament\Forms\Components\Textarea::make('reason')->required(),
+                    TextInput::make('amount')->numeric()->minValue(1)->required(),
+                    Textarea::make('reason')->required(),
                 ])
                 ->action(function (array $data): void {
                     UserResource::awardCoins($this->record, (int) $data['amount'], $data['reason']);
@@ -74,8 +77,8 @@ class ViewUser extends ViewRecord
                 ->label('Deduct Coins')
                 ->color('danger')
                 ->form([
-                    \Filament\Forms\Components\TextInput::make('amount')->numeric()->minValue(1)->required(),
-                    \Filament\Forms\Components\Textarea::make('reason')->required(),
+                    TextInput::make('amount')->numeric()->minValue(1)->required(),
+                    Textarea::make('reason')->required(),
                 ])
                 ->action(function (array $data): void {
                     UserResource::deductCoins($this->record, (int) $data['amount'], $data['reason']);

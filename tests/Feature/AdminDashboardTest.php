@@ -19,6 +19,7 @@ class AdminDashboardTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $superAdmin;
 
     protected function setUp(): void

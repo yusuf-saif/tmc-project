@@ -3,7 +3,7 @@
 namespace App\Livewire\Layout;
 
 use Illuminate\Support\Str;
-use Livewire\Attributes\Layout; // for future use if needed
+// for future use if needed
 use Livewire\Component;
 
 class BottomNav extends Component

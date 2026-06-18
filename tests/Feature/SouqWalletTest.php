@@ -20,6 +20,7 @@ class SouqWalletTest extends TestCase
     use RefreshDatabase;
 
     protected User $member;
+
     protected User $admin;
 
     protected function setUp(): void
@@ -227,6 +228,7 @@ class SouqWalletTest extends TestCase
         $user->assignRole($role);
         $user->profile()->create([
             'display_name' => $user->name,
+            'membership_status' => 'active',
             'onboarding_completed_at' => now(),
         ]);
 

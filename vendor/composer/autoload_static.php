@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
+class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -805,6 +805,9 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'App\\Filament\\Resources\\EventResource\\Pages\\EventRsvpList' => __DIR__ . '/../..' . '/app/Filament/Resources/EventResource/Pages/EventRsvpList.php',
         'App\\Filament\\Resources\\EventResource\\Pages\\ListEvents' => __DIR__ . '/../..' . '/app/Filament/Resources/EventResource/Pages/ListEvents.php',
         'App\\Filament\\Resources\\EventResource\\Pages\\ViewEvent' => __DIR__ . '/../..' . '/app/Filament/Resources/EventResource/Pages/ViewEvent.php',
+        'App\\Filament\\Resources\\MembershipApplicationResource' => __DIR__ . '/../..' . '/app/Filament/Resources/MembershipApplicationResource.php',
+        'App\\Filament\\Resources\\MembershipApplicationResource\\Pages\\ListMembershipApplications' => __DIR__ . '/../..' . '/app/Filament/Resources/MembershipApplicationResource/Pages/ListMembershipApplications.php',
+        'App\\Filament\\Resources\\MembershipApplicationResource\\Pages\\ViewMembershipApplication' => __DIR__ . '/../..' . '/app/Filament/Resources/MembershipApplicationResource/Pages/ViewMembershipApplication.php',
         'App\\Filament\\Resources\\ResourceResource' => __DIR__ . '/../..' . '/app/Filament/Resources/ResourceResource.php',
         'App\\Filament\\Resources\\ResourceResource\\Pages\\CreateResource' => __DIR__ . '/../..' . '/app/Filament/Resources/ResourceResource/Pages/CreateResource.php',
         'App\\Filament\\Resources\\ResourceResource\\Pages\\EditResource' => __DIR__ . '/../..' . '/app/Filament/Resources/ResourceResource/Pages/EditResource.php',
@@ -823,6 +826,7 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'App\\Filament\\Widgets\\RecentActivityWidget' => __DIR__ . '/../..' . '/app/Filament/Widgets/RecentActivityWidget.php',
         'App\\Filament\\Widgets\\StatsOverviewWidget' => __DIR__ . '/../..' . '/app/Filament/Widgets/StatsOverviewWidget.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
+        'App\\Http\\Middleware\\EnsureMembershipComplete' => __DIR__ . '/../..' . '/app/Http/Middleware/EnsureMembershipComplete.php',
         'App\\Http\\Middleware\\EnsureOnboardingComplete' => __DIR__ . '/../..' . '/app/Http/Middleware/EnsureOnboardingComplete.php',
         'App\\Http\\Middleware\\TrustProxies' => __DIR__ . '/../..' . '/app/Http/Middleware/TrustProxies.php',
         'App\\Http\\Responses\\FortifyLoginResponse' => __DIR__ . '/../..' . '/app/Http/Responses/FortifyLoginResponse.php',
@@ -840,6 +844,9 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'App\\Livewire\\Home\\HomeDashboard' => __DIR__ . '/../..' . '/app/Livewire/Home/HomeDashboard.php',
         'App\\Livewire\\Journal\\JournalScreen' => __DIR__ . '/../..' . '/app/Livewire/Journal/JournalScreen.php',
         'App\\Livewire\\Layout\\BottomNav' => __DIR__ . '/../..' . '/app/Livewire/Layout/BottomNav.php',
+        'App\\Livewire\\Membership\\MembershipOnboardingWizard' => __DIR__ . '/../..' . '/app/Livewire/Membership/MembershipOnboardingWizard.php',
+        'App\\Livewire\\Membership\\PaymentPage' => __DIR__ . '/../..' . '/app/Livewire/Membership/PaymentPage.php',
+        'App\\Livewire\\Membership\\PendingReview' => __DIR__ . '/../..' . '/app/Livewire/Membership/PendingReview.php',
         'App\\Livewire\\Onboarding\\OnboardingWizard' => __DIR__ . '/../..' . '/app/Livewire/Onboarding/OnboardingWizard.php',
         'App\\Livewire\\Profile\\EditProfile' => __DIR__ . '/../..' . '/app/Livewire/Profile/EditProfile.php',
         'App\\Livewire\\Profile\\LegacyCard' => __DIR__ . '/../..' . '/app/Livewire/Profile/LegacyCard.php',
@@ -862,6 +869,8 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'App\\Models\\Interest' => __DIR__ . '/../..' . '/app/Models/Interest.php',
         'App\\Models\\JannahCoinsLedger' => __DIR__ . '/../..' . '/app/Models/JannahCoinsLedger.php',
         'App\\Models\\JournalEntry' => __DIR__ . '/../..' . '/app/Models/JournalEntry.php',
+        'App\\Models\\MembershipApplicationDraft' => __DIR__ . '/../..' . '/app/Models/MembershipApplicationDraft.php',
+        'App\\Models\\MembershipSerial' => __DIR__ . '/../..' . '/app/Models/MembershipSerial.php',
         'App\\Models\\NotificationLog' => __DIR__ . '/../..' . '/app/Models/NotificationLog.php',
         'App\\Models\\Resource' => __DIR__ . '/../..' . '/app/Models/Resource.php',
         'App\\Models\\Setting' => __DIR__ . '/../..' . '/app/Models/Setting.php',
@@ -872,6 +881,11 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'App\\Models\\UserProfile' => __DIR__ . '/../..' . '/app/Models/UserProfile.php',
         'App\\Models\\UserReferral' => __DIR__ . '/../..' . '/app/Models/UserReferral.php',
         'App\\Models\\UserRoleHistory' => __DIR__ . '/../..' . '/app/Models/UserRoleHistory.php',
+        'App\\Notifications\\MembershipApplicationSubmitted' => __DIR__ . '/../..' . '/app/Notifications/MembershipApplicationSubmitted.php',
+        'App\\Notifications\\MembershipApproved' => __DIR__ . '/../..' . '/app/Notifications/MembershipApproved.php',
+        'App\\Notifications\\MembershipNeedsCorrection' => __DIR__ . '/../..' . '/app/Notifications/MembershipNeedsCorrection.php',
+        'App\\Notifications\\MembershipPaymentConfirmed' => __DIR__ . '/../..' . '/app/Notifications/MembershipPaymentConfirmed.php',
+        'App\\Notifications\\MembershipRejected' => __DIR__ . '/../..' . '/app/Notifications/MembershipRejected.php',
         'App\\Policies\\JournalEntryPolicy' => __DIR__ . '/../..' . '/app/Policies/JournalEntryPolicy.php',
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',
         'App\\Providers\\AuthServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AuthServiceProvider.php',
@@ -880,6 +894,7 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'App\\Services\\AuditLogService' => __DIR__ . '/../..' . '/app/Services/AuditLogService.php',
         'App\\Services\\CoinsService' => __DIR__ . '/../..' . '/app/Services/CoinsService.php',
         'App\\Services\\DuaListService' => __DIR__ . '/../..' . '/app/Services/DuaListService.php',
+        'App\\Services\\MembershipIdService' => __DIR__ . '/../..' . '/app/Services/MembershipIdService.php',
         'App\\Services\\RsvpService' => __DIR__ . '/../..' . '/app/Services/RsvpService.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'BaconQrCode\\Common\\BitArray' => __DIR__ . '/..' . '/bacon/bacon-qr-code/src/Common/BitArray.php',
@@ -10071,6 +10086,8 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
         'Tests\\Feature\\CommunityProfileTest' => __DIR__ . '/../..' . '/tests/Feature/CommunityProfileTest.php',
         'Tests\\Feature\\EventRsvpTest' => __DIR__ . '/../..' . '/tests/Feature/EventRsvpTest.php',
         'Tests\\Feature\\JournalPrivacyTest' => __DIR__ . '/../..' . '/tests/Feature/JournalPrivacyTest.php',
+        'Tests\\Feature\\MembershipApplicationTest' => __DIR__ . '/../..' . '/tests/Feature/MembershipApplicationTest.php',
+        'Tests\\Feature\\PasswordResetTest' => __DIR__ . '/../..' . '/tests/Feature/PasswordResetTest.php',
         'Tests\\Feature\\ResourcesTest' => __DIR__ . '/../..' . '/tests/Feature/ResourcesTest.php',
         'Tests\\Feature\\SouqWalletTest' => __DIR__ . '/../..' . '/tests/Feature/SouqWalletTest.php',
         'Tests\\TestCase' => __DIR__ . '/../..' . '/tests/TestCase.php',
@@ -10476,9 +10493,9 @@ class ComposerStaticInit472312faa8c7953708c6497dc0c8c14b
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit472312faa8c7953708c6497dc0c8c14b::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit472312faa8c7953708c6497dc0c8c14b::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit472312faa8c7953708c6497dc0c8c14b::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75::$classMap;
 
         }, null, ClassLoader::class);
     }

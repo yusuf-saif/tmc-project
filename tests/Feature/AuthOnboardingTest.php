@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Onboarding\OnboardingWizard;
+use App\Livewire\Membership\MembershipOnboardingWizard;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\JannahCoinsLedger;
@@ -30,7 +30,7 @@ class AuthOnboardingTest extends TestCase
         ]);
     }
 
-    public function test_user_can_register_complete_onboarding_and_reach_home(): void
+    public function test_user_can_register_and_is_redirected_to_membership_onboarding(): void
     {
         $response = $this->post('/register', [
             'name' => 'Aisha Member',
@@ -41,7 +41,7 @@ class AuthOnboardingTest extends TestCase
 
         $user = User::query()->where('email', 'aisha@example.com')->firstOrFail();
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('membership.onboarding'));
         $this->assertAuthenticatedAs($user);
         $this->assertSame('active', $user->status);
         $this->assertNotNull($user->referral_code);
@@ -50,61 +50,55 @@ class AuthOnboardingTest extends TestCase
 
         $this->actingAs($user)
             ->get('/home')
-            ->assertRedirect(route('onboarding'));
+            ->assertRedirect(route('membership.onboarding'));
+    }
+
+    public function test_user_can_complete_application_and_is_redirected_to_pending(): void
+    {
+        $user = User::query()->where('email', 'aisha@example.com')->first()
+            ?? User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+
+        if (! $user->hasRole('member')) {
+            $user->assignRole('member');
+        }
+
+        if (! $user->profile) {
+            $user->profile()->create(['display_name' => $user->name]);
+        }
 
         $interestSlugs = Interest::query()->orderBy('sort_order')->limit(2)->pluck('slug')->all();
         $goalSlugs = Goal::query()->orderBy('id')->limit(2)->pluck('slug')->all();
 
         Livewire::actingAs($user)
-            ->test(OnboardingWizard::class)
-            ->set('selectedInterests', $interestSlugs)
+            ->test(MembershipOnboardingWizard::class)
+            ->assertSet('step', 1)
+            ->set('firstName', 'Aisha')
+            ->set('lastName', 'Member')
+            ->set('nickname', 'Aishy')
             ->call('nextStep')
+            ->assertSet('step', 2)
+            ->set('country', 'Nigeria')
+            ->set('state', 'Lagos')
+            ->call('nextStep')
+            ->assertSet('step', 3)
+            ->set('ageGroup', '25_34')
+            ->set('maritalStatus', 'married')
+            ->set('phone', '+2348000000000')
+            ->call('nextStep')
+            ->assertSet('step', 4)
+            ->set('instagramUsername', 'aisha_m')
+            ->call('nextStep')
+            ->assertSet('step', 5)
+            ->set('selectedInterests', $interestSlugs)
             ->set('selectedGoals', $goalSlugs)
             ->call('nextStep')
-            ->set('notificationPreferences.announcements', false)
-            ->call('nextStep')
-            ->assertSet('step', 4)
-            ->call('enterClub')
-            ->assertRedirect(route('home'));
+            ->assertSet('step', 6)
+            ->call('submit')
+            ->assertRedirect(route('membership.pending'));
 
-        $user->refresh();
-
-        $this->assertNotNull($user->profile->onboarding_completed_at);
-        $this->assertDatabaseCount('jannah_coins_ledger', 1);
-        $this->assertDatabaseHas('jannah_coins_ledger', [
-            'user_id' => $user->id,
-            'type' => 'earned',
-            'reason' => 'onboarding',
-            'amount' => 50,
-        ]);
-
-        $this->actingAs($user)
-            ->get('/home')
-            ->assertOk();
-    }
-
-    public function test_onboarding_reward_is_only_awarded_once(): void
-    {
-        $user = User::factory()->create([
-            'email_verified_at' => now(),
-            'status' => 'active',
-            'referral_code' => 'MEMBER01',
-        ]);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        Livewire::actingAs($user)
-            ->test(OnboardingWizard::class)
-            ->set('selectedInterests', Interest::query()->limit(1)->pluck('slug')->all())
-            ->call('nextStep')
-            ->set('selectedGoals', Goal::query()->limit(1)->pluck('slug')->all())
-            ->call('nextStep')
-            ->call('nextStep')
-            ->assertSet('step', 4)
-            ->call('previousStep')
-            ->call('nextStep');
-
-        $this->assertSame(1, JannahCoinsLedger::query()->where('user_id', $user->id)->where('reason', 'onboarding')->count());
+        $freshUser = $user->fresh();
+        $this->assertEquals('submitted', $freshUser->profile->membership_status);
+        $this->assertNotNull($freshUser->profile->application_submitted_at);
     }
 
     public function test_referred_user_registration_tracks_the_referrer_for_future_awards(): void
@@ -123,7 +117,7 @@ class AuthOnboardingTest extends TestCase
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
             'ref' => $referrer->referral_code,
-        ])->assertRedirect(route('home'));
+        ])->assertRedirect(route('membership.onboarding'));
 
         $referred = User::query()->where('email', 'safiyyah@example.com')->firstOrFail();
 
@@ -132,7 +126,7 @@ class AuthOnboardingTest extends TestCase
         $this->assertSame(0, JannahCoinsLedger::query()->where('user_id', $referrer->id)->where('reason', 'referral')->count());
     }
 
-    public function test_unonboarded_user_is_redirected_from_home_to_onboarding(): void
+    public function test_unonboarded_user_is_redirected_from_home_to_membership_onboarding(): void
     {
         $user = User::factory()->create([
             'email_verified_at' => now(),
@@ -142,8 +136,10 @@ class AuthOnboardingTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->actingAs($user)
+        $freshUser = $user->fresh();
+
+        $this->actingAs($freshUser)
             ->get('/home')
-            ->assertRedirect(route('onboarding'));
+            ->assertRedirect(route('membership.onboarding'));
     }
 }

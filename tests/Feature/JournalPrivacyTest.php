@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Journal\JournalScreen;
 use App\Models\JournalEntry;
 use App\Models\User;
-use App\Livewire\Journal\JournalScreen;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
-use Database\Seeders\RoleSeeder;
 use Tests\TestCase;
 
 class JournalPrivacyTest extends TestCase
@@ -16,6 +16,7 @@ class JournalPrivacyTest extends TestCase
     use RefreshDatabase;
 
     protected User $member;
+
     protected User $admin;
 
     protected function setUp(): void

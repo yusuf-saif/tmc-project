@@ -109,6 +109,7 @@ class EventRsvpTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create([
             'display_name' => $user->name,
+            'membership_status' => 'active',
             'onboarding_completed_at' => now(),
         ]);
 

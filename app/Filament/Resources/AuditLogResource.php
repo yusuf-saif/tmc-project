@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AuditLogResource\Pages;
 use App\Models\AuditLog;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
@@ -41,7 +43,7 @@ class AuditLogResource extends Resource
             ->filters([
                 Filter::make('action')
                     ->form([
-                        \Filament\Forms\Components\TextInput::make('action'),
+                        TextInput::make('action'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return filled($data['action'] ?? null)
@@ -50,8 +52,8 @@ class AuditLogResource extends Resource
                     }),
                 Filter::make('created_at')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('from'),
-                        \Filament\Forms\Components\DatePicker::make('until'),
+                        DatePicker::make('from'),
+                        DatePicker::make('until'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query

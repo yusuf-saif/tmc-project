@@ -13,15 +13,23 @@ use Filament\Pages\Page;
 class BroadcastNotifications extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
+
     protected static ?string $navigationLabel = 'Broadcast';
+
     protected static ?string $navigationGroup = 'Communications';
+
     protected static string $view = 'filament.pages.broadcast-notifications';
+
     protected static ?string $slug = 'broadcast';
 
     public string $notificationTitle = '';
+
     public string $notificationBody = '';
+
     public string $audienceType = 'all';
+
     public array $audienceValue = [];
+
     public bool $sent = false;
 
     public static function canAccess(): bool
