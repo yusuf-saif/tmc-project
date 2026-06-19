@@ -100,7 +100,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 /* ── HERO ────────────────────────────────────────── */
 .hero { display: grid; grid-template-columns: 58% 42%; min-height: 100vh; overflow: hidden; }
 .hero-left { position: relative; background: var(--teal-hero); display: flex; align-items: center; min-height: 100vh; padding: 8rem clamp(1.5rem, 6vw, 6rem) 4.5rem; overflow: hidden; }
-.hero-left::before { content: ''; position: absolute; inset: 0; background-image: url('{{ asset('images/img4.png') }}'); background-repeat: repeat; background-size: 400px auto; opacity: 0.10; animation: drift 40s linear infinite; }
+.hero-left::before { content: ''; position: absolute; inset: 0; background-image: url('{{ asset('images/img4.png') }}'); background-repeat: no-repeat; background-position: right center; background-size: auto 80%; opacity: 0.12; }
 .hero-left::after { content: ''; position: absolute; bottom: -18rem; left: -10rem; width: 34rem; height: 34rem; border-radius: 50%; background: radial-gradient(circle, rgba(200,168,75,0.15), transparent 64%); animation: orbPulse 8s ease-in-out infinite; }
 .hero-copy { position: relative; z-index: 2; max-width: 620px; }
 .hero-title { font-family: var(--display); font-size: clamp(4rem, 8vw, 5.8rem); font-weight: 400; line-height: 0.96; color: white; margin-bottom: 1.25rem; }
