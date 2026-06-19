@@ -123,6 +123,8 @@ class BroadcastResource extends Resource
                     ->dateTime('d M Y H:i'),
             ])
             ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('No broadcasts')
+            ->emptyStateDescription('No broadcasts have been created.')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('send')

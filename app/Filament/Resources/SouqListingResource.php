@@ -23,6 +23,8 @@ class SouqListingResource extends Resource
 
     protected static ?string $navigationLabel = 'Souq Listings';
 
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -91,6 +93,8 @@ class SouqListingResource extends Resource
                 Tables\Filters\SelectFilter::make('category')
                     ->options(SouqListing::CATEGORY_OPTIONS),
             ])
+            ->emptyStateHeading('No souq listings')
+            ->emptyStateDescription('No listings have been submitted yet.')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('approve')

@@ -131,6 +131,8 @@ class NewsletterResource extends Resource
                     ->dateTime('d M Y H:i'),
             ])
             ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('No newsletters')
+            ->emptyStateDescription('No newsletters have been created.')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('send')

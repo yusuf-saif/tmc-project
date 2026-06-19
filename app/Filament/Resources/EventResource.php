@@ -22,6 +22,8 @@ class EventResource extends Resource
 
     protected static ?string $navigationLabel = 'Events';
 
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -108,6 +110,8 @@ class EventResource extends Resource
                         'completed' => 'Completed',
                     ]),
             ])
+            ->emptyStateHeading('No events')
+            ->emptyStateDescription('No events have been created yet.')
             ->actions([
                 Tables\Actions\Action::make('rsvps')
                     ->label('RSVPs')

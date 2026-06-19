@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('The Muhsinat Club')
             ->brandLogo(asset('images/img2.png'))
             ->favicon(asset('images/img1.png'))
-            ->homeUrl('/admin/users')
+            ->homeUrl('/admin')
             ->login()
             ->colors([
                 'primary' => Color::hex('#1A6B72'),

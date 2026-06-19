@@ -21,6 +21,8 @@ class BadgeResource extends Resource
 
     protected static ?string $navigationLabel = 'Badges';
 
+    protected static ?int $navigationSort = 4;
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -39,6 +41,8 @@ class BadgeResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
             ])
+            ->emptyStateHeading('No badges')
+            ->emptyStateDescription('No badges have been created.')
             ->actions([
                 Tables\Actions\EditAction::make(),
             ]);

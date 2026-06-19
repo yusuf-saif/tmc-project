@@ -3,9 +3,7 @@
         <a href="{{ $tab['href'] }}"
            class="bn-tab {{ $tab['active'] ? 'active' : '' }}"
            @if ($tab['active']) aria-current="page" @endif>
-            <span style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;">
-                {!! $tab['icon'] !!}
-            </span>
+            <span class="bn-icon">{!! $tab['icon'] !!}</span>
             <span>{{ $tab['label'] }}</span>
         </a>
     @endforeach

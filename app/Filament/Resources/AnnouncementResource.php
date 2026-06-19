@@ -22,6 +22,8 @@ class AnnouncementResource extends Resource
 
     protected static ?string $navigationLabel = 'Announcements';
 
+    protected static ?int $navigationSort = 2;
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -55,6 +57,8 @@ class AnnouncementResource extends Resource
                 Tables\Columns\TextColumn::make('publish_at')->dateTime('d M Y H:i'),
                 Tables\Columns\TextColumn::make('published_at')->dateTime('d M Y H:i'),
             ])
+            ->emptyStateHeading('No announcements')
+            ->emptyStateDescription('No announcements have been published.')
             ->actions([
                 Tables\Actions\EditAction::make(),
             ]);

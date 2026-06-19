@@ -116,6 +116,8 @@ class ResourceResource extends Resource
                         'archived' => 'Archived',
                     ]),
             ])
+            ->emptyStateHeading('No resources')
+            ->emptyStateDescription('No library resources have been created.')
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),

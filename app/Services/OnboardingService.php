@@ -7,6 +7,8 @@ use App\Models\MembershipApplicationDraft;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 class OnboardingService
 {
@@ -87,6 +89,21 @@ class OnboardingService
     {
         $profile = $this->saveProgress($user, $data, 6);
 
+        if (! $profile) {
+            throw new RuntimeException('Failed to save onboarding progress.');
+        }
+
+        $currentStatus = $profile->onboarding_status;
+
+        if (in_array($currentStatus, ['pending_review', 'approved', 'active'], true)) {
+            Log::warning('submitForReview called on already-submitted profile', [
+                'user_id' => $user->id,
+                'current_status' => $currentStatus,
+            ]);
+
+            return $profile;
+        }
+
         DB::transaction(function () use ($user, $profile, $data): void {
             $profile->fill([
                 'onboarding_status' => 'pending_review',
@@ -106,7 +123,15 @@ class OnboardingService
                 ],
             );
 
-            $this->syncLegacyProfile($user, $data, true);
+            try {
+                $this->syncLegacyProfile($user, $data, true);
+            } catch (\Throwable $e) {
+                report($e);
+                Log::error('Legacy profile sync failed during submission', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         });
 
         return $profile->refresh();
@@ -114,11 +139,12 @@ class OnboardingService
 
     protected function syncLegacyProfile(User $user, array $data, bool $submitted): void
     {
-        if (! $user->profile) {
+        $legacy = $user->profile;
+
+        if (! $legacy) {
             return;
         }
 
-        $legacy = $user->profile;
         $legacy->fill(array_filter([
             'display_name' => trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: $user->name,
             'first_name' => $data['first_name'] ?? null,
@@ -139,7 +165,7 @@ class OnboardingService
         ], fn ($value) => $value !== null));
 
         if (array_key_exists('selected_goals', $data)) {
-            $legacy->goals = $data['selected_goals'];
+            $legacy->goals = $data['selected_goals'] ?? [];
         }
 
         $legacy->save();

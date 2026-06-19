@@ -18,9 +18,11 @@ class SupportApplicationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-hand-raised';
 
-    protected static ?string $navigationGroup = 'Community';
+    protected static ?string $navigationGroup = 'Approvals';
 
     protected static ?string $navigationLabel = 'Support Applications';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
@@ -73,7 +75,10 @@ class SupportApplicationResource extends Resource
                 Tables\Actions\Action::make('decline')
                     ->color('danger')
                     ->action(fn (SupportApplication $record) => static::updateStatus($record, 'declined', 'support_declined')),
-            ]);
+            ])
+            ->emptyStateHeading('No support applications')
+            ->emptyStateDescription('No volunteer or mentorship applications have been submitted yet.')
+            ->emptyStateIcon('heroicon-o-hand-raised');
     }
 
     public static function getPages(): array

@@ -36,7 +36,7 @@
             <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" class="tmc-input">
         </div>
 
-        <button type="submit" class="tmc-button-gold">Create Account</button>
+        <button type="submit" class="tmc-button-gold" x-data @click="$el.disabled=true;$el.textContent='Creating...'">Create Account</button>
     </form>
 
     <p class="mt-6 text-center text-sm text-ink-soft">

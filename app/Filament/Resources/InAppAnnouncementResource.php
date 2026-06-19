@@ -119,6 +119,8 @@ class InAppAnnouncementResource extends Resource
                     ->label('Created By'),
             ])
             ->defaultSort('created_at', 'desc')
+            ->emptyStateHeading('No in-app announcements')
+            ->emptyStateDescription('No in-app announcements have been created.')
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

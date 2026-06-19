@@ -11,79 +11,61 @@
 
         {{-- Progress Timeline --}}
         <div class="mt-8 text-left" style="padding:0 8px;">
-            <p style="font-size:11px;font-weight:600;text-transform:uppercase;
-                      letter-spacing:1.5px;color:var(--gold);margin-bottom:16px;">
-              Application Progress
-            </p>
+            <p class="section-label" style="color:var(--gold);margin-bottom:16px;">Application Progress</p>
 
             {{-- Step 1: Registration --}}
-            <div style="display:flex;gap:12px;margin-bottom:0;">
-              <div style="display:flex;flex-direction:column;align-items:center;">
-                <div style="width:24px;height:24px;border-radius:50%;
-                            background:var(--teal);display:flex;align-items:center;
-                            justify-content:center;flex-shrink:0;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                       stroke="white" stroke-width="2.5" stroke-linecap="round">
-                    <path d="M5 13l4 4L19 7"/>
-                  </svg>
+            <div class="timeline-step">
+                <div class="timeline-line-complete">
+                    <div class="timeline-dot-complete">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="timeline-connector timeline-connector-complete"></div>
                 </div>
-                <div style="width:2px;flex:1;min-height:20px;background:var(--teal);"></div>
-              </div>
-              <div style="padding-bottom:16px;">
-                <p style="font-size:13px;font-weight:600;color:var(--teal);margin:0;">Registration</p>
-                <p style="font-size:12px;color:var(--ink-soft);margin:2px 0 0;">Account created</p>
-              </div>
+                <div class="timeline-text">
+                    <p class="timeline-title timeline-title-complete">Registration</p>
+                    <p class="timeline-sub">Account created</p>
+                </div>
             </div>
 
             {{-- Step 2: Onboarding --}}
-            <div style="display:flex;gap:12px;margin-bottom:0;">
-              <div style="display:flex;flex-direction:column;align-items:center;">
-                <div style="width:24px;height:24px;border-radius:50%;
-                            background:var(--teal);display:flex;align-items:center;
-                            justify-content:center;flex-shrink:0;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                       stroke="white" stroke-width="2.5" stroke-linecap="round">
-                    <path d="M5 13l4 4L19 7"/>
-                  </svg>
+            <div class="timeline-step">
+                <div class="timeline-line-complete">
+                    <div class="timeline-dot-complete">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="timeline-connector timeline-connector-complete"></div>
                 </div>
-                <div style="width:2px;flex:1;min-height:20px;background:var(--teal);"></div>
-              </div>
-              <div style="padding-bottom:16px;">
-                <p style="font-size:13px;font-weight:600;color:var(--teal);margin:0;">Onboarding</p>
-                <p style="font-size:12px;color:var(--ink-soft);margin:2px 0 0;">Profile completed</p>
-              </div>
+                <div class="timeline-text">
+                    <p class="timeline-title timeline-title-complete">Onboarding</p>
+                    <p class="timeline-sub">Profile completed</p>
+                </div>
             </div>
 
             {{-- Step 3: Under Review (current) --}}
-            <div style="display:flex;gap:12px;margin-bottom:0;">
-              <div style="display:flex;flex-direction:column;align-items:center;">
-                <div style="width:24px;height:24px;border-radius:50%;
-                            background:var(--gold);display:flex;align-items:center;
-                            justify-content:center;flex-shrink:0;
-                            animation:pulse-gold 2s ease-in-out infinite;">
-                  <div style="width:8px;height:8px;border-radius:50%;background:white;"></div>
+            <div class="timeline-step">
+                <div class="timeline-line-complete">
+                    <div class="timeline-dot-active">
+                        <div class="timeline-dot-pulse"></div>
+                    </div>
+                    <div class="timeline-connector timeline-connector-pending"></div>
                 </div>
-                <div style="width:2px;flex:1;min-height:20px;background:var(--border);"></div>
-              </div>
-              <div style="padding-bottom:16px;">
-                <p style="font-size:13px;font-weight:600;color:var(--gold);margin:0;">Under Review</p>
-                <p style="font-size:12px;color:var(--ink-soft);margin:2px 0 0;">Our team is reviewing your application</p>
-              </div>
+                <div class="timeline-text">
+                    <p class="timeline-title" style="color:var(--gold);">Under Review</p>
+                    <p class="timeline-sub">Our team is reviewing your application</p>
+                </div>
             </div>
 
             {{-- Step 4: Approval --}}
-            <div style="display:flex;gap:12px;">
-              <div style="display:flex;flex-direction:column;align-items:center;">
-                <div style="width:24px;height:24px;border-radius:50%;
-                            background:var(--border);display:flex;align-items:center;
-                            justify-content:center;flex-shrink:0;">
-                  <div style="width:8px;height:8px;border-radius:50%;background:var(--ink-soft);opacity:0.4;"></div>
+            <div class="timeline-step">
+                <div class="timeline-line-complete">
+                    <div class="timeline-dot-pending">
+                        <div class="timeline-dot-inner"></div>
+                    </div>
                 </div>
-              </div>
-              <div>
-                <p style="font-size:13px;font-weight:600;color:var(--ink-soft);margin:0;">Approval</p>
-                <p style="font-size:12px;color:var(--ink-soft);margin:2px 0 0;">Welcome to TMC</p>
-              </div>
+                <div class="timeline-text">
+                    <p class="timeline-title" style="color:var(--ink-soft);">Approval</p>
+                    <p class="timeline-sub">Welcome to TMC</p>
+                </div>
             </div>
         </div>
 
@@ -97,35 +79,25 @@
 
         {{-- What Happens Next --}}
         <div class="mt-4 text-left" style="padding:0 4px;">
-          <p style="font-size:11px;font-weight:600;text-transform:uppercase;
-                    letter-spacing:1.5px;color:var(--gold);margin-bottom:10px;">
-            What happens next?
-          </p>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;gap:10px;align-items:flex-start;">
-              <span style="font-size:16px;flex-shrink:0;">1.</span>
-              <p style="font-size:13px;color:var(--ink-md);margin:0;line-height:1.5;">
-                Our team reviews your profile and application details
-              </p>
+          <p class="section-label" style="color:var(--gold);margin-bottom:10px;">What happens next?</p>
+          <div class="space-y-2">
+            <div class="flex gap-2.5 items-start">
+              <span class="text-sm font-semibold text-teal">1.</span>
+              <p class="text-[13px] text-ink-md leading-relaxed">Our team reviews your profile and application details</p>
             </div>
-            <div style="display:flex;gap:10px;align-items:flex-start;">
-              <span style="font-size:16px;flex-shrink:0;">2.</span>
-              <p style="font-size:13px;color:var(--ink-md);margin:0;line-height:1.5;">
-                You'll receive a notification with the decision
-              </p>
+            <div class="flex gap-2.5 items-start">
+              <span class="text-sm font-semibold text-teal">2.</span>
+              <p class="text-[13px] text-ink-md leading-relaxed">You'll receive a notification with the decision</p>
             </div>
-            <div style="display:flex;gap:10px;align-items:flex-start;">
-              <span style="font-size:16px;flex-shrink:0;">3.</span>
-              <p style="font-size:13px;color:var(--ink-md);margin:0;line-height:1.5;">
-                Once approved, you'll get your membership card and can explore the full app
-              </p>
+            <div class="flex gap-2.5 items-start">
+              <span class="text-sm font-semibold text-teal">3.</span>
+              <p class="text-[13px] text-ink-md leading-relaxed">Once approved, you'll get your membership card and can explore the full app</p>
             </div>
           </div>
         </div>
 
         {{-- Soft Engagement --}}
-        <div class="mt-6 rounded-sm p-4" style="background:var(--teal-lt);
-                                                border:1px solid rgba(26,107,114,0.15);">
+        <div class="mt-6 rounded-sm p-4" style="background:var(--teal-lt);border:1px solid rgba(26,107,114,0.15);">
           <p style="font-size:13px;color:var(--teal);margin:0;font-weight:500;">
             While you wait, feel free to explore our
             <a href="{{ route('landing') }}" class="tmc-link">public resources</a>.

@@ -9,9 +9,10 @@
             <h2 class="mt-2 text-sm font-semibold text-ink-md">Find your circle</h2>
         </div>
 
+        @if ($spaces->count())
         <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
             @foreach ($spaces as $space)
-                <a href="{{ route('community.spaces.show', $space->slug) }}" class="overflow-hidden rounded-[8px] bg-white no-underline transition hover:-translate-y-[2px] hover:shadow-sm" style="border: 1px solid var(--border);">
+                <a href="{{ route('community.spaces.show', $space->slug) }}" class="overflow-hidden rounded-[8px] bg-white no-underline transition hover:-translate-y-[2px] hover:shadow-sm" style="border:1px solid var(--border);">
                     @if ($space->cover_image_path)
                         <img src="{{ Storage::url($space->cover_image_path) }}" alt="{{ $space->name }}" class="aspect-[16/9] w-full object-cover">
                     @else
@@ -27,6 +28,12 @@
                 </a>
             @endforeach
         </div>
+        @else
+        <div class="card empty-state">
+            <p class="empty-state-title">No spaces yet</p>
+            <p class="empty-state-sub">Community spaces will appear here soon, insha'Allah</p>
+        </div>
+        @endif
     </section>
 
     <section class="space-y-4">
@@ -40,7 +47,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m6 2.25a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
                 <h3 class="mt-4 text-sm font-semibold">Volunteer with Us</h3>
                 <p class="mt-2 text-[12px] font-light leading-6 text-white/80">Contribute your skills and time to the community</p>
-                <a href="{{ route('community.support', 'volunteer') }}" class="mt-4 inline-flex min-h-11 items-center justify-center border border-white px-4 text-[12px] font-semibold uppercase tracking-[1px] text-white no-underline" style="border-radius: 2px;">Apply to Volunteer</a>
+                <a href="{{ route('community.support', 'volunteer') }}" class="community-volunteer-btn mt-4">Apply to Volunteer</a>
             </div>
 
             <div class="rounded-[8px] bg-gold-pale p-5 text-teal">
@@ -50,7 +57,7 @@
                 <a href="{{ route('community.support', 'mentorship') }}" class="tmc-button-outline mt-4 max-w-[220px] no-underline">Join the Programme</a>
             </div>
 
-            <div class="rounded-[8px] bg-ivory p-5" style="border: 1px solid var(--border);">
+            <div class="rounded-[8px] bg-ivory p-5" style="border:1px solid var(--border);">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-6 w-6 text-gold"><path stroke-linecap="round" stroke-linejoin="round" d="m21 8.25c0-2.485-2.239-4.5-5-4.5-1.885 0-3.526.94-4.388 2.332C10.75 4.69 9.11 3.75 7.224 3.75c-2.76 0-5 2.015-5 4.5 0 7.22 9.388 12 9.388 12S21 15.47 21 8.25Z"/></svg>
                 <h3 class="mt-4 text-sm font-semibold text-ink">Support TMC</h3>
                 <p class="mt-2 text-[12px] font-light leading-6 text-ink-soft">Help us keep the sisterhood thriving</p>

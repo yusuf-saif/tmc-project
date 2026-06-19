@@ -37,7 +37,7 @@
             <a href="{{ route('password.request') }}" class="tmc-link">Forgot password?</a>
         </div>
 
-        <button type="submit" class="tmc-button-gold">Sign In</button>
+        <button type="submit" class="tmc-button-gold" x-data @click="$el.disabled=true;$el.textContent='Signing In...'">Sign In</button>
     </form>
 
     <p class="mt-6 text-center text-sm text-ink-soft">

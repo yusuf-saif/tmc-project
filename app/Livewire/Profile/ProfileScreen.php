@@ -50,7 +50,7 @@ class ProfileScreen extends Component
 
     public function getInterestsProperty()
     {
-        return auth()->user()->interests;
+        return auth()->user()->loadMissing('interests')->interests ?? collect();
     }
 
     public function getMemberSinceProperty(): string

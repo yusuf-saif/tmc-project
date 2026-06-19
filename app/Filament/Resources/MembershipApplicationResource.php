@@ -18,9 +18,11 @@ class MembershipApplicationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationGroup = 'Members';
+    protected static ?string $navigationGroup = 'Approvals';
 
     protected static ?string $navigationLabel = 'Pending Members';
+
+    protected static ?int $navigationSort = 1;
 
     public static function table(Table $table): Table
     {
@@ -59,6 +61,9 @@ class MembershipApplicationResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ])
+            ->emptyStateHeading('No pending applications')
+            ->emptyStateDescription('All membership applications have been reviewed.')
+            ->emptyStateIcon('heroicon-o-clipboard-document-check')
             ->bulkActions([]);
     }
 

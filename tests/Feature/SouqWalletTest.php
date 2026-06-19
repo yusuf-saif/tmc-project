@@ -157,7 +157,7 @@ class SouqWalletTest extends TestCase
 
         $this->actingAs($this->member)
             ->get('/wallet')
-            ->assertOk();
+            ->assertRedirect('/profile?tab=wallet');
 
         Livewire::actingAs($this->member)
             ->test(WalletScreen::class)

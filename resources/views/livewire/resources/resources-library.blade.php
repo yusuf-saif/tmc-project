@@ -5,9 +5,10 @@
     </section>
 
     <section class="-mx-4 overflow-x-auto px-4">
-        <div class="flex min-w-max items-center gap-5 border-b" style="border-color: var(--border);">
+        <div class="resource-tabs">
             @foreach (['all' => 'All', 'dua_book' => "Du'a Book", 'dear_allah' => 'Dear Allah', 'pocket_guide' => 'Pocket Guides', 'audio_halaqahs' => 'Audio & Halaqahs'] as $value => $label)
-                <button type="button" wire:click="setCategory('{{ $value }}')" class="border-b-2 pb-3 text-[13px] font-semibold uppercase tracking-[1.2px] transition" style="border-color: {{ $category === $value ? '#1A6B72' : 'transparent' }}; color: {{ $category === $value ? '#1A6B72' : '#6B6760' }}; border-radius: 0;">
+                <button type="button" wire:click="setCategory('{{ $value }}')"
+                        class="resource-tab {{ $category === $value ? 'resource-tab-active' : 'resource-tab-inactive' }}">
                     {{ $label }}
                 </button>
             @endforeach
@@ -15,7 +16,7 @@
     </section>
 
     <div>
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search resources..." class="w-full bg-white px-4 py-3 text-[14px] text-ink outline-none" style="border: 1px solid var(--border); border-radius: 6px;">
+        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search resources..." class="input">
     </div>
 
     @if ($this->resources->count())
@@ -37,7 +38,7 @@
                         'guide' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20.25h6m-7.5-3h9A2.25 2.25 0 0 0 18.75 15V6A2.25 2.25 0 0 0 16.5 3.75h-9A2.25 2.25 0 0 0 5.25 6v9A2.25 2.25 0 0 0 7.5 17.25Z"/></svg>',
                     };
                 @endphp
-                <a href="{{ route('resources.show', $resource->slug) }}" class="overflow-hidden rounded-[8px] bg-white no-underline" style="border: 1px solid var(--border);">
+                <a href="{{ route('resources.show', $resource->slug) }}" class="overflow-hidden rounded-[8px] bg-white no-underline" style="border:1px solid var(--border);">
                     @if ($resource->thumbnail_path)
                         <img src="{{ Storage::url($resource->thumbnail_path) }}" alt="{{ $resource->title }}" class="aspect-[16/9] w-full object-cover">
                     @else
@@ -47,7 +48,7 @@
                     @endif
                     <div class="space-y-3 p-4">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium" style="background: {{ $badge['bg'] }}; color: {{ $badge['text'] }};">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium" style="background:{{ $badge['bg'] }};color:{{ $badge['text'] }};">
                                 {{ $badge['label'] }}
                             </span>
                             <span class="text-ink-soft">{!! $icon !!}</span>
@@ -65,7 +66,7 @@
             {{ $this->resources->links() }}
         </div>
     @else
-        <section class="rounded-[8px] bg-white px-6 py-12 text-center" style="border: 1px solid var(--border);">
+        <section class="card empty-state">
             <p class="text-sm font-light leading-7 text-ink-soft">No resources found — check back soon, insha'Allah</p>
         </section>
     @endif

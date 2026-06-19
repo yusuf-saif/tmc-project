@@ -21,6 +21,8 @@ class CommunitySpaceResource extends Resource
 
     protected static ?string $navigationLabel = 'Community Spaces';
 
+    protected static ?int $navigationSort = 3;
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -48,6 +50,8 @@ class CommunitySpaceResource extends Resource
                 Tables\Columns\IconColumn::make('is_youth_space')->boolean(),
                 Tables\Columns\TextColumn::make('sort_order')->sortable(),
             ])
+            ->emptyStateHeading('No community spaces')
+            ->emptyStateDescription('No community spaces have been created.')
             ->actions([
                 Tables\Actions\EditAction::make(),
             ]);

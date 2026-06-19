@@ -2,23 +2,17 @@
 
   {{-- Page header --}}
   <div class="page-wrap anim-fade-up" style="margin-bottom:12px;">
-    <h1 style="font-family:var(--font-display);font-size:1.8rem;
-               color:var(--teal);line-height:1;margin-bottom:6px;">
-      Halaqahs &amp; Events
-    </h1>
-    <p style="font-size:0.875rem;font-weight:300;color:var(--ink-soft);line-height:1.6;">
-      Stay close to the gatherings and sisterhood moments ahead.
-    </p>
+    <h1 class="souq-page-title">Halaqahs &amp; Events</h1>
+    <p class="souq-page-subtitle">Stay close to the gatherings and sisterhood moments ahead.</p>
   </div>
 
   {{-- Tab bar --}}
   <div class="tab-bar anim-slide-down">
     @foreach (['upcoming' => 'Upcoming', 'past' => 'Past', 'my_rsvps' => 'My RSVPs'] as $value => $label)
-      <button
-        type="button"
-        wire:click="switchTab('{{ $value }}')"
-        class="tab-item {{ $tab === $value ? 'active' : '' }}"
-      >{{ $label }}</button>
+      <button type="button" wire:click="switchTab('{{ $value }}')"
+              class="tab-item {{ $tab === $value ? 'active' : '' }}">
+        {{ $label }}
+      </button>
     @endforeach
   </div>
 
@@ -28,14 +22,13 @@
     @if ($this->events->isNotEmpty())
 
       @foreach ($this->events as $event)
-      <div class="event-card anim-fade-up"
-           style="animation-delay:{{ $loop->index * 0.06 }}s;">
+      <div class="event-card anim-fade-up" style="animation-delay:{{ $loop->index * 0.06 }}s;">
 
         {{-- Cover image or gradient placeholder --}}
         @if ($event->cover_image_path)
           <img src="{{ asset('storage/'.$event->cover_image_path) }}"
                alt="{{ $event->title }}"
-               style="width:100%;height:140px;object-fit:cover;display:block;">
+               class="event-cover-img">
         @else
           <div class="event-card__placeholder">
             <span>TMC</span>
@@ -56,8 +49,8 @@
             <span>{{ $event->event_date->format('D d M Y · g:ia') }}</span>
           </div>
 
-          <div class="event-card__footer">
-            <div style="display:flex;align-items:center;gap:6px;">
+          <div class="event-footer">
+            <div class="event-footer-meta">
               @php
                 $badgeClass = match($event->location_type) {
                   'in_person' => 'badge-gold',
@@ -72,36 +65,25 @@
                 };
               @endphp
               <span class="badge {{ $badgeClass }}">{{ $locationLabel }}</span>
-              <span style="font-size:11px;color:var(--ink-soft);">
-                {{ $event->active_rsvps_count }} going
-              </span>
+              <span class="event-footer-count">{{ $event->active_rsvps_count }} going</span>
             </div>
 
-            <div style="display:flex;gap:8px;align-items:center;">
-              <a href="{{ route('events.show', $event->slug) }}"
-                 style="font-size:12px;font-weight:500;color:var(--teal);
-                        text-decoration:none;">
-                Details
-              </a>
+            <div class="event-footer-actions">
+              <a href="{{ route('events.show', $event->slug) }}" class="event-footer-link">Details</a>
 
               @if ($tab === 'upcoming')
                 @if ($this->isRsvpd($event->id))
-                  <span class="btn btn-sm btn-teal-ol"
-                        style="cursor:default;opacity:0.8;">Going ✓</span>
+                  <span class="btn btn-sm btn-teal-ol" style="cursor:default;opacity:0.8;">Going ✓</span>
                 @else
-                  <button type="button"
-                          wire:click="rsvp({{ $event->id }})"
-                          class="btn btn-teal btn-sm">
+                  <button type="button" wire:click="rsvp({{ $event->id }})" class="btn btn-teal btn-sm">
                     RSVP
                   </button>
                 @endif
               @endif
 
               @if ($tab === 'my_rsvps')
-                <button type="button"
-                        wire:click="cancelRsvp({{ $event->id }})"
-                        wire:confirm="Cancel your RSVP?"
-                        class="btn btn-sm btn-teal-ol">
+                <button type="button" wire:click="cancelRsvp({{ $event->id }})"
+                        wire:confirm="Cancel your RSVP?" class="btn btn-sm btn-teal-ol">
                   Cancel
                 </button>
               @endif
@@ -112,12 +94,8 @@
       @endforeach
 
     @else
-      <div class="card anim-scale-in"
-           style="padding:48px 24px;text-align:center;">
-        <p style="font-family:var(--font-display);font-size:1.2rem;
-                  color:var(--teal);margin-bottom:8px;">
-          {{ $this->emptyStateMessage() }}
-        </p>
+      <div class="card empty-state">
+        <p class="empty-state-icon">{{ $this->emptyStateMessage() }}</p>
       </div>
     @endif
 

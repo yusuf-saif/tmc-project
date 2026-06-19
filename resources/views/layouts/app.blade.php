@@ -29,14 +29,9 @@
            alt="TMC"
            style="width:32px;height:32px;object-fit:contain;">
     </a>
-    <button type="button"
-            aria-label="Notifications"
-            style="background:none;border:none;cursor:pointer;
-                   color:var(--ink-soft);padding:4px;
-                   display:flex;align-items:center;">
+    <a href="{{ route('profile.notifications') }}" class="topbar-btn" aria-label="Notifications">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="1.5"
-           style="width:24px;height:24px;">
+           fill="none" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round"
               d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31
                  A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75
@@ -44,7 +39,10 @@
                  5.454 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0
                  m5.714 0a3 3 0 1 1-5.714 0"/>
       </svg>
-    </button>
+      @if(auth()->check() && auth()->user()->unreadNotifications()->count() > 0)
+        <span class="notif-badge"></span>
+      @endif
+    </a>
   </header>
 
   {{-- Main content --}}
@@ -68,13 +66,7 @@
     x-transition:enter-end="opacity-100 translate-y-0"
     x-transition:leave="transition ease-in duration-200"
     x-transition:leave-end="opacity-0 translate-y-2"
-    style="position:fixed;bottom:80px;left:50%;
-           transform:translateX(-50%);
-           background:#1A6B72;color:white;
-           padding:10px 20px;border-radius:20px;
-           font-family:'Nunito',sans-serif;font-size:13px;
-           font-weight:500;z-index:100;white-space:nowrap;
-           box-shadow:0 4px 20px rgba(26,107,114,0.35)">
+    class="toast toast-success">
     ✓ {{ session('success') }}
   </div>
 @endif
@@ -90,13 +82,7 @@
     x-transition:enter-end="opacity-100 translate-y-0"
     x-transition:leave="transition ease-in duration-200"
     x-transition:leave-end="opacity-0 translate-y-2"
-    style="position:fixed;bottom:80px;left:50%;
-           transform:translateX(-50%);
-           background:#C53030;color:white;
-           padding:10px 20px;border-radius:20px;
-           font-family:'Nunito',sans-serif;font-size:13px;
-           font-weight:500;z-index:100;white-space:nowrap;
-           box-shadow:0 4px 20px rgba(197,48,48,0.35)">
+    class="toast toast-error">
     {{ session('error') }}
   </div>
 @endif

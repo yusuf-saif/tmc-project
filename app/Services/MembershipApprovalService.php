@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\MemberProfile;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MembershipApprovalService
 {
@@ -16,8 +18,9 @@ class MembershipApprovalService
     {
         $membershipType = MembershipIdService::normalizeType($membershipType);
         $generated = $this->membershipIdService::generate($membershipType);
+        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
 
-        DB::transaction(function () use ($profile, $membershipType, $generated): void {
+        DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward): void {
             $oldValues = $profile->only([
                 'onboarding_status',
                 'membership_type',
@@ -39,18 +42,27 @@ class MembershipApprovalService
             ]);
             $profile->save();
 
-            $profile->user->forceFill(['status' => 'active'])->saveQuietly();
+            $user = $profile->user;
 
-            if ($profile->user->profile) {
-                $profile->user->profile->forceFill([
-                    'membership_status' => 'approved_pending_payment',
+            $user?->forceFill(['status' => 'active'])->saveQuietly();
+
+            $user?->profile?->forceFill([
+                'membership_status' => 'approved_pending_payment',
+                'membership_type' => $membershipType,
+                'membership_id' => $generated['membership_id'],
+                'membership_serial' => $generated['membership_serial'],
+                'membership_hijri_year' => $generated['membership_hijri_year'],
+                'approved_at' => now(),
+                'approved_by' => auth()->id(),
+            ])->saveQuietly();
+
+            if ($user && $coinReward > 0) {
+                CoinsService::award($user, $coinReward, 'manual', null, "Membership approval ({$membershipType})");
+                Log::info('Membership approval coins awarded', [
+                    'user_id' => $user->id,
+                    'amount' => $coinReward,
                     'membership_type' => $membershipType,
-                    'membership_id' => $generated['membership_id'],
-                    'membership_serial' => $generated['membership_serial'],
-                    'membership_hijri_year' => $generated['membership_hijri_year'],
-                    'approved_at' => now(),
-                    'approved_by' => auth()->id(),
-                ])->saveQuietly();
+                ]);
             }
 
             AuditLogService::log('membership_approved', $profile, $oldValues, [
@@ -60,6 +72,7 @@ class MembershipApprovalService
                 'hijri_year' => $generated['membership_hijri_year'],
                 'reviewed_by' => auth()->id(),
                 'reviewed_at' => now()->toDateTimeString(),
+                'coins_awarded' => $coinReward,
             ]);
         });
 
@@ -86,13 +99,13 @@ class MembershipApprovalService
             ]);
             $profile->save();
 
-            $profile->user->forceFill(['status' => 'rejected'])->saveQuietly();
+            $user = $profile->user;
 
-            if ($profile->user->profile) {
-                $profile->user->profile->forceFill([
-                    'membership_status' => 'rejected',
-                ])->saveQuietly();
-            }
+            $user?->forceFill(['status' => 'rejected'])->saveQuietly();
+
+            $user?->profile?->forceFill([
+                'membership_status' => 'rejected',
+            ])->saveQuietly();
 
             AuditLogService::log('membership_rejected', $profile, $oldValues, [
                 'onboarding_status' => 'rejected',

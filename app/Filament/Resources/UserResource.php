@@ -28,6 +28,8 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Users';
 
+    protected static ?int $navigationSort = 1;
+
     public static function table(Table $table): Table
     {
         return $table
@@ -70,6 +72,8 @@ class UserResource extends Resource
                         'suspended' => 'Suspended',
                     ]),
             ])
+            ->emptyStateHeading('No users found')
+            ->emptyStateDescription('No users match your filters.')
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ]);

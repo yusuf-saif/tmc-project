@@ -1,7 +1,7 @@
 <div class="space-y-6">
     <a href="{{ route('resources') }}" class="inline-flex items-center text-[13px] font-medium text-teal">&larr; Resources</a>
 
-    <section class="overflow-hidden rounded-[8px] bg-white p-5" style="border: 1px solid var(--border);">
+    <section class="overflow-hidden rounded-[8px] bg-white p-5" style="border:1px solid var(--border);">
         @if (in_array($resource->type, ['article', 'guide'], true))
             <h1 class="font-display text-[2rem] leading-none text-teal-dk">{{ $resource->title }}</h1>
             @if ($this->bodyContainsHtml())
@@ -15,11 +15,16 @@
             <p class="mt-4 text-sm font-light italic leading-7 text-ink-soft">{{ $resource->description }}</p>
 
             @if (! $isSaved)
-                <button type="button" wire:click="saveToDuaList" class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal transition" style="border: 1px solid #1A6B72; border-radius: 2px;">
+                <button type="button" wire:click="saveToDuaList"
+                        class="btn-teal-outline mt-6"
+                        wire:loading.attr="disabled">
                     ✦ Save to My Du'a List
                 </button>
             @else
-                <button type="button" wire:click="removeFromDuaList" class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk transition" style="background: var(--teal-lt); border: 1px solid var(--teal); border-radius: 2px;">
+                <button type="button" wire:click="removeFromDuaList"
+                        class="mt-6 inline-flex min-h-11 items-center justify-center px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk transition"
+                        style="background:var(--teal-lt);border:1px solid var(--teal);border-radius:var(--radius-sm);"
+                        wire:loading.attr="disabled">
                     ✦ Saved to Du'a List ✓
                 </button>
             @endif
@@ -27,10 +32,11 @@
             <h1 class="font-display text-[2rem] leading-none text-teal-dk">{{ $resource->title }}</h1>
             <p class="mt-3 text-sm font-light leading-7 text-ink-soft">{{ $resource->description }}</p>
             @if ($resource->file_path)
-                <a href="{{ Storage::url($resource->file_path) }}" target="_blank" class="mt-5 inline-flex min-h-11 items-center justify-center bg-gold px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-teal-dk transition" style="border-radius: 2px;">
+                <a href="{{ Storage::url($resource->file_path) }}" target="_blank"
+                   class="btn-gold-full mt-5" style="max-width:200px;">
                     Download PDF
                 </a>
-                <iframe src="{{ Storage::url($resource->file_path) }}" class="mt-4 h-96 w-full rounded-lg border" style="border-color: var(--border);"></iframe>
+                <iframe src="{{ Storage::url($resource->file_path) }}" class="pdf-preview"></iframe>
             @endif
         @elseif ($resource->type === 'audio')
             <h1 class="font-display text-[2rem] leading-none text-teal-dk">{{ $resource->title }}</h1>
@@ -44,7 +50,8 @@
             <h1 class="font-display text-[2rem] leading-none text-teal-dk">{{ $resource->title }}</h1>
             <p class="mt-3 text-sm font-light leading-7 text-ink-soft">{{ $resource->description }}</p>
             @if ($resource->external_url)
-                <a href="{{ $resource->external_url }}" target="_blank" rel="noreferrer" class="mt-5 inline-flex min-h-11 items-center justify-center bg-teal px-5 text-[12.5px] font-semibold uppercase tracking-[1.2px] text-white transition" style="border-radius: 2px;">
+                <a href="{{ $resource->external_url }}" target="_blank" rel="noreferrer"
+                   class="btn-teal-outline mt-5" style="text-decoration:none;">
                     Watch →
                 </a>
             @endif

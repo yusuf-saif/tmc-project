@@ -17,7 +17,7 @@
             @error('email') <p class="tmc-error">{{ $message }}</p> @enderror
         </div>
 
-        <button type="submit" class="tmc-button-gold">Email Reset Link</button>
+        <button type="submit" class="tmc-button-gold" x-data @click="$el.disabled=true;$el.textContent='Sending...'">Email Reset Link</button>
     </form>
 
     <p class="mt-6 text-center text-sm text-ink-soft">

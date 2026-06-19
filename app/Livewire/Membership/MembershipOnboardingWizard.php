@@ -5,7 +5,7 @@ namespace App\Livewire\Membership;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
-use App\Services\NotificationService;
+use App\Services\MembershipSubmissionService;
 use App\Services\OnboardingService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -304,10 +304,22 @@ class MembershipOnboardingWizard extends Component
             'tiktokUsername' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $profile = $this->onboardingService()->submitForReview(auth()->user(), $this->payload());
+        $user = auth()->user();
 
-        app(NotificationService::class)->notifyAdminsAboutSubmission($profile);
-        app(NotificationService::class)->notifyApplicantUnderReview($profile);
+        if (! $user) {
+            session()->flash('error', 'Authentication expired. Please log in again.');
+
+            return;
+        }
+
+        try {
+            app(MembershipSubmissionService::class)->submit($user, $this->payload());
+        } catch (\Throwable $e) {
+            report($e);
+            session()->flash('error', 'Submission failed. Please try again.');
+
+            return;
+        }
 
         session()->flash('membership_submitted', true);
 

@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Models\JannahCoinsLedger;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserReferral;
 use App\Services\AuditLogService;
@@ -38,18 +39,20 @@ class AwardReferralCoins
                 return;
             }
 
+            $amount = (int) Setting::getValue('referral_coins_amount', '25');
+
             JannahCoinsLedger::query()->create([
                 'user_id' => $referrer->id,
                 'type' => 'earned',
                 'reason' => 'referral',
-                'amount' => 25,
+                'amount' => $amount,
                 'reference_id' => $user->id,
             ]);
 
             AuditLogService::log('referral_coins_awarded', $referral, [], [
                 'referrer_id' => $referrer->id,
                 'referred_id' => $user->id,
-                'amount' => 25,
+                'amount' => $amount,
             ]);
         });
     }

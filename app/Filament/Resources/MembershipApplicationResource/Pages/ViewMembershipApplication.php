@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MembershipApplicationResource\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
+use App\Models\Setting;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -18,6 +19,8 @@ class ViewMembershipApplication extends ViewRecord
 
     public function infolist(Infolist $infolist): Infolist
     {
+        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
+
         return $infolist
             ->schema([
                 Section::make('Application Status')
@@ -46,8 +49,8 @@ class ViewMembershipApplication extends ViewRecord
                         TextEntry::make('first_name')->label('First Name'),
                         TextEntry::make('last_name')->label('Last Name'),
                         TextEntry::make('nickname')->label('Nickname'),
-                        TextEntry::make('user.name')->label('Account Name'),
-                        TextEntry::make('user.email')->label('Email'),
+                        TextEntry::make('user.name')->label('Account Name')->placeholder('N/A'),
+                        TextEntry::make('user.email')->label('Email')->placeholder('N/A'),
                     ])->columns(2),
 
                 Section::make('Location')
@@ -86,21 +89,43 @@ class ViewMembershipApplication extends ViewRecord
                     ->schema([
                         TextEntry::make('user.interests')
                             ->label('Interests')
-                            ->state(fn ($record): string => $record->user->interests->pluck('name')->join(', ') ?: 'None'),
+                            ->state(fn ($record): string => $record->user?->interests?->pluck('name')?->join(', ') ?: 'None'),
                         TextEntry::make('user.goals')
                             ->label('Goals')
-                            ->state(fn ($record): string => $record->user->goals->pluck('name')->join(', ') ?: 'None'),
+                            ->state(fn ($record): string => $record->user?->goals?->pluck('name')?->join(', ') ?: 'None'),
                     ]),
+
+                Section::make('Approval Preview')
+                    ->description('What happens when you approve this application')
+                    ->schema([
+                        TextEntry::make('coin_preview')
+                            ->label('Coin Reward')
+                            ->state(fn () => "{$coinReward} Jannah Coins will be credited to user wallet"),
+                        TextEntry::make('activation_preview')
+                            ->label('Account Activation')
+                            ->state(fn () => 'User status will be set to active'),
+                        TextEntry::make('membership_preview')
+                            ->label('Membership ID')
+                            ->state(fn () => 'A unique membership ID will be generated'),
+                    ])->columns(3)
+                    ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review'),
             ]);
     }
 
     protected function getHeaderActions(): array
     {
+        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
+
         return [
             Actions\Action::make('approve')
                 ->label('Approve')
                 ->color('success')
+                ->icon('heroicon-o-check-circle')
                 ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
+                ->requiresConfirmation()
+                ->modalHeading('Approve Membership Application')
+                ->modalDescription("This will activate the user's account and allocate {$coinReward} Jannah Coins.")
+                ->modalSubmitActionLabel('Yes, Approve')
                 ->form([
                     Select::make('membership_type')
                         ->label('Membership Type')
@@ -113,14 +138,23 @@ class ViewMembershipApplication extends ViewRecord
                 ])
                 ->action(function (array $data): void {
                     MembershipApplicationResource::approve($this->record, $data['membership_type']);
-                    Notification::make()->title('Application approved. Membership ID generated.')->success()->send();
+                    Notification::make()
+                        ->title('Application approved')
+                        ->body("Membership ID generated. {$coinReward} coins credited to user.")
+                        ->success()
+                        ->send();
                     $this->refreshFormData(['onboarding_status', 'membership_id', 'reviewed_at']);
                 }),
 
             Actions\Action::make('reject')
                 ->label('Reject')
                 ->color('danger')
+                ->icon('heroicon-o-x-circle')
                 ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
+                ->requiresConfirmation()
+                ->modalHeading('Reject Membership Application')
+                ->modalDescription('This action cannot be undone. The applicant will be notified.')
+                ->modalSubmitActionLabel('Yes, Reject')
                 ->form([
                     Textarea::make('reason')
                         ->label('Reason for rejection')

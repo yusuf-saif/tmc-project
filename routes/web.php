@@ -26,17 +26,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('landing'))->name('landing');
 Route::get('/offline', fn () => view('offline'))->name('offline');
-Route::get('/admin', function () {
-    if (auth()->check() && auth()->user()->hasAnyRole(['super_admin', 'admin', 'moderator', 'content_editor'])) {
-        return redirect('/admin/users');
-    }
-
-    if (auth()->check()) {
-        return redirect('/home');
-    }
-
-    return redirect('/admin/login');
-})->name('filament.admin.pages.dashboard');
 
 Route::middleware(['auth'])->prefix('membership')->name('membership.')->group(function () {
     Route::get('/onboarding', MembershipOnboardingWizard::class)->name('onboarding');

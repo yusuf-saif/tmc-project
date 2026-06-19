@@ -23,6 +23,8 @@ class AuditLogResource extends Resource
 
     protected static ?string $navigationLabel = 'Audit Logs';
 
+    protected static ?int $navigationSort = 1;
+
     public static function table(Table $table): Table
     {
         return $table
@@ -61,6 +63,8 @@ class AuditLogResource extends Resource
                             ->when($data['until'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date));
                     }),
             ])
+            ->emptyStateHeading('No audit logs')
+            ->emptyStateDescription('No activity has been recorded yet.')
             ->actions([])
             ->bulkActions([]);
     }

@@ -5,33 +5,17 @@
     <div class="greeting-card__bg"></div>
     <div class="greeting-card__overlay"></div>
     <div class="greeting-card__content">
-      <p style="font-family:var(--font-display);font-size:1.5rem;
-                color:white;line-height:1.25;margin-bottom:4px;">
-        {{ $greeting }}
-      </p>
-      <p style="font-family:var(--font-display);font-style:italic;
-                font-size:0.9rem;color:rgba(255,255,255,0.6);">
-        {{ $dailyPhrase }}
-      </p>
+      <p class="greeting-title">{{ $greeting }}</p>
+      <p class="greeting-subtitle">{{ $dailyPhrase }}</p>
     </div>
   </div>
 
   {{-- Announcement banner --}}
   @if($announcement)
-  <div class="anim-fade-up delay-1" style="margin: 10px 16px 0;">
-    <a href="{{ route('announcements.show', $announcement->slug) }}"
-       style="display:block;
-              background:linear-gradient(135deg,rgba(200,168,75,0.12),rgba(232,203,122,0.06));
-              border:1px solid rgba(200,168,75,0.3);
-              border-radius:var(--radius-md);padding:12px 14px;
-              text-decoration:none;">
-      <p style="font-size:10px;font-weight:600;text-transform:uppercase;
-                letter-spacing:1.5px;color:var(--gold);margin-bottom:4px;">
-        Announcement
-      </p>
-      <p style="font-size:0.875rem;font-weight:500;color:var(--ink);line-height:1.4;">
-        {{ \Illuminate\Support\Str::limit($announcement->title, 60) }}
-      </p>
+  <div class="anim-fade-up delay-1 page-pad" style="margin-top:10px;margin-bottom:0;">
+    <a href="{{ route('announcements.show', $announcement->slug) }}" class="announce-banner">
+      <p class="announce-label">Announcement</p>
+      <p class="announce-title">{{ \Illuminate\Support\Str::limit($announcement->title, 60) }}</p>
     </a>
   </div>
   @endif
@@ -39,28 +23,15 @@
   {{-- Coins card --}}
   <a href="{{ url('/profile?tab=wallet') }}" class="coins-card anim-fade-up delay-1">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:36px;height:36px;border-radius:50%;
-                  background:linear-gradient(135deg,#C8A84B,#E8CB7A);
-                  display:flex;align-items:center;justify-content:center;
-                  animation:pulse-gold 3s ease-in-out infinite;
-                  flex-shrink:0;">
+      <div class="coins-icon">
         <span style="font-size:14px;color:white;">✦</span>
       </div>
       <div>
-        <p style="font-family:var(--font-display);font-size:1.6rem;
-                  color:var(--gold);line-height:1;">
-          {{ number_format($balance) }}
-        </p>
-        <p style="font-size:10px;font-weight:600;text-transform:uppercase;
-                  letter-spacing:1.5px;color:var(--ink-soft);">
-          Jannah Coins
-        </p>
+        <p class="coins-amount">{{ number_format($balance) }}</p>
+        <p class="coins-label">Jannah Coins</p>
       </div>
     </div>
-    <span style="font-size:12px;font-weight:500;color:var(--teal);
-                 display:flex;align-items:center;gap:4px;">
-      Wallet →
-    </span>
+    <span class="coins-link">Wallet →</span>
   </a>
 
   {{-- Upcoming events --}}
@@ -108,9 +79,7 @@
   @else
   <div style="margin-bottom:16px;">
     <p class="section-label anim-fade-up delay-2">Upcoming Halaqahs</p>
-    <p class="page-pad anim-fade-up delay-2"
-       style="font-family:var(--font-display);font-style:italic;
-              font-size:1rem;color:var(--teal-md);padding-top:8px;">
+    <p class="page-pad event-empty anim-fade-up delay-2">
       No upcoming halaqahs — check back soon
     </p>
   </div>
@@ -129,7 +98,7 @@
       <span>Journal</span>
     </a>
 
-    <a href="{{ route('journal') }}" class="qa-tile">
+    <a href="{{ route('journal') }}?tab=duas" class="qa-tile">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" stroke-width="1.5"
            stroke-linecap="round" stroke-linejoin="round">
@@ -169,15 +138,8 @@
 
   {{-- Support TMC --}}
   <div class="page-pad anim-fade-up delay-4" style="margin-bottom:8px;">
-    <a href="{{ route('community') }}"
-       style="display:flex;align-items:center;justify-content:space-between;
-              background:var(--teal-lt);border-radius:var(--radius-md);
-              padding:14px 16px;text-decoration:none;
-              border:1px solid rgba(26,107,114,0.15);">
-      <span style="font-family:var(--font-body);font-size:0.875rem;
-                   font-weight:500;color:var(--teal);">
-        Support our sisterhood →
-      </span>
+    <a href="{{ route('community') }}" class="support-cta">
+      <span class="support-cta-text">Support our sisterhood →</span>
     </a>
   </div>
 
