@@ -3,10 +3,11 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class MembershipPaymentConfirmed extends Notification
+class MembershipPaymentConfirmed extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -22,11 +23,11 @@ class MembershipPaymentConfirmed extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Welcome to The Muhsinat Club')
+            ->subject('Welcome to The Muhsinat Club — Payment Confirmed')
             ->greeting('Assalamu Alaikum,')
             ->line('Your membership payment has been confirmed.')
             ->line("Your Membership ID: **{$this->membershipId}**")
-            ->line('You now have full access to your member dashboard.')
+            ->line('Your account is now active. You have full access to your member dashboard.')
             ->action('Go to Dashboard', url('/home'));
     }
 
@@ -34,7 +35,7 @@ class MembershipPaymentConfirmed extends Notification
     {
         return [
             'title' => 'Welcome to The Muhsinat Club',
-            'body' => 'Your payment is confirmed. You now have full access to your member dashboard.',
+            'body' => 'Your payment is confirmed. Your account is now active with full access.',
             'action_url' => '/home',
         ];
     }

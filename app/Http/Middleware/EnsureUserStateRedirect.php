@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserStateRedirect
@@ -69,6 +70,10 @@ class EnsureUserStateRedirect
         }
 
         // ── Unknown status — send to onboarding as safe fallback ────
+        Log::warning('EnsureUserStateRedirect: unknown status resolved', [
+            'user_id' => $user->id,
+            'resolved_status' => $status,
+        ]);
         return redirect()->route('membership.onboarding');
     }
 

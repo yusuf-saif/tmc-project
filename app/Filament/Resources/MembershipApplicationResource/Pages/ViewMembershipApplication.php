@@ -30,19 +30,29 @@ class ViewMembershipApplication extends ViewRecord
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
                                 'pending_review' => 'warning',
-                                'approved' => 'success',
+                                'approved_pending_payment' => 'info',
+                                'payment_submitted' => 'info',
                                 'active' => 'success',
                                 'rejected' => 'danger',
-                                'in_progress' => 'info',
+                                'needs_correction' => 'danger',
+                                'in_progress' => 'gray',
                                 default => 'gray',
                             })
                             ->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->title()),
                         TextEntry::make('membership_type')->label('Membership Type'),
-                        TextEntry::make('membership_id')->label('Membership ID'),
+                        TextEntry::make('membership_id')->label('Membership ID')
+                            ->copyable()
+                            ->copyMessage('ID copied'),
                         TextEntry::make('submitted_at')->label('Submitted At')->dateTime('d M Y H:i'),
                         TextEntry::make('reviewed_at')->label('Reviewed At')->dateTime('d M Y H:i'),
                         TextEntry::make('reviewer.name')->label('Reviewed By'),
-                    ])->columns(2),
+                        TextEntry::make('approved_at')->label('Approved At')->dateTime('d M Y H:i'),
+                        TextEntry::make('approver.name')->label('Approved By'),
+                        TextEntry::make('rejection_reason')->label('Rejection Reason')
+                            ->visible(fn ($record): bool => $record->onboarding_status === 'rejected' && $record->rejection_reason !== null),
+                        TextEntry::make('needs_correction_notes')->label('Correction Notes')
+                            ->visible(fn ($record): bool => $record->onboarding_status === 'needs_correction' && $record->needs_correction_notes !== null),
+                    ])->columns(3),
 
                 Section::make('Personal Details')
                     ->schema([
@@ -95,18 +105,27 @@ class ViewMembershipApplication extends ViewRecord
                             ->state(fn ($record): string => $record->user?->goals?->pluck('name')?->join(', ') ?: 'None'),
                     ]),
 
+                Section::make('Payment Details')
+                    ->schema([
+                        TextEntry::make('payment_submitted_at')->label('Payment Submitted At')->dateTime('d M Y H:i'),
+                        TextEntry::make('payment_proof_path')->label('Payment Proof')->url(fn ($state) => $state ? \Illuminate\Support\Facades\Storage::url($state) : null)->visible(fn ($state) => $state !== null),
+                        TextEntry::make('payment_verified_at')->label('Payment Verified At')->dateTime('d M Y H:i'),
+                        TextEntry::make('payment_verified_by')->label('Verified By'),
+                    ])->columns(2)
+                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['payment_submitted', 'active'], true)),
+
                 Section::make('Approval Preview')
                     ->description('What happens when you approve this application')
                     ->schema([
                         TextEntry::make('coin_preview')
                             ->label('Coin Reward')
                             ->state(fn () => "{$coinReward} Jannah Coins will be credited to user wallet"),
-                        TextEntry::make('activation_preview')
-                            ->label('Account Activation')
-                            ->state(fn () => 'User status will be set to active'),
                         TextEntry::make('membership_preview')
                             ->label('Membership ID')
                             ->state(fn () => 'A unique membership ID will be generated'),
+                        TextEntry::make('payment_preview')
+                            ->label('Payment Required')
+                            ->state(fn () => 'User will be prompted to complete payment before activation'),
                     ])->columns(3)
                     ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review'),
             ]);
@@ -124,7 +143,7 @@ class ViewMembershipApplication extends ViewRecord
                 ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
                 ->requiresConfirmation()
                 ->modalHeading('Approve Membership Application')
-                ->modalDescription("This will activate the user's account and allocate {$coinReward} Jannah Coins.")
+                ->modalDescription("This will generate a membership ID and transition the user to \"approved — pending payment\". {$coinReward} Jannah Coins will be credited.")
                 ->modalSubmitActionLabel('Yes, Approve')
                 ->form([
                     Select::make('membership_type')
@@ -140,10 +159,31 @@ class ViewMembershipApplication extends ViewRecord
                     MembershipApplicationResource::approve($this->record, $data['membership_type']);
                     Notification::make()
                         ->title('Application approved')
-                        ->body("Membership ID generated. {$coinReward} coins credited to user.")
+                        ->body("Membership ID generated. {$coinReward} coins credited. User must pay before activation.")
                         ->success()
                         ->send();
-                    $this->refreshFormData(['onboarding_status', 'membership_id', 'reviewed_at']);
+                    $this->refreshFormData(['onboarding_status', 'membership_id', 'reviewed_at', 'approved_at']);
+                }),
+
+            Actions\Action::make('needs_correction')
+                ->label('Request Correction')
+                ->color('warning')
+                ->icon('heroicon-o-pencil-square')
+                ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
+                ->requiresConfirmation()
+                ->modalHeading('Request Application Correction')
+                ->modalDescription('The applicant will be notified and asked to update their application.')
+                ->modalSubmitActionLabel('Send Request')
+                ->form([
+                    Textarea::make('notes')
+                        ->label('What needs to be corrected?')
+                        ->required()
+                        ->placeholder('Please specify what the applicant needs to update...'),
+                ])
+                ->action(function (array $data): void {
+                    MembershipApplicationResource::needsCorrection($this->record, $data['notes']);
+                    Notification::make()->title('Correction requested')->warning()->send();
+                    $this->refreshFormData(['onboarding_status', 'needs_correction_notes']);
                 }),
 
             Actions\Action::make('reject')
@@ -163,7 +203,26 @@ class ViewMembershipApplication extends ViewRecord
                 ->action(function (array $data): void {
                     MembershipApplicationResource::reject($this->record, $data['reason']);
                     Notification::make()->title('Application rejected')->danger()->send();
-                    $this->refreshFormData(['onboarding_status']);
+                    $this->refreshFormData(['onboarding_status', 'rejection_reason']);
+                }),
+
+            Actions\Action::make('confirm_payment')
+                ->label('Confirm Payment')
+                ->color('success')
+                ->icon('heroicon-o-banknotes')
+                ->visible(fn (): bool => $this->record->onboarding_status === 'payment_submitted')
+                ->requiresConfirmation()
+                ->modalHeading('Confirm Membership Payment')
+                ->modalDescription('This will activate the user\'s account and give them full access.')
+                ->modalSubmitActionLabel('Yes, Confirm Payment')
+                ->action(function (): void {
+                    MembershipApplicationResource::confirmPayment($this->record);
+                    Notification::make()
+                        ->title('Payment confirmed')
+                        ->body('User account activated. Full access granted.')
+                        ->success()
+                        ->send();
+                    $this->refreshFormData(['onboarding_status', 'payment_verified_at', 'activated_at']);
                 }),
         ];
     }

@@ -28,6 +28,13 @@ class SouqListing extends Model
         'archived' => 'Archived',
     ];
 
+    public const BILLING_STATUS_OPTIONS = [
+        'none' => 'None',
+        'active' => 'Active',
+        'expired' => 'Expired',
+        'suspended' => 'Suspended',
+    ];
+
     protected $fillable = [
         'user_id',
         'business_name',
@@ -43,13 +50,30 @@ class SouqListing extends Model
         'admin_note',
         'reviewed_by',
         'reviewed_at',
+        'billing_status',
+        'subscription_id',
+        'billing_start_date',
+        'billing_end_date',
+        'monthly_fee',
+        'last_billed_at',
+        'billing_suspended_at',
     ];
 
     protected function casts(): array
     {
         return [
             'reviewed_at' => 'datetime',
+            'billing_start_date' => 'datetime',
+            'billing_end_date' => 'datetime',
+            'last_billed_at' => 'datetime',
+            'billing_suspended_at' => 'datetime',
+            'monthly_fee' => 'decimal:2',
         ];
+    }
+
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class);
     }
 
     protected static function boot(): void

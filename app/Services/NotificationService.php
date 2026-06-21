@@ -11,6 +11,8 @@ use App\Models\Newsletter;
 use App\Models\User;
 use App\Notifications\MembershipApplicationSubmitted;
 use App\Notifications\MembershipApproved;
+use App\Notifications\MembershipNeedsCorrection;
+use App\Notifications\MembershipPaymentConfirmed;
 use App\Notifications\MembershipRejected;
 use App\Notifications\MembershipUnderReviewNotification;
 use Illuminate\Support\Collection;
@@ -18,7 +20,7 @@ use Illuminate\Support\Facades\Notification;
 
 class NotificationService
 {
-    // ─── Membership Notifications (existing) ───────────────────────
+    // ─── Membership Notifications ───────────────────────────────────
 
     public function notifyAdminsAboutSubmission(MemberProfile $profile): void
     {
@@ -36,12 +38,26 @@ class NotificationService
 
     public function notifyApplicantApproved(MemberProfile $profile, string $membershipId): void
     {
-        $profile->user->notify(new MembershipApproved($profile->user, $membershipId, $profile->membership_type ?? 'M'));
+        $profile->user->notify(new MembershipApproved(
+            $profile->user,
+            $membershipId,
+            $profile->membership_type ?? 'M',
+        ));
     }
 
     public function notifyApplicantRejected(MemberProfile $profile, string $reason): void
     {
         $profile->user->notify(new MembershipRejected($reason));
+    }
+
+    public function notifyApplicantNeedsCorrection(MemberProfile $profile, string $notes): void
+    {
+        $profile->user->notify(new MembershipNeedsCorrection($notes));
+    }
+
+    public function notifyApplicantPaymentConfirmed(MemberProfile $profile, string $membershipId): void
+    {
+        $profile->user->notify(new MembershipPaymentConfirmed($membershipId));
     }
 
     // ─── In-App Announcements ──────────────────────────────────────

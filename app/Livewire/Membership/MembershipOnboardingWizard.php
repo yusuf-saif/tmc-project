@@ -4,15 +4,15 @@ namespace App\Livewire\Membership;
 
 use App\Models\Goal;
 use App\Models\Interest;
-use App\Models\MemberProfile;
-use App\Services\MembershipSubmissionService;
-use App\Services\OnboardingService;
+use App\Services\MembershipApplicationService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class MembershipOnboardingWizard extends Component
 {
     public int $step = 1;
+
+    public bool $submitting = false;
 
     public string $firstName = '';
 
@@ -22,15 +22,9 @@ class MembershipOnboardingWizard extends Component
 
     public string $locationCountry = 'Nigeria';
 
-    public string $country = 'Nigeria';
-
     public string $locationState = '';
 
-    public string $state = '';
-
     public string $locationInternational = '';
-
-    public string $outsideNigeriaLocation = '';
 
     public string $ageGroup = '';
 
@@ -44,11 +38,7 @@ class MembershipOnboardingWizard extends Component
 
     public string $igUsername = '';
 
-    public string $instagramUsername = '';
-
     public string $fbUsername = '';
-
-    public string $facebookUsername = '';
 
     public string $xUsername = '';
 
@@ -78,92 +68,142 @@ class MembershipOnboardingWizard extends Component
         'widowed' => 'Widowed',
     ];
 
-    protected ?MemberProfile $profile = null;
+    
+    public $interestsList;
 
-    protected function onboardingService(): OnboardingService
-    {
-        return app(OnboardingService::class);
-    }
+    public $goalsList;
 
-    protected function profile(): MemberProfile
-    {
-        return $this->profile ??= $this->onboardingService()->resolveForUser(auth()->user());
-    }
-
-    public function mount(): void
+    public function mount(MembershipApplicationService $service): void
     {
         $user = auth()->user();
-        $this->profile = $this->onboardingService()->resolveForUser($user);
 
-        if (in_array($this->profile()->onboarding_status, ['pending_review', 'approved', 'active'], true)) {
+        if (! $user) {
+            $this->redirectRoute('login');
+
+            return;
+        }
+
+        $result = $service->loadOrCreateDraft($user);
+
+        if (in_array($result['profile']->onboarding_status, ['pending_review', 'submitted', 'approved', 'active'], true)) {
             $this->redirectRoute('membership.pending', navigate: true);
 
             return;
         }
 
-        $this->step = max(1, (int) ($this->profile()->onboarding_step ?: 1));
-        $this->loadStateFromProfile($user);
+        $this->step = $result['step'];
+
+        $draft = $result['draft'];
+        $profile = $result['profile'];
+        $legacy = $user->profile;
+
+        $this->firstName = $draft['first_name'] ?? $profile?->first_name ?? $legacy?->first_name ?? '';
+        $this->lastName = $draft['last_name'] ?? $profile?->last_name ?? $legacy?->last_name ?? '';
+        $this->nickname = $draft['nickname'] ?? $profile?->nickname ?? $legacy?->nickname ?? '';
+        $this->locationCountry = $draft['location_country'] ?? $draft['country'] ?? $profile?->location_country ?? $legacy?->country ?? 'Nigeria';
+        $this->locationState = $draft['location_state'] ?? $draft['state'] ?? $profile?->location_state ?? $legacy?->state ?? '';
+        $this->locationInternational = $draft['location_international'] ?? $draft['outside_nigeria_location'] ?? $profile?->location_international ?? $legacy?->outside_nigeria_location ?? '';
+        $this->ageGroup = $draft['age_group'] ?? $profile?->age_group ?? $legacy?->age_group ?? '';
+        $this->maritalStatus = $draft['marital_status'] ?? $profile?->marital_status ?? $legacy?->marital_status ?? '';
+        $this->phone = $draft['phone'] ?? $profile?->phone ?? $legacy?->phone ?? '';
+        $this->igUsername = $draft['ig_username'] ?? $draft['instagram_username'] ?? $profile?->ig_username ?? $legacy?->instagram_username ?? '';
+        $this->fbUsername = $draft['fb_username'] ?? $draft['facebook_username'] ?? $profile?->fb_username ?? $legacy?->facebook_username ?? '';
+        $this->xUsername = $draft['x_username'] ?? $profile?->x_username ?? $legacy?->x_username ?? '';
+        $this->tiktokUsername = $draft['tiktok_username'] ?? $profile?->tiktok_username ?? $legacy?->tiktok_username ?? '';
+
+        $this->selectedInterests = $result['interests'];
+        $this->selectedGoals = $result['goals'];
+
+        $this->interestsList = Interest::query()->where('is_active', true)->orderBy('sort_order')->get();
+        $this->goalsList = Goal::query()->where('is_active', true)->orderBy('id')->get();
     }
 
-    public function updated($name): void
+    public function toggleInterest(string $slug): void
     {
-        if ($name === 'country') {
-            $this->locationCountry = $this->country;
+        if (in_array($slug, $this->selectedInterests, true)) {
+            $this->selectedInterests = array_values(array_filter($this->selectedInterests, fn ($s): bool => $s !== $slug));
+        } elseif (count($this->selectedInterests) < 5) {
+            $this->selectedInterests[] = $slug;
+        }
+    }
+
+    public function toggleGoal(string $slug): void
+    {
+        if (in_array($slug, $this->selectedGoals, true)) {
+            $this->selectedGoals = array_values(array_filter($this->selectedGoals, fn ($s): bool => $s !== $slug));
+        } else {
+            $this->selectedGoals[] = $slug;
+        }
+    }
+
+    public function nextStep(MembershipApplicationService $service): void
+    {
+        $this->validateCurrentStep();
+
+        if ($this->step < 6) {
+            $this->step++;
         }
 
-        if ($name === 'state') {
-            $this->locationState = $this->state;
-        }
+        $service->saveStep(auth()->user(), $this->payload(), $this->step);
+    }
 
-        if ($name === 'outsideNigeriaLocation') {
-            $this->locationInternational = $this->outsideNigeriaLocation;
-        }
+    public function previousStep(): void
+    {
+        $this->step = max(1, $this->step - 1);
+    }
 
-        if ($name === 'instagramUsername') {
-            $this->igUsername = $this->instagramUsername;
-        }
+    public function submit(MembershipApplicationService $service): void
+    {
+        $this->validate([
+            'firstName' => ['required', 'string', 'max:255'],
+            'lastName' => ['required', 'string', 'max:255'],
+            'locationCountry' => ['required', 'string', 'max:255'],
+            'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
+            'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
+            'ageGroup' => ['required', 'string', 'max:50'],
+            'maritalStatus' => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:30'],
+            'selectedInterests' => ['array', 'min:1', 'max:5'],
+            'selectedGoals' => ['array', 'min:1'],
+            'igUsername' => ['nullable', 'string', 'max:255'],
+            'fbUsername' => ['nullable', 'string', 'max:255'],
+            'xUsername' => ['nullable', 'string', 'max:255'],
+            'tiktokUsername' => ['nullable', 'string', 'max:255'],
+        ]);
 
-        if ($name === 'facebookUsername') {
-            $this->fbUsername = $this->facebookUsername;
-        }
+        $user = auth()->user();
 
-        if (! in_array($name, [
-            'firstName', 'lastName', 'nickname', 'locationCountry', 'locationState', 'locationInternational',
-            'ageGroup', 'maritalStatus', 'phone', 'igUsername', 'fbUsername', 'xUsername', 'tiktokUsername',
-            'selectedInterests', 'selectedGoals', 'country', 'state', 'outsideNigeriaLocation', 'instagramUsername', 'facebookUsername',
-        ], true)) {
+        if (! $user) {
+            session()->flash('error', 'Authentication expired. Please log in again.');
+
             return;
         }
 
-        $this->autoSave();
+        $this->submitting = true;
+
+        try {
+            $profile = $service->submit($user, $this->payload());
+            $service->dispatchSubmittedEvent($profile, $user);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->submitting = false;
+            session()->flash('error', 'Submission failed. Please try again.');
+
+            return;
+        }
+
+        session()->flash('membership_submitted', true);
+
+        $this->redirectRoute('membership.pending', navigate: true);
     }
 
-    protected function loadStateFromProfile($user): void
+    public function getProgressPercentageProperty(): int
     {
-        $legacy = $user->profile;
+        return (int) round(($this->step / 6) * 100);
+    }
 
-        $this->firstName = $this->profile->first_name ?? $legacy?->first_name ?? '';
-        $this->lastName = $this->profile->last_name ?? $legacy?->last_name ?? '';
-        $this->nickname = $this->profile->nickname ?? $legacy?->nickname ?? '';
-        $this->locationCountry = $this->profile->location_country ?? $legacy?->country ?? 'Nigeria';
-        $this->country = $this->locationCountry;
-        $this->locationState = $this->profile->location_state ?? $legacy?->state ?? '';
-        $this->state = $this->locationState;
-        $this->locationInternational = $this->profile->location_international ?? $legacy?->outside_nigeria_location ?? '';
-        $this->outsideNigeriaLocation = $this->locationInternational;
-        $this->ageGroup = $this->profile->age_group ?? $legacy?->age_group ?? '';
-        $this->maritalStatus = $this->profile->marital_status ?? $legacy?->marital_status ?? '';
-        $this->phone = $this->profile->phone ?? $legacy?->phone ?? '';
-        $this->igUsername = $this->profile->ig_username ?? $legacy?->instagram_username ?? '';
-        $this->instagramUsername = $this->igUsername;
-        $this->fbUsername = $this->profile->fb_username ?? $legacy?->facebook_username ?? '';
-        $this->facebookUsername = $this->fbUsername;
-        $this->xUsername = $this->profile->x_username ?? $legacy?->x_username ?? '';
-        $this->tiktokUsername = $this->profile->tiktok_username ?? $legacy?->tiktok_username ?? '';
-
-        $user->loadMissing(['interests:id,slug', 'goals:id,slug']);
-        $this->selectedInterests = $user->interests->pluck('slug')->all();
-        $this->selectedGoals = $user->goals->pluck('slug')->all();
+    public function pingAutoSave(): void
+    {
     }
 
     protected function payload(): array
@@ -184,68 +224,7 @@ class MembershipOnboardingWizard extends Component
             'tiktok_username' => $this->tiktokUsername,
             'selected_interests' => $this->selectedInterests,
             'selected_goals' => $this->selectedGoals,
-            'interest_ids' => Interest::query()->whereIn('slug', $this->selectedInterests)->pluck('id')->all(),
-            'goal_ids' => Goal::query()->whereIn('slug', $this->selectedGoals)->pluck('id')->all(),
         ];
-    }
-
-    protected function autoSave(): void
-    {
-        if (in_array($this->profile()->onboarding_status, ['pending_review', 'approved', 'active'], true)) {
-            return;
-        }
-
-        $this->onboardingService()->saveProgress(auth()->user(), $this->payload(), $this->step);
-    }
-
-    public function toggleInterest(string $slug): void
-    {
-        if (in_array($slug, $this->selectedInterests, true)) {
-            $this->selectedInterests = array_values(array_filter($this->selectedInterests, fn ($selected): bool => $selected !== $slug));
-            $this->autoSave();
-
-            return;
-        }
-
-        if (count($this->selectedInterests) >= 5) {
-            return;
-        }
-
-        $this->selectedInterests[] = $slug;
-        $this->autoSave();
-    }
-
-    public function toggleGoal(string $slug): void
-    {
-        if (in_array($slug, $this->selectedGoals, true)) {
-            $this->selectedGoals = array_values(array_filter($this->selectedGoals, fn ($selected): bool => $selected !== $slug));
-            $this->autoSave();
-
-            return;
-        }
-
-        $this->selectedGoals[] = $slug;
-        $this->autoSave();
-    }
-
-    public function nextStep(): void
-    {
-        $this->validateCurrentStep();
-        $this->autoSave();
-
-        if ($this->step < 6) {
-            $this->step++;
-        }
-    }
-
-    public function previousStep(): void
-    {
-        $this->step = max(1, $this->step - 1);
-    }
-
-    public function getProgressPercentageProperty(): int
-    {
-        return (int) round(($this->step / 6) * 100);
     }
 
     protected function validateCurrentStep(): void
@@ -262,19 +241,19 @@ class MembershipOnboardingWizard extends Component
                 'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
                 'ageGroup' => ['required', 'string', 'max:50'],
                 'maritalStatus' => ['required', 'string', 'max:50'],
-                'phone' => ['nullable', 'string', 'max:30'],
             ],
             3 => [
-                'selectedInterests' => ['array', 'min:1', 'max:5'],
+                'phone' => ['required', 'string', 'max:30'],
             ],
             4 => [
-                'selectedGoals' => ['array', 'min:1'],
-            ],
-            5 => [
                 'igUsername' => ['nullable', 'string', 'max:255'],
                 'fbUsername' => ['nullable', 'string', 'max:255'],
                 'xUsername' => ['nullable', 'string', 'max:255'],
                 'tiktokUsername' => ['nullable', 'string', 'max:255'],
+            ],
+            5 => [
+                'selectedInterests' => ['array', 'min:1', 'max:5'],
+                'selectedGoals' => ['array', 'min:1'],
             ],
             default => [],
         };
@@ -284,58 +263,11 @@ class MembershipOnboardingWizard extends Component
         }
     }
 
-    public function submit(): void
-    {
-        $this->validate([
-            'firstName' => ['required', 'string', 'max:255'],
-            'lastName' => ['required', 'string', 'max:255'],
-            'nickname' => ['nullable', 'string', 'max:255'],
-            'locationCountry' => ['required', 'string', 'max:255'],
-            'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
-            'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
-            'ageGroup' => ['required', 'string', 'max:50'],
-            'maritalStatus' => ['required', 'string', 'max:50'],
-            'phone' => ['nullable', 'string', 'max:30'],
-            'selectedInterests' => ['array', 'min:1', 'max:5'],
-            'selectedGoals' => ['array', 'min:1'],
-            'igUsername' => ['nullable', 'string', 'max:255'],
-            'fbUsername' => ['nullable', 'string', 'max:255'],
-            'xUsername' => ['nullable', 'string', 'max:255'],
-            'tiktokUsername' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $user = auth()->user();
-
-        if (! $user) {
-            session()->flash('error', 'Authentication expired. Please log in again.');
-
-            return;
-        }
-
-        try {
-            app(MembershipSubmissionService::class)->submit($user, $this->payload());
-        } catch (\Throwable $e) {
-            report($e);
-            session()->flash('error', 'Submission failed. Please try again.');
-
-            return;
-        }
-
-        session()->flash('membership_submitted', true);
-
-        $this->redirectRoute('membership.pending', navigate: true);
-    }
-
-    public function pingAutoSave(): void
-    {
-        // No-op: used by wire:poll to confirm the component is alive
-    }
-
     public function render()
     {
         return view('livewire.membership.onboarding-wizard', [
-            'interests' => Interest::query()->where('is_active', true)->orderBy('sort_order')->get(),
-            'goals' => Goal::query()->where('is_active', true)->orderBy('id')->get(),
+            'interests' => $this->interestsList ?? Interest::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'goals' => $this->goalsList ?? Goal::query()->where('is_active', true)->orderBy('id')->get(),
         ])->layout('layouts.guest-livewire', [
             'title' => 'Onboarding',
         ]);

@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class MembershipApplicationResource extends Resource
 {
@@ -27,7 +28,12 @@ class MembershipApplicationResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->where('onboarding_status', 'pending_review')->with('user'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('onboarding_status', [
+                'pending_review',
+                'approved_pending_payment',
+                'payment_submitted',
+                'needs_correction',
+            ])->with('user'))
             ->defaultSort('submitted_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
@@ -37,26 +43,36 @@ class MembershipApplicationResource extends Resource
                 Tables\Columns\TextColumn::make('user.email')
                     ->label('Email')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('onboarding_status')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending_review' => 'warning',
+                        'approved_pending_payment' => 'info',
+                        'payment_submitted' => 'info',
+                        'needs_correction' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->title()),
                 Tables\Columns\TextColumn::make('location_country')
                     ->label('Location')
                     ->state(fn (MemberProfile $record): string => $record->location_country === 'Nigeria'
                         ? trim(($record->location_state ?? '').', Nigeria', ', ')
                         : ($record->location_international ?? '')),
-                Tables\Columns\TextColumn::make('age_group')
-                    ->label('Age Group')
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'under_18' => 'Under 18',
-                        '18_24' => '18 - 24',
-                        '25_34' => '25 - 34',
-                        '35_44' => '35 - 44',
-                        '45_54' => '45 - 54',
-                        '55_above' => '55+',
-                        default => $state ?? 'N/A',
-                    }),
                 Tables\Columns\TextColumn::make('submitted_at')
                     ->label('Submitted')
                     ->dateTime('d M Y H:i')
                     ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('onboarding_status')
+                    ->label('Status')
+                    ->options([
+                        'pending_review' => 'Pending Review',
+                        'approved_pending_payment' => 'Approved (Pending Payment)',
+                        'payment_submitted' => 'Payment Submitted',
+                        'needs_correction' => 'Needs Correction',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -77,7 +93,18 @@ class MembershipApplicationResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['super_admin', 'admin', 'moderator']) ?? false;
+        $user = auth()->user();
+
+        $allowed = $user?->hasAnyRole(['super_admin', 'admin', 'moderator']) ?? false;
+
+        if (! $allowed && $user) {
+            Log::warning('Unauthorized Filament access attempt to MembershipApplicationResource', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        }
+
+        return $allowed;
     }
 
     public static function canCreate(): bool
@@ -125,5 +152,31 @@ class MembershipApplicationResource extends Resource
         }
 
         app(MembershipApprovalService::class)->reject($profile, $reason);
+    }
+
+    public static function needsCorrection(MemberProfile|UserProfile $profile, string $notes): void
+    {
+        if ($profile instanceof UserProfile) {
+            return;
+        }
+
+        app(MembershipApprovalService::class)->needsCorrection($profile, $notes);
+    }
+
+    public static function confirmPayment(MemberProfile|UserProfile $profile): void
+    {
+        if ($profile instanceof UserProfile) {
+            $profile->update([
+                'membership_status' => 'active',
+                'payment_status' => 'paid',
+                'membership_fee_paid_at' => now(),
+            ]);
+
+            $profile->user?->forceFill(['status' => 'active'])->saveQuietly();
+
+            return;
+        }
+
+        app(MembershipApprovalService::class)->confirmPayment($profile);
     }
 }

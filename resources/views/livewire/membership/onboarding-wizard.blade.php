@@ -92,58 +92,28 @@
                 </select>
                 @error('maritalStatus') <p class="tmc-error">{{ $message }}</p> @enderror
             </div>
+        </div>
+
+        @elseif ($step === 3)
+        <div class="space-y-5">
+            <div>
+                <h1 class="font-display text-4xl leading-none text-teal-dk">Contact Details</h1>
+                <p class="mt-3 text-sm font-light leading-7 text-ink-soft">How can we reach you?</p>
+            </div>
 
             <div>
-                <label class="tmc-label" for="phone">Phone Number</label>
+                <label class="tmc-label" for="email">Email</label>
+                <input id="email" type="email" value="{{ auth()->user()->email }}" class="tmc-input" readonly style="background:#F5F3EE;color:#6B6B6B;cursor:not-allowed;">
+            </div>
+
+            <div>
+                <label class="tmc-label" for="phone">Phone Number *</label>
                 <input id="phone" type="text" wire:model="phone" class="tmc-input" placeholder="+234 800 000 0000">
                 @error('phone') <p class="tmc-error">{{ $message }}</p> @enderror
             </div>
         </div>
 
-        @elseif ($step === 3)
-        <div class="space-y-6">
-            <div>
-                <h1 class="font-display text-4xl leading-none text-teal-dk">Interests</h1>
-                <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Select up to five interests.</p>
-            </div>
-
-            <div>
-                <div class="flex flex-wrap gap-3">
-                    @foreach ($interests as $interest)
-                        @php($selected = in_array($interest->slug, $selectedInterests, true))
-                        <button type="button" wire:click="toggleInterest('{{ $interest->slug }}')" class="px-4 py-3 text-sm font-semibold transition" style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#1A6B72' : '#FAF8F3' }}; color: {{ $selected ? '#FFFFFF' : '#3D3A35' }}; border-radius: 999px;">
-                            {{ $interest->name }}
-                        </button>
-                    @endforeach
-                </div>
-                <div class="mt-2 flex items-center justify-between text-sm text-ink-soft">
-                    <p>{{ count($selectedInterests) }}/5 selected</p>
-                    @error('selectedInterests') <p class="tmc-error mt-0">{{ $message }}</p> @enderror
-                </div>
-            </div>
-        </div>
-
         @elseif ($step === 4)
-        <div class="space-y-6">
-            <div>
-                <h1 class="font-display text-4xl leading-none text-teal-dk">Goals</h1>
-                <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Select the goals that matter most to you.</p>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                @foreach ($goals as $goal)
-                    @php($selected = in_array($goal->slug, $selectedGoals, true))
-                    <div wire:click="toggleGoal('{{ $goal->slug }}')" class="cursor-pointer rounded-lg p-4 transition" style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#D6EDEF' : '#FFFFFF' }}; border-radius: 8px;">
-                        <span class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">GOAL</span>
-                        <h3 class="font-display text-[1.4rem] text-teal-dk">{{ $goal->name }}</h3>
-                        <p class="text-sm text-ink-soft">{{ $goal->description ?? '' }}</p>
-                    </div>
-                @endforeach
-            </div>
-            @error('selectedGoals') <p class="tmc-error">{{ $message }}</p> @enderror
-        </div>
-
-        @elseif ($step === 5)
         <div class="space-y-5">
             <div>
                 <h1 class="font-display text-4xl leading-none text-teal-dk">Social Media</h1>
@@ -175,6 +145,45 @@
             </div>
         </div>
 
+        @elseif ($step === 5)
+        <div class="space-y-6">
+            <div>
+                <h1 class="font-display text-4xl leading-none text-teal-dk">Interests & Goals</h1>
+                <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Select your interests and goals for your membership journey.</p>
+            </div>
+
+            <div>
+                <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold mb-3">Interests (up to 5)</h4>
+                <div class="flex flex-wrap gap-3">
+                    @foreach ($interests as $interest)
+                        @php($selected = in_array($interest->slug, $selectedInterests, true))
+                        <button type="button" wire:click="toggleInterest('{{ $interest->slug }}')" class="px-4 py-3 text-sm font-semibold transition" style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#1A6B72' : '#FAF8F3' }}; color: {{ $selected ? '#FFFFFF' : '#3D3A35' }}; border-radius: 999px;">
+                            {{ $interest->name }}
+                        </button>
+                    @endforeach
+                </div>
+                <div class="mt-2 flex items-center justify-between text-sm text-ink-soft">
+                    <p>{{ count($selectedInterests) }}/5 selected</p>
+                    @error('selectedInterests') <p class="tmc-error mt-0">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold mb-3">Goals</h4>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    @foreach ($goals as $goal)
+                        @php($selected = in_array($goal->slug, $selectedGoals, true))
+                        <div wire:click="toggleGoal('{{ $goal->slug }}')" class="cursor-pointer rounded-lg p-4 transition" style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#D6EDEF' : '#FFFFFF' }}; border-radius: 8px;">
+                            <span class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">GOAL</span>
+                            <h3 class="font-display text-[1.4rem] text-teal-dk">{{ $goal->name }}</h3>
+                            <p class="text-sm text-ink-soft">{{ $goal->description ?? '' }}</p>
+                        </div>
+                    @endforeach
+                </div>
+                @error('selectedGoals') <p class="tmc-error">{{ $message }}</p> @enderror
+            </div>
+        </div>
+
         @elseif ($step === 6)
         <div class="space-y-6">
             <div>
@@ -196,6 +205,11 @@
                 <div class="border-b border-ivory pb-3">
                     <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Demographics</h4>
                     <p class="text-ink-md">{{ $ageGroups[$ageGroup] ?? $ageGroup }} | {{ $maritalStatuses[$maritalStatus] ?? $maritalStatus }}</p>
+                </div>
+
+                <div class="border-b border-ivory pb-3">
+                    <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Contact</h4>
+                    <p class="text-ink-md">{{ auth()->user()->email }}</p>
                     <p class="text-ink-md">{{ $phone ?: 'Not provided' }}</p>
                 </div>
 
@@ -233,8 +247,12 @@
                     Continue
                 </button>
             @else
-                <button type="button" wire:click="submit" class="tmc-button-gold max-w-[180px]">
-                    Submit for Review
+                <button type="button" wire:click="submit" class="tmc-button-gold max-w-[180px]" @disabled($submitting)>
+                    @if ($submitting)
+                        Submitting...
+                    @else
+                        Submit for Review
+                    @endif
                 </button>
             @endif
         </div>

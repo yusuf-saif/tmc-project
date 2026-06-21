@@ -19,8 +19,14 @@ class PendingReview extends Component
         }
 
         if ($profile instanceof MemberProfile) {
-            if (in_array($profile->onboarding_status, ['draft', 'in_progress', 'rejected'], true)) {
+            if (in_array($profile->onboarding_status, ['draft', 'in_progress', 'rejected', 'needs_correction'], true)) {
                 $this->redirectRoute('membership.onboarding', navigate: true);
+
+                return;
+            }
+
+            if (in_array($profile->onboarding_status, ['approved_pending_payment', 'payment_submitted'], true)) {
+                $this->redirectRoute('membership.payment', navigate: true);
 
                 return;
             }
@@ -35,7 +41,7 @@ class PendingReview extends Component
                 return;
             }
         } else {
-            if (in_array($profile->membership_status, ['draft', null], true)) {
+            if (in_array($profile->membership_status, ['draft', 'in_progress', null], true)) {
                 $this->redirectRoute('membership.onboarding', navigate: true);
 
                 return;
@@ -47,7 +53,7 @@ class PendingReview extends Component
                 return;
             }
 
-            if ($profile->membership_status === 'approved_pending_payment') {
+            if (in_array($profile->membership_status, ['approved_pending_payment', 'payment_submitted'], true)) {
                 $this->redirectRoute('membership.payment', navigate: true);
 
                 return;

@@ -33,7 +33,15 @@ class MemberProfile extends Model
         'reviewed_by',
         'reviewed_at',
         'rejection_reason',
+        'needs_correction_notes',
         'submitted_at',
+        'approved_by',
+        'approved_at',
+        'payment_submitted_at',
+        'payment_proof_path',
+        'payment_verified_by',
+        'payment_verified_at',
+        'activated_at',
     ];
 
     protected function casts(): array
@@ -43,6 +51,10 @@ class MemberProfile extends Model
             'hijri_year' => 'integer',
             'reviewed_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'payment_submitted_at' => 'datetime',
+            'payment_verified_at' => 'datetime',
+            'activated_at' => 'datetime',
         ];
     }
 
@@ -54,5 +66,15 @@ class MemberProfile extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function paymentVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payment_verified_by');
     }
 }
