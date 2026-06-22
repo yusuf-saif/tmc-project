@@ -5,6 +5,8 @@ namespace App\Livewire\Membership;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Services\MembershipApplicationService;
+use App\Services\MembershipRegistrationService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -86,7 +88,7 @@ class MembershipOnboardingWizard extends Component
         $result = $service->loadOrCreateDraft($user);
 
         if (in_array($result['profile']->onboarding_status, ['pending_review', 'submitted', 'approved', 'active'], true)) {
-            $this->redirectRoute('membership.pending', navigate: true);
+        $this->redirect(route('membership.pending'));
 
             return;
         }
@@ -152,7 +154,7 @@ class MembershipOnboardingWizard extends Component
         $this->step = max(1, $this->step - 1);
     }
 
-    public function submit(MembershipApplicationService $service): void
+    public function submit(MembershipRegistrationService $service): void
     {
         $this->validate([
             'firstName' => ['required', 'string', 'max:255'],
@@ -182,10 +184,12 @@ class MembershipOnboardingWizard extends Component
         $this->submitting = true;
 
         try {
-            $profile = $service->submit($user, $this->payload());
-            $service->dispatchSubmittedEvent($profile, $user);
+            $service->register($user, $this->payload());
         } catch (\Throwable $e) {
-            report($e);
+            Log::error('MembershipOnboardingWizard: submit failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
             $this->submitting = false;
             session()->flash('error', 'Submission failed. Please try again.');
 
@@ -194,7 +198,7 @@ class MembershipOnboardingWizard extends Component
 
         session()->flash('membership_submitted', true);
 
-        $this->redirectRoute('membership.pending', navigate: true);
+        $this->redirect(route('membership.pending'));
     }
 
     public function getProgressPercentageProperty(): int

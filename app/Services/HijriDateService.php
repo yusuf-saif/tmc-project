@@ -84,22 +84,31 @@ class HijriDateService
 
     public function convertToGregorian(int $year, int $month, int $day): Carbon
     {
-        if (class_exists(\IntlCalendar::class)) {
-            $cal = \IntlCalendar::createInstance(null, 'ar_SA@calendar=islamic');
-            $cal->set($year, $month - 1, $day);
-            $gregorianYear = $cal->get(\IntlCalendar::FIELD_EXTENDED_YEAR);
-            $gregorianMonth = $cal->get(\IntlCalendar::FIELD_MONTH) + 1;
-            $gregorianDay = $cal->get(\IntlCalendar::FIELD_DAY_OF_MONTH);
+        try {
+            if (class_exists(\IntlCalendar::class)) {
+                $cal = \IntlCalendar::createInstance(null, 'ar_SA@calendar=islamic');
+                $cal->set($year, $month - 1, $day);
+                $gregorianYear = $cal->get(\IntlCalendar::FIELD_EXTENDED_YEAR);
+                $gregorianMonth = $cal->get(\IntlCalendar::FIELD_MONTH) + 1;
+                $gregorianDay = $cal->get(\IntlCalendar::FIELD_DAY_OF_MONTH);
 
-            $gregorianCal = \IntlCalendar::createInstance(null, 'gregorian');
-            $gregorianCal->set($gregorianYear, $gregorianMonth - 1, $gregorianDay);
+                $gregorianCal = \IntlCalendar::createInstance(null, 'gregorian');
+                $gregorianCal->set($gregorianYear, $gregorianMonth - 1, $gregorianDay);
 
-            return Carbon::create(
-                $gregorianCal->get(\IntlCalendar::FIELD_YEAR),
-                $gregorianCal->get(\IntlCalendar::FIELD_MONTH) + 1,
-                $gregorianCal->get(\IntlCalendar::FIELD_DAY_OF_MONTH),
-                0, 0, 0
-            );
+                return Carbon::create(
+                    $gregorianCal->get(\IntlCalendar::FIELD_YEAR),
+                    $gregorianCal->get(\IntlCalendar::FIELD_MONTH) + 1,
+                    $gregorianCal->get(\IntlCalendar::FIELD_DAY_OF_MONTH),
+                    0, 0, 0
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('HijriDateService: IntlCalendar conversion failed, using approximation', [
+                'year' => $year,
+                'month' => $month,
+                'day' => $day,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $this->convertApproximate($year, $month, $day);

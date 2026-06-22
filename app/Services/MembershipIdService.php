@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MembershipSerial;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MembershipIdService
 {
@@ -36,10 +37,16 @@ class MembershipIdService
 
     public static function getCurrentHijriYear(): int
     {
-        if (class_exists(\IntlCalendar::class)) {
-            $calendar = \IntlCalendar::createInstance(null, 'ar_SA@calendar=islamic');
+        try {
+            if (class_exists(\IntlCalendar::class)) {
+                $calendar = \IntlCalendar::createInstance(null, 'ar_SA@calendar=islamic');
 
-            return $calendar->get(\IntlCalendar::FIELD_YEAR);
+                return $calendar->get(\IntlCalendar::FIELD_YEAR);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('MembershipIdService: IntlCalendar failed, using fallback', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return (int) floor(((int) date('Y') - 622) * (33 / 32));
@@ -51,32 +58,41 @@ class MembershipIdService
         $hijriYear = self::getCurrentHijriYear();
         $typeCode = self::getTypeCode($membershipType);
 
-        return DB::transaction(function () use ($membershipType, $hijriYear, $typeCode) {
-            $counter = MembershipSerial::query()
-                ->where('membership_type', $membershipType)
-                ->where('hijri_year', $hijriYear)
-                ->lockForUpdate()
-                ->first();
+        try {
+            return DB::transaction(function () use ($membershipType, $hijriYear, $typeCode) {
+                $counter = MembershipSerial::query()
+                    ->where('membership_type', $membershipType)
+                    ->where('hijri_year', $hijriYear)
+                    ->lockForUpdate()
+                    ->first();
 
-            if (! $counter) {
-                $counter = MembershipSerial::query()->create([
-                    'membership_type' => $membershipType,
-                    'hijri_year' => $hijriYear,
-                    'last_serial' => 0,
-                ]);
-            }
+                if (! $counter) {
+                    $counter = MembershipSerial::query()->create([
+                        'membership_type' => $membershipType,
+                        'hijri_year' => $hijriYear,
+                        'last_serial' => 0,
+                    ]);
+                }
 
-            $counter->increment('last_serial');
-            $serial = $counter->last_serial;
+                $counter->increment('last_serial');
+                $serial = $counter->last_serial;
 
-            $membershipId = sprintf('TMC-%s-%d-%03d', $typeCode, $hijriYear, $serial);
+                $membershipId = sprintf('TMC-%s-%d-%03d', $typeCode, $hijriYear, $serial);
 
-            return [
-                'membership_id' => $membershipId,
-                'membership_serial' => $serial,
-                'membership_hijri_year' => $hijriYear,
-                'membership_type' => $typeCode,
-            ];
-        });
+                return [
+                    'membership_id' => $membershipId,
+                    'membership_serial' => $serial,
+                    'membership_hijri_year' => $hijriYear,
+                    'membership_type' => $typeCode,
+                ];
+            });
+        } catch (\Throwable $e) {
+            Log::error('MembershipIdService: generation failed', [
+                'membership_type' => $membershipType,
+                'hijri_year' => $hijriYear,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 }
