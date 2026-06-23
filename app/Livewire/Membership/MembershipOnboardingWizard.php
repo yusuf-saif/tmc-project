@@ -154,7 +154,7 @@ class MembershipOnboardingWizard extends Component
         $this->step = max(1, $this->step - 1);
     }
 
-    public function submit(MembershipRegistrationService $service): void
+    public function submit(MembershipRegistrationService $service)
     {
         $this->validate([
             'firstName' => ['required', 'string', 'max:255'],
@@ -181,8 +181,6 @@ class MembershipOnboardingWizard extends Component
             return;
         }
 
-        $this->submitting = true;
-
         try {
             $service->register($user, $this->payload());
         } catch (\Throwable $e) {
@@ -190,7 +188,6 @@ class MembershipOnboardingWizard extends Component
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
-            $this->submitting = false;
             session()->flash('error', 'Submission failed. Please try again.');
 
             return;
@@ -198,7 +195,7 @@ class MembershipOnboardingWizard extends Component
 
         session()->flash('membership_submitted', true);
 
-        $this->redirect(route('membership.pending'));
+        return redirect()->to(route('membership.pending'));
     }
 
     public function getProgressPercentageProperty(): int

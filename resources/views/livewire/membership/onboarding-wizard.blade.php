@@ -247,12 +247,8 @@
                     Continue
                 </button>
             @else
-                <button type="button" wire:click="submit" class="tmc-button-gold max-w-[180px]" @disabled($submitting)>
-                    @if ($submitting)
-                        Submitting...
-                    @else
-                        Submit for Review
-                    @endif
+                <button type="button" wire:click="submit" class="tmc-button-gold max-w-[180px]">
+                    Submit for Review
                 </button>
             @endif
         </div>
