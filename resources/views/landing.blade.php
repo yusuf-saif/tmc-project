@@ -390,7 +390,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
     </ul>
     <div class="nav-actions">
       <a class="btn btn-outline btn-sm nav-cta" href="{{ url('/admin/login') }}">Admin</a>
-      <a class="btn btn-gold btn-sm nav-cta" href="{{ url('/register') }}">Register</a>
+      <a class="btn btn-gold btn-sm nav-cta" href="{{ route('membership.signup') }}">Register</a>
       <a class="btn btn-gold btn-sm nav-cta" href="{{ url('/login') }}">Login</a>
     </div>
   </div>
@@ -591,7 +591,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
       <p class="cta-body">Step into a warm, refined space for worship, learning, reflection, rewards, and sincere companionship built for Muslim women.</p>
       <div class="cta-actions">
         <a class="btn btn-gold" href="{{ url('/login') }}">Sign In</a>
-        <a class="btn btn-rose" href="{{ url('/register') }}">Create Your Account</a>
+        <a class="btn btn-rose" href="{{ route('membership.signup') }}">Create Your Account</a>
       </div>
     </div>
   </section>

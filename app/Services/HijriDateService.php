@@ -69,11 +69,13 @@ class HijriDateService
             $char = $format[$i];
             if ($char === '\\' && ! $escaped) {
                 $escaped = true;
+
                 continue;
             }
             if ($escaped) {
                 $result .= $char;
                 $escaped = false;
+
                 continue;
             }
             $result .= $replacements[$char] ?? $char;
@@ -172,6 +174,7 @@ class HijriDateService
             Log::warning('IntlCalendar not available, using Hijri approximation', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

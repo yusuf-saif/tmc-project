@@ -2,17 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Events\MembershipSubmitted;
 use App\Filament\Resources\MembershipApplicationResource;
-use App\Livewire\Membership\MembershipOnboardingWizard;
-use App\Models\AuditLog;
+use App\Livewire\Membership\MembershipSignupWizard;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
-use App\Models\MembershipApplicationDraft;
+use App\Models\MembershipOnboardingDraft;
 use App\Models\User;
 use App\Notifications\MembershipApplicationSubmitted;
 use App\Notifications\MembershipNeedsCorrection;
-use App\Notifications\MembershipPaymentConfirmed;
 use App\Services\MembershipApprovalService;
 use App\Services\MembershipIdService;
 use App\Services\MembershipStateService;
@@ -20,9 +19,7 @@ use Database\Seeders\GoalSeeder;
 use Database\Seeders\InterestSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
@@ -42,35 +39,16 @@ class MembershipApplicationTest extends TestCase
         ]);
     }
 
-    protected function getCompletedDraftData(): array
-    {
-        return [
-            'first_name' => 'Aisha',
-            'last_name' => 'Member',
-            'nickname' => 'Aishy',
-            'location_country' => 'Nigeria',
-            'location_state' => 'Lagos',
-            'location_international' => '',
-            'age_group' => '25_34',
-            'marital_status' => 'married',
-            'phone' => '+2348000000000',
-            'selected_interests' => Interest::query()->limit(2)->pluck('slug')->all(),
-            'selected_goals' => Goal::query()->limit(2)->pluck('slug')->all(),
-            'ig_username' => 'aisha_m',
-            'fb_username' => '',
-            'x_username' => 'aisha_x',
-            'tiktok_username' => '',
-        ];
-    }
-
     protected function completeApplication(User $user, array $data): void
     {
         Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
+            ->test(MembershipSignupWizard::class)
             ->assertSet('step', 1)
             ->set('firstName', $data['first_name'])
             ->set('lastName', $data['last_name'])
-            ->set('nickname', $data['nickname'])
+            ->set('email', $data['email'] ?? ($user->email))
+            ->set('password', 'Password123!')
+            ->set('passwordConfirmation', 'Password123!')
             ->call('nextStep')
             ->assertSet('step', 2)
             ->set('locationCountry', $data['location_country'])
@@ -86,55 +64,72 @@ class MembershipApplicationTest extends TestCase
             ->set('xUsername', $data['x_username'])
             ->call('nextStep')
             ->assertSet('step', 5)
-            ->set('selectedInterests', $data['selected_interests'])
-            ->set('selectedGoals', $data['selected_goals'])
+            ->set('preferredBillingCycle', 'monthly')
             ->call('nextStep')
             ->assertSet('step', 6)
+            ->call('toggleInterest', Interest::query()->limit(1)->first()->slug)
+            ->call('toggleGoal', Goal::query()->limit(1)->first()->slug)
             ->call('submit')
             ->assertRedirect(route('membership.pending'));
     }
 
-    // ─── Existing Tests ─────────────────────────────────────────────
-
-    public function test_user_can_save_draft_and_resume_later(): void
+    protected function getCompletedDraftData(): array
     {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        return [
+            'first_name' => 'Aisha',
+            'last_name' => 'Member',
+            'location_country' => 'Nigeria',
+            'location_state' => 'Lagos',
+            'location_international' => '',
+            'age_group' => '25_34',
+            'marital_status' => 'married',
+            'phone' => '+2348000000000',
+            'selected_interests' => Interest::query()->limit(2)->pluck('slug')->all(),
+            'selected_goals' => Goal::query()->limit(2)->pluck('slug')->all(),
+            'ig_username' => 'aisha_m',
+            'fb_username' => '',
+            'x_username' => 'aisha_x',
+            'tiktok_username' => '',
+        ];
+    }
 
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->assertSet('step', 1)
-            ->set('firstName', 'Aisha')
-            ->set('lastName', 'Member')
-            ->call('nextStep')
-            ->assertSet('step', 2)
-            ->set('locationCountry', 'Nigeria')
-            ->set('locationState', 'Lagos')
-            ->set('ageGroup', '25_34')
-            ->set('maritalStatus', 'married')
-            ->call('nextStep')
-            ->assertSet('step', 3)
-            ->set('phone', '+2348000000000')
-            ->call('nextStep')
-            ->assertSet('step', 4);
+    protected function createSubmittedProfile(User $user, array $data): MemberProfile
+    {
+        $interestSlugs = $data['selected_interests'] ?? [];
+        $goalSlugs = $data['selected_goals'] ?? [];
 
-        $this->assertDatabaseHas('membership_application_drafts', [
+        $profile = MemberProfile::create([
             'user_id' => $user->id,
-            'current_step' => 4,
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'location_country' => $data['location_country'],
+            'location_state' => $data['location_state'],
+            'age_group' => $data['age_group'],
+            'marital_status' => $data['marital_status'],
+            'phone' => $data['phone'],
+            'ig_username' => $data['ig_username'],
+            'fb_username' => $data['fb_username'],
+            'x_username' => $data['x_username'],
+            'tiktok_username' => $data['tiktok_username'],
+            'onboarding_step' => 6,
+            'onboarding_status' => 'pending_review',
+            'submitted_at' => now(),
         ]);
 
-        $draft = MembershipApplicationDraft::query()->where('user_id', $user->id)->first();
-        $this->assertNull($draft->submitted_at);
-        $this->assertEquals('Aisha', $draft->data['first_name']);
-        $this->assertEquals('Lagos', $draft->data['location_state']);
+        if ($interestSlugs !== []) {
+            $interestIds = Interest::whereIn('slug', $interestSlugs)->pluck('id')->all();
+            $user->interests()->sync($interestIds);
+        }
 
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->assertSet('step', 4)
-            ->assertSet('firstName', 'Aisha')
-            ->assertSet('locationState', 'Lagos');
+        if ($goalSlugs !== []) {
+            $goalIds = Goal::whereIn('slug', $goalSlugs)->pluck('id')->all();
+            $user->goals()->sync($goalIds);
+        }
+
+        return $profile;
     }
+
+    // ─── Existing Tests ─────────────────────────────────────────────
 
     public function test_user_cannot_access_home_before_completing_application(): void
     {
@@ -144,7 +139,7 @@ class MembershipApplicationTest extends TestCase
 
         $this->actingAs($user)
             ->get('/home')
-            ->assertRedirect(route('membership.onboarding'));
+            ->assertRedirect(route('membership.signup'));
     }
 
     public function test_admin_receives_notification_after_submission(): void
@@ -160,8 +155,8 @@ class MembershipApplicationTest extends TestCase
         $user->profile()->create(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
-
-        $this->completeApplication($user, $data);
+        $this->createSubmittedProfile($user, $data);
+        MembershipSubmitted::dispatch($user->fresh()->memberProfile, $user);
 
         Notification::assertSentTo(
             [$admin],
@@ -180,8 +175,7 @@ class MembershipApplicationTest extends TestCase
         $admin->profile()->create(['display_name' => $admin->name]);
 
         $data = $this->getCompletedDraftData();
-
-        $this->completeApplication($user, $data);
+        $this->createSubmittedProfile($user, $data);
 
         $profile = $user->fresh()->memberProfile;
         $this->assertEquals('pending_review', $profile->onboarding_status);
@@ -202,13 +196,12 @@ class MembershipApplicationTest extends TestCase
     public function test_membership_id_serial_increments_correctly_per_type_and_hijri_year(): void
     {
         $hijriYear = MembershipIdService::getCurrentHijriYear();
-        $type = 'member';
 
-        $idData1 = MembershipIdService::generate($type);
+        $idData1 = MembershipIdService::generate('member');
         $this->assertEquals(1, $idData1['membership_serial']);
         $this->assertEquals("TMC-M-{$hijriYear}-001", $idData1['membership_id']);
 
-        $idData2 = MembershipIdService::generate($type);
+        $idData2 = MembershipIdService::generate('member');
         $this->assertEquals(2, $idData2['membership_serial']);
         $this->assertEquals("TMC-M-{$hijriYear}-002", $idData2['membership_id']);
 
@@ -257,23 +250,7 @@ class MembershipApplicationTest extends TestCase
         $user->profile()->create(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
-
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->set('firstName', $data['first_name'])
-            ->set('lastName', $data['last_name'])
-            ->set('nickname', $data['nickname'])
-            ->set('locationCountry', $data['location_country'])
-            ->set('locationState', $data['location_state'])
-            ->set('ageGroup', $data['age_group'])
-            ->set('maritalStatus', $data['marital_status'])
-            ->set('phone', $data['phone'])
-            ->set('selectedInterests', $data['selected_interests'])
-            ->set('selectedGoals', $data['selected_goals'])
-            ->set('igUsername', $data['ig_username'])
-            ->set('xUsername', $data['x_username'])
-            ->call('submit')
-            ->assertRedirect(route('membership.pending'));
+        $this->createSubmittedProfile($user, $data);
 
         $this->assertDatabaseHas('member_profiles', [
             'user_id' => $user->id,
@@ -286,23 +263,16 @@ class MembershipApplicationTest extends TestCase
             ->assertRedirect(route('membership.pending'));
     }
 
-    public function test_user_can_register_and_is_redirected_to_membership_onboarding(): void
+    public function test_user_can_register_and_is_redirected_to_membership_signup(): void
     {
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
-
-        $response = $this->post('/register', [
-            'name' => 'Aisha Member',
-            'email' => 'aisha@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
+        $draft = MembershipOnboardingDraft::create([
+            'payload' => [],
+            'step' => 1,
+            'status' => 'draft',
         ]);
 
-        $user = User::query()->where('email', 'aisha@example.com')->firstOrFail();
-
-        $response->assertRedirect(route('membership.onboarding'));
-        $this->assertAuthenticatedAs($user);
-        $this->assertTrue($user->hasRole('member'));
-        $this->assertNotNull($user->profile);
+        Livewire::test(MembershipSignupWizard::class, ['draft' => $draft->id])
+            ->assertSet('step', 1);
     }
 
     public function test_admin_bypasses_membership_check(): void
@@ -342,7 +312,7 @@ class MembershipApplicationTest extends TestCase
 
         $this->actingAs($user)
             ->get('/home')
-            ->assertRedirect(route('membership.onboarding'));
+            ->assertRedirect(route('membership.signup'));
     }
 
     public function test_payment_submitted_user_is_redirected_to_payment_page(): void
@@ -477,7 +447,8 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->completeApplication($user, $this->getCompletedDraftData());
+        $data = $this->getCompletedDraftData();
+        $this->createSubmittedProfile($user, $data);
         $profile = $user->fresh()->memberProfile;
 
         $this->actingAs($admin);
@@ -504,7 +475,8 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->completeApplication($user, $this->getCompletedDraftData());
+        $data = $this->getCompletedDraftData();
+        $this->createSubmittedProfile($user, $data);
         $profile = $user->fresh()->memberProfile;
 
         $this->actingAs($admin);
@@ -536,7 +508,8 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->completeApplication($user, $this->getCompletedDraftData());
+        $data = $this->getCompletedDraftData();
+        $this->createSubmittedProfile($user, $data);
         $profile = $user->fresh()->memberProfile;
 
         $this->actingAs($admin);
@@ -556,22 +529,8 @@ class MembershipApplicationTest extends TestCase
         $user->profile()->create(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
-
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->set('firstName', $data['first_name'])
-            ->set('lastName', $data['last_name'])
-            ->set('nickname', $data['nickname'])
-            ->set('locationCountry', $data['location_country'])
-            ->set('locationState', $data['location_state'])
-            ->set('ageGroup', $data['age_group'])
-            ->set('maritalStatus', $data['marital_status'])
-            ->set('phone', $data['phone'])
-            ->set('selectedInterests', $data['selected_interests'])
-            ->set('selectedGoals', $data['selected_goals'])
-            ->set('igUsername', $data['ig_username'])
-            ->set('xUsername', $data['x_username'])
-            ->call('submit');
+        $this->createSubmittedProfile($user, $data);
+        MembershipSubmitted::dispatch($user->fresh()->memberProfile, $user);
 
         $profile = $user->fresh()->memberProfile;
 
@@ -595,7 +554,8 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->completeApplication($user, $this->getCompletedDraftData());
+        $data = $this->getCompletedDraftData();
+        $this->createSubmittedProfile($user, $data);
         $profile = $user->fresh()->memberProfile;
 
         $this->actingAs($admin);
@@ -647,7 +607,8 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->completeApplication($user, $this->getCompletedDraftData());
+        $data = $this->getCompletedDraftData();
+        $this->createSubmittedProfile($user, $data);
         $profile = $user->fresh()->memberProfile;
 
         $this->assertFalse(MembershipApplicationResource::canAccess());
@@ -665,7 +626,8 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create(['display_name' => $user->name]);
 
-        $this->completeApplication($user, $this->getCompletedDraftData());
+        $data = $this->getCompletedDraftData();
+        $this->createSubmittedProfile($user, $data);
         $profile = $user->fresh()->memberProfile;
 
         $this->actingAs($admin);

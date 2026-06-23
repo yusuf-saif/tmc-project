@@ -53,6 +53,7 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'a1cfe24d14977df6878b9bf804af2d1c' => __DIR__ . '/..' . '/nunomaduro/collision/src/Adapters/Phpunit/Autoload.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
         '377b22b161c09ed6e5152de788ca020a' => __DIR__ . '/..' . '/spatie/laravel-permission/src/helpers.php',
+        'bab4ed692c1fd3872849227e2a85791e' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/Support/helpers.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -69,6 +70,10 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
             'Whoops\\' => 7,
             'Webmozart\\Assert\\' => 17,
             'Webauthn\\' => 9,
+        ),
+        'U' =>
+        array (
+            'Unicodeveloper\\Paystack\\' => 24,
         ),
         'T' =>
         array (
@@ -270,6 +275,10 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'Webauthn\\' =>
         array (
             0 => __DIR__ . '/..' . '/web-auth/webauthn-lib/src',
+        ),
+        'Unicodeveloper\\Paystack\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src',
         ),
         'TijsVerkoyen\\CssToInlineStyles\\' =>
         array (
@@ -788,7 +797,6 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'AnourValar\\EloquentSerialize\\Grammars\\QueryBuilderGrammar' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Grammars/QueryBuilderGrammar.php',
         'AnourValar\\EloquentSerialize\\Package' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Package.php',
         'AnourValar\\EloquentSerialize\\Service' => __DIR__ . '/..' . '/anourvalar/eloquent-serialize/src/Service.php',
-        'App\\Actions\\Fortify\\CreateNewUser' => __DIR__ . '/../..' . '/app/Actions/Fortify/CreateNewUser.php',
         'App\\Actions\\Fortify\\PasswordValidationRules' => __DIR__ . '/../..' . '/app/Actions/Fortify/PasswordValidationRules.php',
         'App\\Actions\\Fortify\\ResetUserPassword' => __DIR__ . '/../..' . '/app/Actions/Fortify/ResetUserPassword.php',
         'App\\Actions\\Fortify\\UpdateUserPassword' => __DIR__ . '/../..' . '/app/Actions/Fortify/UpdateUserPassword.php',
@@ -809,6 +817,7 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'App\\Events\\SubscriptionPaymentFailed' => __DIR__ . '/../..' . '/app/Events/SubscriptionPaymentFailed.php',
         'App\\Events\\SubscriptionPaymentReceived' => __DIR__ . '/../..' . '/app/Events/SubscriptionPaymentReceived.php',
         'App\\Events\\SubscriptionSuspended' => __DIR__ . '/../..' . '/app/Events/SubscriptionSuspended.php',
+        'App\\Events\\UserRegistered' => __DIR__ . '/../..' . '/app/Events/UserRegistered.php',
         'App\\Filament\\Pages\\BroadcastNotifications' => __DIR__ . '/../..' . '/app/Filament/Pages/BroadcastNotifications.php',
         'App\\Filament\\Pages\\Dashboard' => __DIR__ . '/../..' . '/app/Filament/Pages/Dashboard.php',
         'App\\Filament\\Pages\\SettingsPage' => __DIR__ . '/../..' . '/app/Filament/Pages/SettingsPage.php',
@@ -866,6 +875,7 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'App\\Filament\\Widgets\\RecentActivityWidget' => __DIR__ . '/../..' . '/app/Filament/Widgets/RecentActivityWidget.php',
         'App\\Filament\\Widgets\\StatsOverviewWidget' => __DIR__ . '/../..' . '/app/Filament/Widgets/StatsOverviewWidget.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
+        'App\\Http\\Controllers\\PaystackWebhookController' => __DIR__ . '/../..' . '/app/Http/Controllers/PaystackWebhookController.php',
         'App\\Http\\Middleware\\EnsureMembershipComplete' => __DIR__ . '/../..' . '/app/Http/Middleware/EnsureMembershipComplete.php',
         'App\\Http\\Middleware\\EnsureOnboardingComplete' => __DIR__ . '/../..' . '/app/Http/Middleware/EnsureOnboardingComplete.php',
         'App\\Http\\Middleware\\EnsureUserStateRedirect' => __DIR__ . '/../..' . '/app/Http/Middleware/EnsureUserStateRedirect.php',
@@ -874,6 +884,7 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'App\\Http\\Responses\\FortifyRegisterResponse' => __DIR__ . '/../..' . '/app/Http/Responses/FortifyRegisterResponse.php',
         'App\\Http\\Responses\\FortifyVerifyEmailResponse' => __DIR__ . '/../..' . '/app/Http/Responses/FortifyVerifyEmailResponse.php',
         'App\\Jobs\\BroadcastPushNotification' => __DIR__ . '/../..' . '/app/Jobs/BroadcastPushNotification.php',
+        'App\\Jobs\\MembershipProcessingJob' => __DIR__ . '/../..' . '/app/Jobs/MembershipProcessingJob.php',
         'App\\Jobs\\SendBroadcastNotificationJob' => __DIR__ . '/../..' . '/app/Jobs/SendBroadcastNotificationJob.php',
         'App\\Jobs\\SendEventReminderNotification' => __DIR__ . '/../..' . '/app/Jobs/SendEventReminderNotification.php',
         'App\\Jobs\\SendNewsletterEmailJob' => __DIR__ . '/../..' . '/app/Jobs/SendNewsletterEmailJob.php',
@@ -892,7 +903,7 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'App\\Livewire\\Home\\HomeDashboard' => __DIR__ . '/../..' . '/app/Livewire/Home/HomeDashboard.php',
         'App\\Livewire\\Journal\\JournalScreen' => __DIR__ . '/../..' . '/app/Livewire/Journal/JournalScreen.php',
         'App\\Livewire\\Layout\\BottomNav' => __DIR__ . '/../..' . '/app/Livewire/Layout/BottomNav.php',
-        'App\\Livewire\\Membership\\MembershipOnboardingWizard' => __DIR__ . '/../..' . '/app/Livewire/Membership/MembershipOnboardingWizard.php',
+        'App\\Livewire\\Membership\\MembershipSignupWizard' => __DIR__ . '/../..' . '/app/Livewire/Membership/MembershipSignupWizard.php',
         'App\\Livewire\\Membership\\PaymentPage' => __DIR__ . '/../..' . '/app/Livewire/Membership/PaymentPage.php',
         'App\\Livewire\\Membership\\PendingReview' => __DIR__ . '/../..' . '/app/Livewire/Membership/PendingReview.php',
         'App\\Livewire\\Profile\\EditProfile' => __DIR__ . '/../..' . '/app/Livewire/Profile/EditProfile.php',
@@ -922,6 +933,7 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'App\\Models\\JournalEntry' => __DIR__ . '/../..' . '/app/Models/JournalEntry.php',
         'App\\Models\\MemberProfile' => __DIR__ . '/../..' . '/app/Models/MemberProfile.php',
         'App\\Models\\MembershipApplicationDraft' => __DIR__ . '/../..' . '/app/Models/MembershipApplicationDraft.php',
+        'App\\Models\\MembershipOnboardingDraft' => __DIR__ . '/../..' . '/app/Models/MembershipOnboardingDraft.php',
         'App\\Models\\MembershipSerial' => __DIR__ . '/../..' . '/app/Models/MembershipSerial.php',
         'App\\Models\\Newsletter' => __DIR__ . '/../..' . '/app/Models/Newsletter.php',
         'App\\Models\\NotificationLog' => __DIR__ . '/../..' . '/app/Models/NotificationLog.php',
@@ -962,13 +974,12 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'App\\Services\\CoinsService' => __DIR__ . '/../..' . '/app/Services/CoinsService.php',
         'App\\Services\\DuaListService' => __DIR__ . '/../..' . '/app/Services/DuaListService.php',
         'App\\Services\\HijriDateService' => __DIR__ . '/../..' . '/app/Services/HijriDateService.php',
-        'App\\Services\\MembershipApplicationService' => __DIR__ . '/../..' . '/app/Services/MembershipApplicationService.php',
         'App\\Services\\MembershipApprovalService' => __DIR__ . '/../..' . '/app/Services/MembershipApprovalService.php',
         'App\\Services\\MembershipIdService' => __DIR__ . '/../..' . '/app/Services/MembershipIdService.php',
+        'App\\Services\\MembershipSignupService' => __DIR__ . '/../..' . '/app/Services/MembershipSignupService.php',
         'App\\Services\\MembershipStateService' => __DIR__ . '/../..' . '/app/Services/MembershipStateService.php',
-        'App\\Services\\MembershipSubmissionService' => __DIR__ . '/../..' . '/app/Services/MembershipSubmissionService.php',
         'App\\Services\\NotificationService' => __DIR__ . '/../..' . '/app/Services/NotificationService.php',
-        'App\\Services\\OnboardingService' => __DIR__ . '/../..' . '/app/Services/OnboardingService.php',
+        'App\\Services\\PaystackService' => __DIR__ . '/../..' . '/app/Services/PaystackService.php',
         'App\\Services\\RsvpService' => __DIR__ . '/../..' . '/app/Services/RsvpService.php',
         'App\\Services\\SubscriptionStateService' => __DIR__ . '/../..' . '/app/Services/SubscriptionStateService.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
@@ -10247,7 +10258,10 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'Tests\\Feature\\EventRsvpTest' => __DIR__ . '/../..' . '/tests/Feature/EventRsvpTest.php',
         'Tests\\Feature\\JournalPrivacyTest' => __DIR__ . '/../..' . '/tests/Feature/JournalPrivacyTest.php',
         'Tests\\Feature\\MembershipApplicationTest' => __DIR__ . '/../..' . '/tests/Feature/MembershipApplicationTest.php',
+        'Tests\\Feature\\MembershipSignupServiceTest' => __DIR__ . '/../..' . '/tests/Feature/MembershipSignupServiceTest.php',
+        'Tests\\Feature\\MembershipSignupWizardTest' => __DIR__ . '/../..' . '/tests/Feature/MembershipSignupWizardTest.php',
         'Tests\\Feature\\PasswordResetTest' => __DIR__ . '/../..' . '/tests/Feature/PasswordResetTest.php',
+        'Tests\\Feature\\PaystackWebhookTest' => __DIR__ . '/../..' . '/tests/Feature/PaystackWebhookTest.php',
         'Tests\\Feature\\ResourcesTest' => __DIR__ . '/../..' . '/tests/Feature/ResourcesTest.php',
         'Tests\\Feature\\SouqWalletTest' => __DIR__ . '/../..' . '/tests/Feature/SouqWalletTest.php',
         'Tests\\Feature\\SubscriptionBillingTest' => __DIR__ . '/../..' . '/tests/Feature/SubscriptionBillingTest.php',
@@ -10268,6 +10282,12 @@ class ComposerStaticInitd1de9432086d2ddd353f9c61855f6f75
         'TijsVerkoyen\\CssToInlineStyles\\Css\\Rule\\Processor' => __DIR__ . '/..' . '/tijsverkoyen/css-to-inline-styles/src/Css/Rule/Processor.php',
         'TijsVerkoyen\\CssToInlineStyles\\Css\\Rule\\Rule' => __DIR__ . '/..' . '/tijsverkoyen/css-to-inline-styles/src/Css/Rule/Rule.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
+        'Unicodeveloper\\Paystack\\Exceptions\\IsNullException' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/Exceptions/IsNullException.php',
+        'Unicodeveloper\\Paystack\\Exceptions\\PaymentVerificationFailedException' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/Exceptions/PaymentVerificationFailedException.php',
+        'Unicodeveloper\\Paystack\\Facades\\Paystack' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/Facades/Paystack.php',
+        'Unicodeveloper\\Paystack\\Paystack' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/Paystack.php',
+        'Unicodeveloper\\Paystack\\PaystackServiceProvider' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/PaystackServiceProvider.php',
+        'Unicodeveloper\\Paystack\\TransRef' => __DIR__ . '/..' . '/unicodeveloper/laravel-paystack/src/TransRef.php',
         'ValueError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/ValueError.php',
         'Webauthn\\AttestationStatement\\AndroidKeyAttestationStatementSupport' => __DIR__ . '/..' . '/web-auth/webauthn-lib/src/AttestationStatement/AndroidKeyAttestationStatementSupport.php',
         'Webauthn\\AttestationStatement\\AppleAttestationStatementSupport' => __DIR__ . '/..' . '/web-auth/webauthn-lib/src/AttestationStatement/AppleAttestationStatementSupport.php',

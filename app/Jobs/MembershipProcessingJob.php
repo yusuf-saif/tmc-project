@@ -40,6 +40,7 @@ class MembershipProcessingJob implements ShouldQueue
                 'user_id' => $this->userId,
                 'profile_id' => $this->profileId,
             ]);
+
             return;
         }
 

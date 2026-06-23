@@ -7,6 +7,7 @@ use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
 use App\Events\PaymentConfirmed;
 use App\Models\MemberProfile;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -50,6 +51,7 @@ class MembershipStateService
                 'user_id' => $profile->user_id,
                 'status' => $newStatus,
             ]);
+
             return $profile;
         }
 
@@ -66,7 +68,7 @@ class MembershipStateService
             );
         }
 
-        DB::transaction(function () use ($profile, $newStatus, $actor, $oldStatus, $metadata): void {
+        DB::transaction(function () use ($profile, $newStatus, $oldStatus, $metadata): void {
             $profile->onboarding_status = $newStatus;
 
             if (isset($metadata['approved_by'])) {
@@ -133,11 +135,12 @@ class MembershipStateService
                 'profile_id' => $profile->id,
                 'existing_id' => $profile->membership_id,
             ]);
+
             return $profile;
         }
 
         $generated = MembershipIdService::generate($membershipType);
-        $coinReward = (int) \App\Models\Setting::getValue('membership_approval_coins', '100');
+        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
 
         DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward, $admin): void {
             $profile->membership_type = $membershipType;
@@ -216,6 +219,13 @@ class MembershipStateService
                 'payment_verified_by' => $admin->id,
                 'activated_at' => now(),
             ]);
+
+            $nextDue = match ($profile->preferred_billing_cycle ?? 'monthly') {
+                'quarterly' => now()->addMonths(3),
+                'yearly' => now()->addYear(),
+                default => now()->addMonth(),
+            };
+            $profile->update(['next_due_at' => $nextDue]);
 
             $profile->user?->forceFill(['status' => 'active'])->saveQuietly();
 

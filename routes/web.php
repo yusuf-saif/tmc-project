@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PaystackWebhookController;
 use App\Livewire\Community\CommunityHome;
 use App\Livewire\Community\SpaceDetail;
 use App\Livewire\Community\SupportForm;
@@ -7,7 +8,7 @@ use App\Livewire\Events\EventDetail;
 use App\Livewire\Events\EventsList;
 use App\Livewire\Home\HomeDashboard;
 use App\Livewire\Journal\JournalScreen;
-use App\Livewire\Membership\MembershipOnboardingWizard;
+use App\Livewire\Membership\MembershipSignupWizard;
 use App\Livewire\Membership\PaymentPage;
 use App\Livewire\Membership\PendingReview;
 use App\Livewire\Profile\EditProfile;
@@ -21,20 +22,27 @@ use App\Livewire\Souq\ListingDetail;
 use App\Livewire\Souq\SouqDirectory;
 use App\Models\Announcement;
 use App\Models\Setting;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('landing'))->name('landing');
 Route::get('/offline', fn () => view('offline'))->name('offline');
 
+// Membership signup — no auth middleware (wizard creates user + logs in internally)
+Route::get('/membership/signup', MembershipSignupWizard::class)->name('membership.signup');
+
+// Paystack webhook — CSRF-exempt, signature-enforced
+Route::post('/webhooks/paystack', PaystackWebhookController::class)
+    ->withoutMiddleware(ValidateCsrfToken::class)
+    ->name('webhooks.paystack');
+
 Route::middleware(['auth'])->prefix('membership')->name('membership.')->group(function () {
-    Route::get('/onboarding', MembershipOnboardingWizard::class)->name('onboarding');
     Route::get('/pending', PendingReview::class)->name('pending');
     Route::get('/payment', PaymentPage::class)->name('payment');
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::redirect('/onboarding', '/membership/onboarding')->name('onboarding');
     Route::redirect('/wallet', '/profile?tab=wallet')->name('wallet');
 });
 

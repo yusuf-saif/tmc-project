@@ -12,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Storage;
 
 class ViewMembershipApplication extends ViewRecord
 {
@@ -85,6 +86,8 @@ class ViewMembershipApplication extends ViewRecord
                             }),
                         TextEntry::make('marital_status')->label('Marital Status')
                             ->formatStateUsing(fn (?string $state): string => $state ? ucfirst($state) : 'N/A'),
+                        TextEntry::make('preferred_billing_cycle')->label('Billing Preference')
+                            ->formatStateUsing(fn (?string $state): string => ucfirst($state ?? 'monthly')),
                     ])->columns(2),
 
                 Section::make('Social Media')
@@ -108,7 +111,7 @@ class ViewMembershipApplication extends ViewRecord
                 Section::make('Payment Details')
                     ->schema([
                         TextEntry::make('payment_submitted_at')->label('Payment Submitted At')->dateTime('d M Y H:i'),
-                        TextEntry::make('payment_proof_path')->label('Payment Proof')->url(fn ($state) => $state ? \Illuminate\Support\Facades\Storage::url($state) : null)->visible(fn ($state) => $state !== null),
+                        TextEntry::make('payment_proof_path')->label('Payment Proof')->url(fn ($state) => $state ? Storage::url($state) : null)->visible(fn ($state) => $state !== null),
                         TextEntry::make('payment_verified_at')->label('Payment Verified At')->dateTime('d M Y H:i'),
                         TextEntry::make('payment_verified_by')->label('Verified By'),
                     ])->columns(2)
@@ -155,7 +158,17 @@ class ViewMembershipApplication extends ViewRecord
                         ])
                         ->required(),
                 ])
-                ->action(function (array $data): void {
+                ->action(function (array $data) use ($coinReward): void {
+                    if (! in_array($this->record->fresh()->onboarding_status, ['pending_review'], true)) {
+                        Notification::make()
+                            ->title('Already approved')
+                            ->body('This application has already been processed.')
+                            ->warning()
+                            ->send();
+
+                        return;
+                    }
+
                     MembershipApplicationResource::approve($this->record, $data['membership_type']);
                     Notification::make()
                         ->title('Application approved')

@@ -42,7 +42,7 @@ class FortifyLoginResponse implements LoginResponseContract
         $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status ?? $user->status;
 
         if (! $status || in_array($status, ['draft', 'onboarding', 'in_progress'], true)) {
-            return route('membership.onboarding');
+            return route('membership.signup');
         }
 
         if (in_array($status, ['pending_review', 'submitted', 'under_review'], true)) {
@@ -50,7 +50,7 @@ class FortifyLoginResponse implements LoginResponseContract
         }
 
         if (in_array($status, ['rejected', 'needs_correction'], true)) {
-            return route('membership.onboarding');
+            return route('membership.signup');
         }
 
         if (in_array($status, ['approved_pending_payment', 'payment_submitted'], true)) {
@@ -61,6 +61,6 @@ class FortifyLoginResponse implements LoginResponseContract
             return '/home';
         }
 
-        return route('membership.onboarding');
+        return route('membership.signup');
     }
 }

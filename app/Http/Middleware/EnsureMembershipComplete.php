@@ -27,7 +27,7 @@ class EnsureMembershipComplete
             $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status ?? $user->status;
 
             if (! $status || in_array($status, ['draft', 'onboarding', 'in_progress'], true)) {
-                return redirect()->route('membership.onboarding');
+                return redirect()->route('membership.signup');
             }
 
             if (in_array($status, ['pending_review', 'submitted', 'under_review'], true)) {
@@ -35,7 +35,7 @@ class EnsureMembershipComplete
             }
 
             if (in_array($status, ['rejected', 'needs_correction'], true)) {
-                return redirect()->route('membership.onboarding');
+                return redirect()->route('membership.signup');
             }
 
             if (in_array($status, ['approved_pending_payment', 'payment_submitted'], true)) {
@@ -43,7 +43,7 @@ class EnsureMembershipComplete
             }
 
             if (! in_array($status, ['approved', 'active'], true)) {
-                return redirect()->route('membership.onboarding');
+                return redirect()->route('membership.signup');
             }
         }
 

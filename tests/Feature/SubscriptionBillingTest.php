@@ -25,6 +25,7 @@ use App\Services\BusinessStateService;
 use App\Services\SubscriptionStateService;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SubscriptionPlanSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -36,9 +37,13 @@ class SubscriptionBillingTest extends TestCase
     use RefreshDatabase;
 
     protected SubscriptionPlan $monthlyPlan;
+
     protected SubscriptionPlan $quarterlyPlan;
+
     protected SubscriptionPlan $annualPlan;
+
     protected User $member;
+
     protected User $admin;
 
     protected function setUp(): void
@@ -106,7 +111,7 @@ class SubscriptionBillingTest extends TestCase
 
     public function test_subscription_plan_slug_is_unique(): void
     {
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         SubscriptionPlan::create([
             'name' => 'Duplicate',
             'slug' => 'monthly',

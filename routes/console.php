@@ -1,11 +1,16 @@
 <?php
 
+use App\Events\SubscriptionExpired;
+use App\Events\SubscriptionExpiringSoon;
 use App\Jobs\SendBroadcastNotificationJob;
 use App\Jobs\SendNewsletterEmailJob;
 use App\Models\Announcement;
 use App\Models\Broadcast;
 use App\Models\InAppAnnouncement;
 use App\Models\Newsletter;
+use App\Models\SouqListing;
+use App\Models\Subscription;
+use App\Services\BusinessStateService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -49,12 +54,12 @@ Schedule::call(function () {
 
 // ─── Expire subscriptions past their end_date ─────────────────────
 Schedule::call(function () {
-    App\Models\Subscription::query()
+    Subscription::query()
         ->where('status', 'active')
         ->whereNotNull('end_date')
         ->where('end_date', '<=', now())
-        ->each(function (App\Models\Subscription $subscription) {
-            App\Events\SubscriptionExpired::dispatch($subscription);
+        ->each(function (Subscription $subscription) {
+            SubscriptionExpired::dispatch($subscription);
             $subscription->update(['status' => 'expired']);
         });
 })->dailyAt('00:01')->name('expire-subscriptions');
@@ -63,20 +68,20 @@ Schedule::call(function () {
 Schedule::call(function () {
     $intervals = [7, 3, 1];
     foreach ($intervals as $days) {
-        App\Models\Subscription::expiringBetween($days, $days)
-            ->each(function (App\Models\Subscription $subscription) use ($days) {
-                App\Events\SubscriptionExpiringSoon::dispatch($subscription, $days);
+        Subscription::expiringBetween($days, $days)
+            ->each(function (Subscription $subscription) use ($days) {
+                SubscriptionExpiringSoon::dispatch($subscription, $days);
             });
     }
 })->dailyAt('08:00')->name('subscription-expiry-reminders');
 
 // ─── Expire business listing billing ──────────────────────────────
 Schedule::call(function () {
-    App\Models\SouqListing::query()
+    SouqListing::query()
         ->where('billing_status', 'active')
         ->whereNotNull('billing_end_date')
         ->where('billing_end_date', '<=', now())
-        ->each(function (App\Models\SouqListing $listing) {
-            app(App\Services\BusinessStateService::class)->autoExpireBilling($listing);
+        ->each(function (SouqListing $listing) {
+            app(BusinessStateService::class)->autoExpireBilling($listing);
         });
 })->dailyAt('00:05')->name('expire-business-billing');

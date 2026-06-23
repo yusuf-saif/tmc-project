@@ -42,6 +42,10 @@ class MemberProfile extends Model
         'payment_verified_by',
         'payment_verified_at',
         'activated_at',
+        'preferred_billing_cycle',
+        'next_due_at',
+        'paystack_reference',
+        'paystack_customer_code',
     ];
 
     protected function casts(): array
@@ -55,6 +59,7 @@ class MemberProfile extends Model
             'payment_submitted_at' => 'datetime',
             'payment_verified_at' => 'datetime',
             'activated_at' => 'datetime',
+            'next_due_at' => 'datetime',
         ];
     }
 

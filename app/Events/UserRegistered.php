@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Models\MemberProfile;
 use App\Models\User;
 use Illuminate\Foundation\Events\Dispatchable;
 

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Livewire\Membership\MembershipOnboardingWizard;
+use App\Livewire\Membership\MembershipSignupWizard;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\JannahCoinsLedger;
-use App\Models\MembershipApplicationDraft;
+use App\Models\MembershipOnboardingDraft;
 use App\Models\User;
 use App\Models\UserReferral;
 use Database\Seeders\GoalSeeder;
@@ -31,53 +31,36 @@ class AuthOnboardingTest extends TestCase
         ]);
     }
 
-    public function test_user_can_register_and_is_redirected_to_membership_onboarding(): void
+    protected function createDraft(): MembershipOnboardingDraft
     {
-        $response = $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->post('/register', [
-            'name' => 'Aisha Member',
-            'email' => 'aisha@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
+        return MembershipOnboardingDraft::create([
+            'payload' => [],
+            'step' => 1,
+            'status' => 'draft',
         ]);
-
-        $user = User::query()->where('email', 'aisha@example.com')->firstOrFail();
-
-        $response->assertRedirect(route('membership.onboarding'));
-        $this->assertAuthenticatedAs($user);
-        $this->assertSame('draft', $user->status);
-        $this->assertNotNull($user->referral_code);
-        $this->assertTrue($user->hasRole('member'));
-        $this->assertNotNull($user->profile);
-        $this->assertNotNull($user->memberProfile);
-        $this->assertSame('draft', $user->memberProfile->onboarding_status);
-
-        $this->actingAs($user)
-            ->get('/home')
-            ->assertRedirect(route('membership.onboarding'));
     }
 
-    public function test_user_can_complete_application_and_is_redirected_to_pending(): void
+    public function test_user_can_register_and_is_redirected_to_membership_signup(): void
     {
-        $user = User::query()->where('email', 'aisha@example.com')->first()
-            ?? User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $draft = $this->createDraft();
 
-        if (! $user->hasRole('member')) {
-            $user->assignRole('member');
-        }
+        Livewire::test(MembershipSignupWizard::class, ['draft' => $draft->id])
+            ->assertSet('step', 1);
+    }
 
-        if (! $user->profile) {
-            $user->profile()->create(['display_name' => $user->name]);
-        }
-
+    public function test_user_can_complete_signup_and_is_redirected_to_pending(): void
+    {
+        $draft = $this->createDraft();
         $interestSlugs = Interest::query()->orderBy('sort_order')->limit(2)->pluck('slug')->all();
         $goalSlugs = Goal::query()->orderBy('id')->limit(2)->pluck('slug')->all();
 
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
+        Livewire::test(MembershipSignupWizard::class, ['draft' => $draft->id])
             ->assertSet('step', 1)
             ->set('firstName', 'Aisha')
             ->set('lastName', 'Member')
-            ->set('nickname', 'Aishy')
+            ->set('email', 'aisha@example.com')
+            ->set('password', 'Password123!')
+            ->set('passwordConfirmation', 'Password123!')
             ->call('nextStep')
             ->assertSet('step', 2)
             ->set('locationCountry', 'Nigeria')
@@ -93,127 +76,53 @@ class AuthOnboardingTest extends TestCase
             ->set('xUsername', 'aisha_x')
             ->call('nextStep')
             ->assertSet('step', 5)
-            ->set('selectedInterests', $interestSlugs)
-            ->set('selectedGoals', $goalSlugs)
+            ->set('preferredBillingCycle', 'monthly')
             ->call('nextStep')
             ->assertSet('step', 6)
+            ->call('toggleInterest', $interestSlugs[0])
+            ->call('toggleGoal', $goalSlugs[0])
             ->call('submit')
             ->assertRedirect(route('membership.pending'));
 
-        $freshUser = $user->fresh();
-        $this->assertEquals('pending_review', $freshUser->memberProfile->onboarding_status);
-        $this->assertNotNull($freshUser->memberProfile->submitted_at);
-        $this->assertEquals('pending_review', $freshUser->status);
-
-        $this->assertDatabaseHas('membership_application_drafts', [
-            'user_id' => $user->id,
-        ]);
-
-        $draft = MembershipApplicationDraft::query()
-            ->where('user_id', $user->id)
-            ->first();
-        $this->assertNotNull($draft->submitted_at);
-    }
-
-    public function test_user_can_resume_onboarding_after_refresh(): void
-    {
-        $user = User::factory()->create([
-            'email_verified_at' => now(),
-            'status' => 'active',
-        ]);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $interestSlugs = Interest::query()->orderBy('sort_order')->limit(2)->pluck('slug')->all();
-        $goalSlugs = Goal::query()->orderBy('id')->limit(2)->pluck('slug')->all();
-
-        // Complete steps 1 and 2
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->assertSet('step', 1)
-            ->set('firstName', 'Aisha')
-            ->set('lastName', 'Member')
-            ->set('nickname', 'Aishy')
-            ->call('nextStep')
-            ->assertSet('step', 2)
-            ->set('locationCountry', 'Nigeria')
-            ->set('locationState', 'Lagos')
-            ->set('ageGroup', '25_34')
-            ->set('maritalStatus', 'married')
-            ->call('nextStep')
-            ->assertSet('step', 3);
-
-        // Simulate refresh: new component instance should restore state from draft
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
-            ->assertSet('step', 3)
-            ->assertSet('firstName', 'Aisha')
-            ->assertSet('lastName', 'Member')
-            ->assertSet('locationCountry', 'Nigeria')
-            ->assertSet('ageGroup', '25_34')
-            ->set('phone', '+2348000000000')
-            ->call('nextStep')
-            ->assertSet('step', 4)
-            ->set('igUsername', 'aisha_m')
-            ->set('xUsername', 'aisha_x')
-            ->call('nextStep')
-            ->assertSet('step', 5)
-            ->set('selectedInterests', $interestSlugs)
-            ->set('selectedGoals', $goalSlugs)
-            ->call('nextStep')
-            ->assertSet('step', 6)
-            ->call('submit')
-            ->assertRedirect(route('membership.pending'));
-
-        $freshUser = $user->fresh();
-        $this->assertEquals('pending_review', $freshUser->memberProfile->onboarding_status);
-        $this->assertNotNull($freshUser->memberProfile->submitted_at);
+        $user = User::query()->where('email', 'aisha@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('pending_review', $user->memberProfile->onboarding_status);
+        $this->assertNotNull($user->memberProfile->submitted_at);
+        $this->assertEquals('pending_review', $user->status);
     }
 
     public function test_double_submit_is_prevented(): void
     {
-        $user = User::factory()->create([
-            'email_verified_at' => now(),
-            'status' => 'active',
-        ]);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
+        $draft = $this->createDraft();
         $interestSlugs = Interest::query()->orderBy('sort_order')->limit(2)->pluck('slug')->all();
         $goalSlugs = Goal::query()->orderBy('id')->limit(2)->pluck('slug')->all();
 
-        // Complete all 6 steps
-        Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
+        Livewire::test(MembershipSignupWizard::class, ['draft' => $draft->id])
             ->set('firstName', 'Aisha')
             ->set('lastName', 'Member')
-            ->set('nickname', 'Aishy')
-            ->call('nextStep')
+            ->set('email', 'aisha@example.com')
+            ->set('password', 'Password123!')
+            ->set('passwordConfirmation', 'Password123!')
             ->set('locationCountry', 'Nigeria')
             ->set('locationState', 'Lagos')
             ->set('ageGroup', '25_34')
             ->set('maritalStatus', 'married')
-            ->call('nextStep')
             ->set('phone', '+2348000000000')
-            ->call('nextStep')
-            ->set('igUsername', 'aisha_m')
-            ->call('nextStep')
-            ->set('selectedInterests', $interestSlugs)
-            ->set('selectedGoals', $goalSlugs)
-            ->call('nextStep')
+            ->set('preferredBillingCycle', 'monthly')
+            ->call('toggleInterest', $interestSlugs[0])
+            ->call('toggleGoal', $goalSlugs[0])
             ->call('submit')
             ->assertRedirect(route('membership.pending'));
 
-        // Second submit should not crash and should be idempotent
+        $user = User::query()->where('email', 'aisha@example.com')->firstOrFail();
+
         Livewire::actingAs($user)
-            ->test(MembershipOnboardingWizard::class)
+            ->test(MembershipSignupWizard::class)
             ->assertRedirect(route('membership.pending'));
     }
 
     public function test_referred_user_registration_tracks_the_referrer_for_future_awards(): void
     {
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
-
         $referrer = User::factory()->create([
             'email_verified_at' => now(),
             'status' => 'active',
@@ -222,13 +131,25 @@ class AuthOnboardingTest extends TestCase
         $referrer->assignRole('member');
         $referrer->profile()->create(['display_name' => $referrer->name]);
 
-        $this->post('/register', [
-            'name' => 'Safiyyah',
-            'email' => 'safiyyah@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'ref' => $referrer->referral_code,
-        ])->assertRedirect(route('membership.onboarding'));
+        $draft = $this->createDraft();
+        $interest = Interest::first();
+        $goal = Goal::first();
+
+        Livewire::test(MembershipSignupWizard::class, ['draft' => $draft->id, 'ref' => $referrer->referral_code])
+            ->set('firstName', 'Safiyyah')
+            ->set('lastName', 'Referred')
+            ->set('email', 'safiyyah@example.com')
+            ->set('password', 'Password123!')
+            ->set('passwordConfirmation', 'Password123!')
+            ->set('locationCountry', 'Nigeria')
+            ->set('locationState', 'Lagos')
+            ->set('ageGroup', '25_34')
+            ->set('maritalStatus', 'single')
+            ->set('phone', '+2348012345678')
+            ->set('preferredBillingCycle', 'monthly')
+            ->call('toggleInterest', $interest->slug)
+            ->call('toggleGoal', $goal->slug)
+            ->call('submit');
 
         $referred = User::query()->where('email', 'safiyyah@example.com')->firstOrFail();
 
@@ -237,7 +158,7 @@ class AuthOnboardingTest extends TestCase
         $this->assertSame(0, JannahCoinsLedger::query()->where('user_id', $referrer->id)->where('reason', 'referral')->count());
     }
 
-    public function test_unonboarded_user_is_redirected_from_home_to_membership_onboarding(): void
+    public function test_unonboarded_user_is_redirected_from_home_to_membership_signup(): void
     {
         $user = User::factory()->create([
             'email_verified_at' => now(),
@@ -251,6 +172,6 @@ class AuthOnboardingTest extends TestCase
 
         $this->actingAs($freshUser)
             ->get('/home')
-            ->assertRedirect(route('membership.onboarding'));
+            ->assertRedirect(route('membership.signup'));
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Foundation\Events\Dispatchable;
 

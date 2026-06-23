@@ -3,24 +3,25 @@
 namespace App\Livewire\Membership;
 
 use App\Events\PaymentSubmitted;
-use App\Models\MemberProfile;
 use App\Models\Setting;
 use App\Services\MembershipStateService;
-use Livewire\Component;
-use Livewire\WithFileUploads;
+use App\Services\PaystackService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class PaymentPage extends Component
 {
     use WithFileUploads;
 
     public $paymentProof;
-    public $paymentNotes = '';
-    public bool $submitting = false;
-    public bool $submitted = false;
 
-    public function mount(): void
+    public $paymentNotes = '';
+
+    public bool $submitting = false;
+
+    public function mount()
     {
         $user = auth()->user();
         $memberProfile = $user->memberProfile;
@@ -29,12 +30,32 @@ class PaymentPage extends Component
         $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
 
         if (! $status || ! in_array($status, ['approved_pending_payment', 'payment_submitted'], true)) {
-            $this->redirectRoute('home', navigate: true);
+            return redirect()->route('home');
+        }
+    }
 
+    public function redirectToPaystack(PaystackService $paystackService)
+    {
+        $user = auth()->user();
+        $memberProfile = $user->memberProfile;
+
+        if (! $memberProfile || $memberProfile->onboarding_status !== 'approved_pending_payment') {
             return;
         }
 
-        $this->submitted = $status === 'payment_submitted';
+        $billingCycle = $memberProfile->preferred_billing_cycle ?? 'monthly';
+
+        try {
+            $url = $paystackService->getAuthorizationUrl($user, $billingCycle);
+
+            return redirect()->away($url);
+        } catch (\Throwable $e) {
+            Log::error('PaymentPage: Paystack initialization failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            $this->addError('paystack', 'Could not connect to payment gateway. Please try the manual bank transfer option below.');
+        }
     }
 
     public function submitPayment(): void
@@ -58,7 +79,7 @@ class PaymentPage extends Component
             $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
 
             if ($status !== 'approved_pending_payment') {
-                Log::warning('Blocked payment attempt — wrong status', [
+                Log::warning('PaymentPage: blocked payment attempt — wrong status', [
                     'user_id' => $user->id,
                     'status' => $status,
                 ]);
@@ -86,11 +107,10 @@ class PaymentPage extends Component
                 ])->saveQuietly();
             }
 
-            $this->submitted = true;
             $this->paymentProof = null;
             $this->paymentNotes = '';
 
-            Log::info('Payment submitted', [
+            Log::info('PaymentPage: payment submitted', [
                 'user_id' => $user->id,
                 'profile_type' => $memberProfile ? 'member_profile' : 'user_profile',
                 'file_path' => $path,
@@ -98,10 +118,9 @@ class PaymentPage extends Component
 
             session()->flash('message', 'Your payment receipt has been submitted. An admin will verify it shortly.');
         } catch (\Throwable $e) {
-            Log::error('Payment submission failed', [
+            Log::error('PaymentPage: payment submission failed', [
                 'user_id' => auth()->id(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             $this->addError('paymentProof', 'An error occurred while submitting your payment. Please try again.');
@@ -122,15 +141,22 @@ class PaymentPage extends Component
 
         $profile = $memberProfile ?? $legacyProfile;
         $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
+        $submitted = $status === 'payment_submitted';
 
         $bankDetails = Setting::getValue('bank_details', 'Contact us for bank details');
+
+        $billingCycle = $memberProfile?->preferred_billing_cycle ?? 'monthly';
+        $amountDue = app(PaystackService::class)->getAmountForBillingCycle($billingCycle);
 
         return view('livewire.membership.payment-page', [
             'profile' => $profile,
             'memberProfile' => $memberProfile,
             'status' => $status,
+            'submitted' => $submitted,
             'bankDetails' => $bankDetails,
             'membershipId' => $memberProfile?->membership_id ?? $legacyProfile?->membership_id,
+            'billingCycle' => $billingCycle,
+            'amountDue' => $amountDue,
         ])->layout('layouts.guest-livewire', [
             'title' => 'Membership Payment',
         ]);

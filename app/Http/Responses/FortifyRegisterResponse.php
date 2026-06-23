@@ -19,6 +19,6 @@ class FortifyRegisterResponse implements RegisterResponseContract
             return redirect('/admin');
         }
 
-        return redirect()->route('membership.onboarding');
+        return redirect()->route('membership.signup');
     }
 }

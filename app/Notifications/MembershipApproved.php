@@ -25,22 +25,25 @@ class MembershipApproved extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $legacyCardUrl = route('profile.legacy-card');
+        $paymentUrl = route('membership.payment');
+
         return (new MailMessage)
-            ->subject('Membership Approved — Payment Required')
-            ->greeting("Assalamu Alaikum {$this->user->name},")
-            ->line('Your membership application has been approved.')
-            ->line("Membership Type: {$this->membershipType}")
-            ->line("Membership ID: {$this->membershipId}")
-            ->line('To complete your registration, please submit your membership payment.')
-            ->line('Your account will be activated once payment is confirmed.')
-            ->action('Complete Payment', url('/membership/payment'));
+            ->subject('Membership Approved — Welcome to TMC!')
+            ->markdown('emails.membership.approved', [
+                'user' => $this->user,
+                'membershipId' => $this->membershipId,
+                'membershipType' => $this->membershipType,
+                'legacyCardUrl' => $legacyCardUrl,
+                'paymentUrl' => $paymentUrl,
+            ]);
     }
 
     public function toDatabase(object $notifiable): array
     {
         return [
-            'title' => 'Membership Approved — Payment Required',
-            'body' => "Your membership has been approved (ID: {$this->membershipId}). Please complete your payment to activate your account.",
+            'title' => 'Membership Approved',
+            'body' => "Your membership (ID: {$this->membershipId}) has been approved. Please complete your payment to activate your account.",
             'action_url' => '/membership/payment',
         ];
     }

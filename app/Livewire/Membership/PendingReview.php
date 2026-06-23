@@ -7,34 +7,26 @@ use Livewire\Component;
 
 class PendingReview extends Component
 {
-    public function mount(): void
+    public function mount()
     {
         $user = auth()->user();
         $profile = $user->memberProfile ?? $user->profile;
 
         if (! $profile) {
-            $this->redirectRoute('membership.onboarding', navigate: true);
-
-            return;
+            return redirect()->route('membership.signup');
         }
 
         if ($profile instanceof MemberProfile) {
             if (in_array($profile->onboarding_status, ['draft', 'in_progress', 'rejected', 'needs_correction'], true)) {
-                $this->redirectRoute('membership.onboarding', navigate: true);
-
-                return;
+                return redirect()->route('membership.signup');
             }
 
             if (in_array($profile->onboarding_status, ['approved_pending_payment', 'payment_submitted'], true)) {
-                $this->redirectRoute('membership.payment', navigate: true);
-
-                return;
+                return redirect()->route('membership.payment');
             }
 
             if (in_array($profile->onboarding_status, ['approved', 'active'], true)) {
-                $this->redirectRoute('home', navigate: true);
-
-                return;
+                return redirect()->route('home');
             }
 
             if ($profile->onboarding_status === 'pending_review') {
@@ -42,27 +34,19 @@ class PendingReview extends Component
             }
         } else {
             if (in_array($profile->membership_status, ['draft', 'in_progress', null], true)) {
-                $this->redirectRoute('membership.onboarding', navigate: true);
-
-                return;
+                return redirect()->route('membership.signup');
             }
 
             if ($profile->membership_status === 'active') {
-                $this->redirectRoute('home', navigate: true);
-
-                return;
+                return redirect()->route('home');
             }
 
             if (in_array($profile->membership_status, ['approved_pending_payment', 'payment_submitted'], true)) {
-                $this->redirectRoute('membership.payment', navigate: true);
-
-                return;
+                return redirect()->route('membership.payment');
             }
 
             if (in_array($profile->membership_status, ['rejected', 'needs_correction'], true)) {
-                $this->redirectRoute('membership.onboarding', navigate: true);
-
-                return;
+                return redirect()->route('membership.signup');
             }
         }
     }

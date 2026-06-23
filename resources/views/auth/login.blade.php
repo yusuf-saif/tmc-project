@@ -42,6 +42,6 @@
 
     <p class="mt-6 text-center text-sm text-ink-soft">
         New here?
-        <a href="{{ route('register') }}" class="tmc-link">Create an account</a>
+        <a href="{{ route('membership.signup') }}" class="tmc-link">Create an account</a>
     </p>
 @endsection

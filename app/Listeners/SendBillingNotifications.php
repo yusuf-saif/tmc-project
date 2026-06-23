@@ -5,7 +5,6 @@ namespace App\Listeners;
 use App\Events\BusinessActivated;
 use App\Events\BusinessApproved;
 use App\Events\BusinessSuspended;
-use App\Events\MembershipActivated;
 use App\Events\SubscriptionActivated;
 use App\Events\SubscriptionExpired;
 use App\Events\SubscriptionExpiringSoon;

@@ -46,7 +46,7 @@ class EnsureUserStateRedirect
 
         // ── Draft / Onboarding states ───────────────────────────────
         if (! $status || in_array($status, ['draft', 'onboarding', 'in_progress'], true)) {
-            return redirect()->route('membership.onboarding');
+            return redirect()->route('membership.signup');
         }
 
         // ── Pending review states ───────────────────────────────────
@@ -56,7 +56,7 @@ class EnsureUserStateRedirect
 
         // ── Rejected states ─────────────────────────────────────────
         if (in_array($status, ['rejected', 'needs_correction'], true)) {
-            return redirect()->route('membership.onboarding');
+            return redirect()->route('membership.signup');
         }
 
         // ── Approved — awaiting payment ─────────────────────────────
@@ -74,7 +74,8 @@ class EnsureUserStateRedirect
             'user_id' => $user->id,
             'resolved_status' => $status,
         ]);
-        return redirect()->route('membership.onboarding');
+
+        return redirect()->route('membership.signup');
     }
 
     protected function resolveStatus(object $user): ?string

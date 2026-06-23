@@ -27,6 +27,32 @@
                     </div>
                 @endif
 
+                <div class="rounded-sm bg-ivory p-5 text-center">
+                    <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Amount Due</p>
+                    <p class="mt-1 font-display text-4xl text-teal-dk">₦{{ number_format($amountDue) }}</p>
+                    <p class="mt-1 text-sm text-ink-soft">{{ ucfirst($billingCycle) }} billing</p>
+                </div>
+
+                <div class="rounded-sm border border-teal bg-white p-5 text-center">
+                    <h3 class="text-sm font-semibold text-teal-dk">Pay Online with Card</h3>
+                    <p class="mt-1 text-xs text-ink-soft">Secure payment via Paystack</p>
+                    <button type="button" wire:click="redirectToPaystack" wire:loading.attr="disabled"
+                            class="mt-4 w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
+                        <span wire:loading.remove wire:target="redirectToPaystack">Pay ₦{{ number_format($amountDue) }} with Card</span>
+                        <span wire:loading wire:target="redirectToPaystack">Connecting to Paystack...</span>
+                    </button>
+                    @error('paystack') <p class="mt-2 text-xs text-red-500">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-white px-2 text-ink-soft">Or pay via bank transfer</span>
+                    </div>
+                </div>
+
                 <div class="rounded-sm bg-ivory p-5 text-left text-sm text-ink-soft">
                     <h3 class="mb-2 text-sm font-semibold text-ink-md">Payment Instructions</h3>
                     <p class="leading-7">
