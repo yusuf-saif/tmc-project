@@ -34,6 +34,12 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="mb-6 rounded-sm bg-red-50 p-4 text-sm text-red-700">
+                {{ session('error') }}
+            </div>
+        @endif
+
         {{-- STATE: payment_pending — show payment form --}}
         @if ($status === 'payment_pending')
             <h1 class="font-display text-4xl leading-none text-teal-dk">Membership Payment</h1>
@@ -129,6 +135,10 @@
                     </div>
                     <p class="text-sm text-ink-md">We are processing your payment. This may take a moment.</p>
                     <p class="mt-2 text-xs text-ink-soft">You will be automatically redirected once payment is confirmed.</p>
+                    <button type="button" wire:click="checkPaymentStatus"
+                            class="mt-4 text-xs font-medium text-teal underline transition hover:text-teal-dk">
+                        Check Status Manually
+                    </button>
                 </div>
 
                 @if ($membershipId)
@@ -152,7 +162,8 @@
                             <line x1="9" y1="9" x2="15" y2="15"/>
                         </svg>
                     </div>
-                    <p class="text-sm text-ink-md">Your payment could not be processed. Please try again or use bank transfer.</p>
+                    <p class="text-sm text-ink-md">Your payment could not be processed.</p>
+                    <p class="mt-1 text-xs text-ink-soft">You can try again with a different card, or use the bank transfer option below. If the issue persists, contact support.</p>
                 </div>
 
                 @if ($membershipId)

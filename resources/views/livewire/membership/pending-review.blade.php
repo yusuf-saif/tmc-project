@@ -1,4 +1,12 @@
-<div class="mx-auto flex min-h-screen w-full max-w-2xl items-center justify-center px-6 py-12">
+<div class="mx-auto flex min-h-screen w-full max-w-2xl items-center justify-center px-6 py-12"
+     x-data="{ refreshing: false }"
+     x-init="
+         setInterval(() => {
+             if (! document.hidden) {
+                 $wire.refreshStatus();
+             }
+         }, 15000);
+     ">
     <section class="w-full max-w-xl rounded bg-white p-10 text-center shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
         <img src="{{ asset('images/img2.png') }}" alt="The Muhsinat Club" class="mx-auto mb-6 w-36 max-w-full object-contain">
 
@@ -102,6 +110,15 @@
             While you wait, feel free to explore our
             <a href="{{ route('landing') }}" class="tmc-link">public resources</a>.
           </p>
+        </div>
+
+        {{-- Manual Refresh --}}
+        <div class="mt-4 text-center">
+          <button type="button" wire:click="refreshStatus" wire:loading.attr="disabled"
+                  class="text-xs font-medium text-teal underline transition hover:text-teal-dk disabled:opacity-50">
+            <span wire:loading.remove wire:target="refreshStatus">Check Status</span>
+            <span wire:loading wire:target="refreshStatus">Checking...</span>
+          </button>
         </div>
     </section>
 </div>

@@ -60,6 +60,9 @@ class MemberProfile extends Model
             'payment_verified_at' => 'datetime',
             'activated_at' => 'datetime',
             'next_due_at' => 'datetime',
+            'under_review_email_sent_at' => 'datetime',
+            'approval_email_sent_at' => 'datetime',
+            'payment_confirmed_email_sent_at' => 'datetime',
         ];
     }
 

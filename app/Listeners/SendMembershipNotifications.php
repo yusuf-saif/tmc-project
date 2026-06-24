@@ -52,8 +52,8 @@ class SendMembershipNotifications
 
         $profile = $user->memberProfile;
 
-        if ($profile && $profile->email_sent_at !== null) {
-            Log::info('SendMembershipNotifications: email already sent, skipping', [
+        if ($profile && $profile->payment_confirmed_email_sent_at !== null) {
+            Log::info('SendMembershipNotifications: payment confirmed email already sent, skipping', [
                 'user_id' => $user->id,
             ]);
 
@@ -65,7 +65,7 @@ class SendMembershipNotifications
         ));
 
         if ($profile) {
-            $profile->forceFill(['email_sent_at' => now()])->saveQuietly();
+            $profile->forceFill(['payment_confirmed_email_sent_at' => now()])->saveQuietly();
         }
     }
 
@@ -76,16 +76,44 @@ class SendMembershipNotifications
             Notification::send($admins, new MembershipApplicationSubmitted($event->actor));
         }
 
-        $event->actor->notify(new MembershipUnderReviewNotification($event->profile));
+        $profile = $event->profile;
+
+        if ($profile && $profile->under_review_email_sent_at !== null) {
+            Log::info('SendMembershipNotifications: under review email already sent, skipping', [
+                'user_id' => $event->actor->id,
+            ]);
+
+            return;
+        }
+
+        $event->actor->notify(new MembershipUnderReviewNotification($profile));
+
+        if ($profile) {
+            $profile->forceFill(['under_review_email_sent_at' => now()])->saveQuietly();
+        }
     }
 
     protected function sendApprovedNotification(MembershipApproved $event): void
     {
-        $event->profile->user->notify(new MembershipApprovedNotification(
-            $event->profile->user,
+        $profile = $event->profile;
+
+        if ($profile && $profile->approval_email_sent_at !== null) {
+            Log::info('SendMembershipNotifications: approval email already sent, skipping', [
+                'user_id' => $profile->user_id,
+            ]);
+
+            return;
+        }
+
+        $profile->user->notify(new MembershipApprovedNotification(
+            $profile->user,
             $event->membershipId,
             $event->membershipType,
         ));
+
+        if ($profile) {
+            $profile->forceFill(['approval_email_sent_at' => now()])->saveQuietly();
+        }
     }
 
     protected function sendRejectedNotification(MembershipRejected $event): void

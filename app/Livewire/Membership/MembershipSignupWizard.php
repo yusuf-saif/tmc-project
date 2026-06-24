@@ -92,7 +92,7 @@ class MembershipSignupWizard extends Component
             $user = auth()->user();
             $profile = $user->memberProfile;
 
-            if ($profile && in_array($profile->onboarding_status, ['pending_review', 'submitted', 'under_review', 'approved_pending_payment', 'payment_submitted', 'approved', 'active'], true)) {
+            if ($profile && in_array($profile->onboarding_status, ['pending_review', 'submitted', 'under_review', 'payment_pending', 'payment_processing', 'payment_failed', 'active'], true)) {
                 $this->redirect(route('membership.pending'));
 
                 return;

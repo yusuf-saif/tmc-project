@@ -51,6 +51,34 @@ class PendingReview extends Component
         }
     }
 
+    public function refreshStatus(): void
+    {
+        $user = auth()->user();
+        $profile = $user->memberProfile ?? $user->profile;
+
+        if (! $profile) {
+            $this->redirect(route('membership.signup'));
+
+            return;
+        }
+
+        $status = $profile instanceof MemberProfile
+            ? $profile->onboarding_status
+            : $profile->membership_status;
+
+        if (in_array($status, ['payment_pending', 'payment_processing', 'payment_failed'], true)) {
+            $this->redirect(route('membership.payment'));
+
+            return;
+        }
+
+        if (in_array($status, ['approved', 'active'], true)) {
+            $this->redirect(route('home'));
+
+            return;
+        }
+    }
+
     public function render()
     {
         return view('livewire.membership.pending-review')

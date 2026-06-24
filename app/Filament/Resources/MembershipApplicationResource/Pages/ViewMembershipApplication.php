@@ -239,6 +239,14 @@ class ViewMembershipApplication extends ViewRecord
                         ->send();
                     $this->refreshFormData(['onboarding_status', 'payment_verified_at', 'activated_at']);
                 }),
+
+            Actions\Action::make('download_receipt')
+                ->label('Download Receipt')
+                ->color('gray')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->visible(fn (): bool => $this->record->payment_proof_path !== null)
+                ->url(fn () => route('admin.receipt.download', $this->record))
+                ->openUrlInNewTab(),
         ];
     }
 }
