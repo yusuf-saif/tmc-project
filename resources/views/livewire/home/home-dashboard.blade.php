@@ -10,16 +10,6 @@
     </div>
   </div>
 
-  {{-- Announcement banner --}}
-  @if($announcement)
-  <div class="anim-fade-up delay-1 page-pad" style="margin-top:10px;margin-bottom:0;">
-    <a href="{{ route('announcements.show', $announcement->slug) }}" class="announce-banner">
-      <p class="announce-label">Announcement</p>
-      <p class="announce-title">{{ \Illuminate\Support\Str::limit($announcement->title, 60) }}</p>
-    </a>
-  </div>
-  @endif
-
   {{-- Coins card --}}
   <a href="{{ url('/profile?tab=wallet') }}" class="coins-card anim-fade-up delay-1">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -55,7 +45,7 @@
               <line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
             </svg>
-            <span>{{ \Carbon\Carbon::parse($event->event_date)->format('D d M · g:ia') }}</span>
+            <span>{{ \Carbon\Carbon::parse($event->event_date)->hijri('D d M · g:ia') }}</span>
           </div>
           <div class="event-card__footer">
             @php

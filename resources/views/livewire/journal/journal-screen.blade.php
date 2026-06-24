@@ -43,7 +43,7 @@
                     <article class="journal-entry-card">
                         <div class="journal-mood">{{ $emoji }}</div>
                         <div style="flex:1;min-width:0;">
-                            <p style="font-size:0.875rem;font-weight:600;color:var(--ink);">{{ $entry->entry_date->format('d M Y') }}</p>
+                            <p style="font-size:0.875rem;font-weight:600;color:var(--ink);">{{ $entry->entry_date->hijri('d M Y') }}</p>
                             <p style="margin-top:4px;font-size:0.8rem;font-weight:300;color:var(--ink-soft);line-height:1.6;">{{ Str::limit($entry->body, 80) }}</p>
                         </div>
                         <div class="journal-entry-actions">

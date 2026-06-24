@@ -17,7 +17,7 @@
             <h1 class="font-display text-[2rem] leading-none text-teal-dk">{{ $event->title }}</h1>
 
             <div class="space-y-2 text-sm font-light text-ink-soft">
-                <p>📅 {{ $event->event_date->format('d M Y · H:i') }}</p>
+                <p>📅 {{ $event->event_date->hijri('d M Y · H:i') }}</p>
                 <p>
                     📍
                     <span class="location-badge location-badge-{{ $event->location_type === 'online' ? 'online' : ($event->location_type === 'in_person' ? 'person' : 'hybrid') }}">
@@ -37,7 +37,14 @@
             <div class="text-[0.9rem] font-light leading-8 text-ink-md">
                 {!! $event->description !!}
             </div>
+        </div>
 
+        @if ($event->cover_image_path)
+            <img src="{{ asset('storage/'.$event->cover_image_path) }}" alt="{{ $event->title }}"
+                 class="w-full object-cover">
+        @endif
+
+        <div class="space-y-5 p-5">
             @if ($event->external_link)
                 <a href="{{ $event->external_link }}" target="_blank" rel="noreferrer"
                    class="btn-teal-outline" style="text-decoration:none;">Join Online →</a>

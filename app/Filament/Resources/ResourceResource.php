@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ResourceResource\Pages;
 use App\Models\Resource as LibraryResource;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -42,13 +43,9 @@ class ResourceResource extends Resource
                 ->required()
                 ->rows(3)
                 ->columnSpanFull(),
-            Forms\Components\Select::make('category')
-                ->options([
-                    'dua_book' => "Du'a Book",
-                    'dear_allah' => 'Dear Allah',
-                    'pocket_guide' => 'Pocket Guide',
-                    'audio_halaqahs' => 'Audio & Halaqahs',
-                ])
+            Forms\Components\Select::make('category_id')
+                ->label('Category')
+                ->relationship('category', 'name')
                 ->required(),
             Forms\Components\Select::make('type')
                 ->options([
@@ -89,7 +86,7 @@ class ResourceResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('category')->badge(),
+                Tables\Columns\TextColumn::make('category.name')->label('Category')->badge(),
                 Tables\Columns\TextColumn::make('type')->badge(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -99,16 +96,12 @@ class ResourceResource extends Resource
                         'archived' => 'warning',
                         default => 'gray',
                     }),
-                Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
+                Tables\Columns\TextColumn::make('created_at')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
-                    ->options([
-                        'dua_book' => "Du'a Book",
-                        'dear_allah' => 'Dear Allah',
-                        'pocket_guide' => 'Pocket Guide',
-                        'audio_halaqahs' => 'Audio & Halaqahs',
-                    ]),
+                Tables\Filters\SelectFilter::make('category_id')
+                    ->label('Category')
+                    ->relationship('category', 'name'),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'draft' => 'Draft',
@@ -123,7 +116,12 @@ class ResourceResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->after(function (LibraryResource $record): void {
-                        AuditLogService::log('resource_deleted', $record, $record->only(['title', 'status', 'category', 'type']), []);
+                        AuditLogService::log('resource_deleted', $record, [
+                            'title' => $record->title,
+                            'status' => $record->status,
+                            'category' => $record->category?->name,
+                            'type' => $record->type,
+                        ], []);
                     }),
             ]);
     }
@@ -170,11 +168,21 @@ class ResourceResource extends Resource
 
     public static function logCreate(LibraryResource $resource): void
     {
-        AuditLogService::log('resource_created', $resource, [], $resource->only(['title', 'status', 'category', 'type']));
+        AuditLogService::log('resource_created', $resource, [], [
+            'title' => $resource->title,
+            'status' => $resource->status,
+            'category' => $resource->category?->name,
+            'type' => $resource->type,
+        ]);
     }
 
     public static function logUpdate(LibraryResource $resource, array $old): void
     {
-        AuditLogService::log('resource_updated', $resource, $old, $resource->only(['title', 'status', 'category', 'type']));
+        AuditLogService::log('resource_updated', $resource, $old, [
+            'title' => $resource->title,
+            'status' => $resource->status,
+            'category' => $resource->category?->name,
+            'type' => $resource->type,
+        ]);
     }
 }

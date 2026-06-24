@@ -70,7 +70,6 @@ class MembershipSignupService
                 'fb_username' => $data['fb_username'] ?? null,
                 'x_username' => $data['x_username'] ?? null,
                 'tiktok_username' => $data['tiktok_username'] ?? null,
-                'onboarding_step' => 6,
                 'onboarding_status' => 'pending_review',
                 'submitted_at' => now(),
                 'preferred_billing_cycle' => $data['preferred_billing_cycle'] ?? 'monthly',

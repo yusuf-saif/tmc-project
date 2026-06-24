@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SupportApplicationResource\Pages;
 use App\Models\SupportApplication;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -50,7 +51,7 @@ class SupportApplicationResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('type')->badge(),
                 Tables\Columns\TextColumn::make('status')->badge(),
-                Tables\Columns\TextColumn::make('created_at')->dateTime('d M Y H:i'),
+                Tables\Columns\TextColumn::make('created_at')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')->options([

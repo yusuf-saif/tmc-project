@@ -16,7 +16,7 @@ class Resource extends Model
         'title',
         'slug',
         'description',
-        'category',
+        'category_id',
         'type',
         'body',
         'file_path',
@@ -38,6 +38,11 @@ class Resource extends Model
         });
     }
 
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
@@ -45,7 +50,7 @@ class Resource extends Model
 
     public function scopeByCategory($query, string $category)
     {
-        return $query->where('category', $category);
+        return $query->whereHas('category', fn ($q) => $q->where('slug', $category));
     }
 
     public function duaListItems(): HasMany

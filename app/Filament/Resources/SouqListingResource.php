@@ -6,6 +6,7 @@ use App\Filament\Resources\SouqListingResource\Pages;
 use App\Jobs\SouqApprovedNotification;
 use App\Models\SouqListing;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -83,7 +84,7 @@ class SouqListingResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Applied')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->sortable(),
             ])
             ->filters([

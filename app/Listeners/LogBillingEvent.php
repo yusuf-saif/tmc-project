@@ -13,10 +13,15 @@ use App\Events\SubscriptionPaymentFailed;
 use App\Events\SubscriptionPaymentReceived;
 use App\Events\SubscriptionSuspended;
 use App\Services\AuditLogService;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
-class LogBillingEvent
+class LogBillingEvent implements ShouldQueue
 {
+    public string $queue = 'billing';
+
+    public int $timeout = 30;
+
     public function handle(
         MembershipActivated|SubscriptionActivated|SubscriptionExpired|SubscriptionExpiringSoon|SubscriptionSuspended|SubscriptionPaymentReceived|SubscriptionPaymentFailed|BusinessApproved|BusinessActivated|BusinessSuspended $event,
     ): void {

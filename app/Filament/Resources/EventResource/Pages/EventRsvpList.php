@@ -4,6 +4,7 @@ namespace App\Filament\Resources\EventResource\Pages;
 
 use App\Filament\Resources\EventResource;
 use App\Models\Event;
+use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\Page;
 use Filament\Tables;
@@ -38,9 +39,9 @@ class EventRsvpList extends Page implements HasTable
                     ->label('Email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('rsvp_at')
-                    ->dateTime('D M Y H:i'),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('D M Y H:i') : '—'),
                 Tables\Columns\TextColumn::make('cancelled_at')
-                    ->dateTime('D M Y H:i'),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('D M Y H:i') : '—'),
             ]);
     }
 

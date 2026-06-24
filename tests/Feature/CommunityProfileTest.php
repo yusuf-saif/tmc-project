@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Livewire\Community\SupportForm;
 use App\Livewire\Profile\NotificationPreferences;
-use App\Models\Announcement;
 use App\Models\CommunitySpace;
 use App\Models\SupportApplication;
 use App\Models\User;
@@ -13,7 +12,6 @@ use Database\Seeders\GoalSeeder;
 use Database\Seeders\InterestSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -148,46 +146,11 @@ class CommunityProfileTest extends TestCase
         ], $this->member->profile->notification_preferences);
     }
 
-    public function test_announcement_appears_on_home(): void
-    {
-        Announcement::query()->create([
-            'title' => 'Member Update',
-            'body' => 'A warm update for all members.',
-            'status' => 'published',
-            'published_at' => now(),
-            'created_by' => $this->admin->id,
-            'updated_by' => $this->admin->id,
-        ]);
-
-        $this->actingAs($this->member)
-            ->get('/home')
-            ->assertSee('Member Update');
-    }
-
-    public function test_scheduled_announcement_publishes(): void
-    {
-        $announcement = Announcement::query()->create([
-            'title' => 'Scheduled Update',
-            'body' => 'Soon to be published.',
-            'status' => 'scheduled',
-            'publish_at' => now()->subMinute(),
-            'created_by' => $this->admin->id,
-            'updated_by' => $this->admin->id,
-        ]);
-
-        Artisan::call('schedule:run');
-
-        $announcement->refresh();
-
-        $this->assertSame('published', $announcement->status);
-        $this->assertNotNull($announcement->published_at);
-    }
-
     public function test_admin_can_load_phase_six_filament_resources(): void
     {
         $this->actingAs($this->admin)->get('/admin/community-spaces')->assertOk();
         $this->actingAs($this->admin)->get('/admin/support-applications')->assertOk();
-        $this->actingAs($this->admin)->get('/admin/announcements')->assertOk();
+        $this->actingAs($this->admin)->get('/admin/in-app-announcements')->assertOk();
     }
 
     protected function createOnboardedUser(string $email, string $referralCode, string $role): User

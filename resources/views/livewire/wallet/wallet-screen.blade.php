@@ -58,7 +58,7 @@
 
             @foreach ($this->history as $row)
                 <div class="grid grid-cols-[1.2fr_1.3fr_0.7fr] gap-3 text-[12px] text-ink-md">
-                    <span>{{ $row->created_at->format('d M Y') }}</span>
+                    <span>{{ $row->created_at->hijri('d M Y') }}</span>
                     <span>{{ match ($row->reason) {
                         'onboarding' => 'Welcome gift',
                         'referral' => 'Referral bonus',

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\AuditLogResource\Pages;
 use App\Models\AuditLog;
+use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -40,7 +41,7 @@ class AuditLogResource extends Resource
                     ->formatStateUsing(fn (?string $state): string => $state ? Str::afterLast(str_replace('\\', '/', $state), '/') : 'System'),
                 Tables\Columns\TextColumn::make('auditable_id')->label('Target ID'),
                 Tables\Columns\TextColumn::make('ip_address'),
-                Tables\Columns\TextColumn::make('created_at')->label('When')->dateTime('d M Y H:i')->sortable(),
+                Tables\Columns\TextColumn::make('created_at')->label('When')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')->sortable(),
             ])
             ->filters([
                 Filter::make('action')

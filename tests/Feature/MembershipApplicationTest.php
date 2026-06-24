@@ -111,7 +111,6 @@ class MembershipApplicationTest extends TestCase
             'fb_username' => $data['fb_username'],
             'x_username' => $data['x_username'],
             'tiktok_username' => $data['tiktok_username'],
-            'onboarding_step' => 6,
             'onboarding_status' => 'pending_review',
             'submitted_at' => now(),
         ]);

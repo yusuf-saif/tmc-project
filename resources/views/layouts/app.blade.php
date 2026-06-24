@@ -29,7 +29,10 @@
            alt="TMC"
            style="width:32px;height:32px;object-fit:contain;">
     </a>
-    <a href="{{ route('profile.notifications') }}" class="topbar-btn" aria-label="Notifications">
+    <span class="text-[11px] font-medium text-teal-dk/70" style="font-feature-settings:'tnum';">
+      {{ now()->hijri('j M Y') }}
+    </span>
+    <a href="{{ route('profile', ['tab' => 'notifications']) }}" class="topbar-btn" aria-label="Notifications">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
            fill="none" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round"

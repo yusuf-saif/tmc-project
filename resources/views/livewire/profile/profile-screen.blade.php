@@ -166,7 +166,7 @@
         </div>
         @foreach ($this->history as $row)
           <div class="wallet-history-row">
-            <span>{{ $row->created_at->format('d M Y') }}</span>
+            <span>{{ $row->created_at->hijri('d M Y') }}</span>
             <span>{{ match ($row->reason) {
                 'onboarding' => 'Welcome gift',
                 'referral' => 'Referral bonus',
@@ -239,10 +239,19 @@
 
     {{-- Notifications List --}}
     @php($notifications = $this->notifications)
+    @php($unread = $this->unreadCount)
     @if($notifications->count() > 0)
+      @if($unread > 0)
+        <button type="button" wire:click="markAllAsRead" class="notif-mark-all">
+          <span class="notif-mark-all-text">Mark all as read</span>
+          <span class="notif-mark-all-icon">✓</span>
+        </button>
+      @endif
       <div class="notif-list">
         @foreach($notifications as $notification)
-          <div class="notif-card {{ $notification->read_at ? '' : 'notif-card-unread' }}">
+          <div class="notif-card {{ $notification->read_at ? '' : 'notif-card-unread' }}"
+               wire:click="markAsRead('{{ $notification->id }}')"
+               wire:key="notif-{{ $notification->id }}">
             <div class="notif-item-inner">
               @if(!$notification->read_at)
                 <span class="notif-dot"></span>

@@ -7,6 +7,8 @@ use App\Models\MemberProfile;
 use App\Models\UserProfile;
 use App\Services\MembershipApprovalService;
 use App\Services\MembershipIdService;
+use App\Services\MembershipStateService;
+use Carbon\Carbon;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -63,7 +65,7 @@ class MembershipApplicationResource extends Resource
                         : ($record->location_international ?? '')),
                 Tables\Columns\TextColumn::make('submitted_at')
                     ->label('Submitted')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->sortable(),
             ])
             ->filters([
@@ -164,6 +166,21 @@ class MembershipApplicationResource extends Resource
         }
 
         app(MembershipApprovalService::class)->needsCorrection($profile, $notes);
+    }
+
+    public static function markPaymentFailed(MemberProfile|UserProfile $profile, ?string $reason = null): void
+    {
+        if ($profile instanceof UserProfile) {
+            return;
+        }
+
+        $actor = auth()->user();
+
+        app(MembershipStateService::class)->markFailed($profile, $actor);
+
+        if ($reason) {
+            $profile->forceFill(['payment_failed_reason' => $reason])->saveQuietly();
+        }
     }
 
     public static function confirmPayment(MemberProfile|UserProfile $profile): void

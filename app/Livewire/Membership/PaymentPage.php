@@ -84,6 +84,11 @@ class PaymentPage extends Component
         $memberProfile = $user->memberProfile;
 
         if (! $memberProfile || $memberProfile->onboarding_status !== 'payment_pending') {
+            Log::warning('PaymentPage: blocked Paystack redirect — wrong status', [
+                'user_id' => $user->id,
+                'status' => $memberProfile?->onboarding_status,
+            ]);
+
             return;
         }
 
@@ -95,10 +100,17 @@ class PaymentPage extends Component
 
             $url = $paystackService->getAuthorizationUrl($user, $billingCycle);
 
+            Log::info('PaymentPage: redirecting to Paystack', [
+                'user_id' => $user->id,
+                'profile_id' => $memberProfile->id,
+                'billing_cycle' => $billingCycle,
+            ]);
+
             return redirect()->away($url);
         } catch (\Throwable $e) {
             Log::error('PaymentPage: Paystack initialization failed', [
                 'user_id' => $user->id,
+                'profile_id' => $memberProfile->id,
                 'error' => $e->getMessage(),
             ]);
             $this->addError('paystack', 'Could not connect to payment gateway. Please try the manual bank transfer option below.');
@@ -136,6 +148,15 @@ class PaymentPage extends Component
             }
 
             $path = $this->paymentProof->store('payment-proofs', 'public');
+            $fileSize = $this->paymentProof->getSize();
+            $fileMime = $this->paymentProof->getMimeType();
+
+            Log::info('PaymentPage: proof file stored', [
+                'user_id' => $user->id,
+                'path' => $path,
+                'size' => $fileSize,
+                'mime' => $fileMime,
+            ]);
 
             $profile = $memberProfile ?? $legacyProfile;
 

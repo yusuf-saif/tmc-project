@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Resources\SupportApplicationResource;
 use App\Models\SupportApplication;
+use Carbon\Carbon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -29,7 +30,7 @@ class LatestApplicationsWidget extends TableWidget
                 Tables\Columns\TextColumn::make('status')->badge(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Submitted')
-                    ->date('d M Y'),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y') : '—'),
             ])
             ->paginated(false)
             ->headerActions([

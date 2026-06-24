@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\InAppAnnouncementResource\Pages;
 use App\Models\InAppAnnouncement;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -110,10 +111,10 @@ class InAppAnnouncementResource extends Resource
                 Tables\Columns\IconColumn::make('dismissible')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('start_at')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('Immediately'),
                 Tables\Columns\TextColumn::make('expires_at')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('Never'),
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Created By'),

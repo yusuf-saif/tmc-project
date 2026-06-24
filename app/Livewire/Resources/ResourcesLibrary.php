@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Resources;
 
+use App\Models\Category;
 use App\Models\Resource;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -19,10 +20,10 @@ class ResourcesLibrary extends Component
 
     public function getResourcesProperty()
     {
-        $query = Resource::query()->published();
+        $query = Resource::query()->published()->with('category');
 
         if ($this->category !== 'all') {
-            $query->where('category', $this->category);
+            $query->whereHas('category', fn ($q) => $q->where('slug', $this->category));
         }
 
         if ($this->search !== '') {
@@ -30,6 +31,11 @@ class ResourcesLibrary extends Component
         }
 
         return $query->orderByDesc('created_at')->paginate(12);
+    }
+
+    public function getCategoriesProperty()
+    {
+        return Category::ordered()->get();
     }
 
     public function setCategory(string $category): void

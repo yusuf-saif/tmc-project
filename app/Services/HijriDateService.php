@@ -53,6 +53,7 @@ class HijriDateService
         $hijri = $this->approximateHijri($date);
 
         $replacements = [
+            // Hijri date tokens
             'd' => str_pad((string) $hijri['day'], 2, '0', STR_PAD_LEFT),
             'j' => (string) $hijri['day'],
             'M' => $this->monthName($hijri['month']),
@@ -61,6 +62,17 @@ class HijriDateService
             'n' => (string) $hijri['month'],
             'Y' => (string) $hijri['year'],
             'y' => substr((string) $hijri['year'], -2),
+            // Day name tokens (same in Hijri and Gregorian)
+            'D' => $date->format('D'),
+            'l' => $date->format('l'),
+            // Time tokens (shared between calendars)
+            'H' => $date->format('H'),
+            'i' => $date->format('i'),
+            's' => $date->format('s'),
+            'g' => $date->format('g'),
+            'h' => $date->format('h'),
+            'a' => $date->format('a'),
+            'A' => $date->format('A'),
         ];
 
         $result = '';

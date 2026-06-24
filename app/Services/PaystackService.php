@@ -37,6 +37,13 @@ class PaystackService
     {
         $amount = $this->getAmountForBillingCycle($billingCycle);
 
+        Log::info('PaystackService: initializing payment', [
+            'user_id' => $user->id,
+            'billing_cycle' => $billingCycle,
+            'reference' => $reference,
+            'amount' => $amount,
+        ]);
+
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$this->secretKey}",
             'Content-Type' => 'application/json',
@@ -57,30 +64,52 @@ class PaystackService
         if (! $response->successful() || empty($body['data']['authorization_url'])) {
             Log::error('PaystackService: initialization failed', [
                 'user_id' => $user->id,
+                'http_status' => $response->status(),
                 'response' => $body,
             ]);
             throw new \RuntimeException('Payment initialization failed. Please try again.');
         }
+
+        Log::info('PaystackService: payment initialized successfully', [
+            'user_id' => $user->id,
+            'reference' => $reference,
+            'authorization_url' => $body['data']['authorization_url'] ?? null,
+        ]);
 
         return $body['data'];
     }
 
     public function verifyPayment(string $reference): array
     {
+        Log::info('PaystackService: verifying payment', [
+            'reference' => $reference,
+        ]);
+
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$this->secretKey}",
             'Content-Type' => 'application/json',
         ])->get("{$this->baseUrl}/transaction/verify/{$reference}");
 
         $body = $response->json();
+        $paidStatus = $body['data']['status'] ?? 'unknown';
+        $paidAmount = $body['data']['amount'] ?? 0;
 
-        if (! $response->successful() || ($body['data']['status'] ?? '') !== 'success') {
+        if (! $response->successful() || $paidStatus !== 'success') {
             Log::warning('PaystackService: verification failed', [
                 'reference' => $reference,
+                'http_status' => $response->status(),
+                'paystack_status' => $paidStatus,
+                'paid_amount' => $paidAmount,
                 'response' => $body,
             ]);
             throw new \RuntimeException('Payment verification failed.');
         }
+
+        Log::info('PaystackService: payment verified successfully', [
+            'reference' => $reference,
+            'amount' => $paidAmount,
+            'status' => $paidStatus,
+        ]);
 
         return $body['data'];
     }
@@ -98,6 +127,11 @@ class PaystackService
 
         MemberProfile::where('user_id', $user->id)->update([
             'paystack_reference' => $reference,
+        ]);
+
+        Log::info('PaystackService: authorization URL generated', [
+            'user_id' => $user->id,
+            'reference' => $reference,
         ]);
 
         return $data['authorization_url'];

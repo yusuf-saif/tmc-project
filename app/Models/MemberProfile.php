@@ -25,7 +25,6 @@ class MemberProfile extends Model
         'fb_username',
         'x_username',
         'tiktok_username',
-        'onboarding_step',
         'onboarding_status',
         'membership_type',
         'membership_id',
@@ -46,12 +45,13 @@ class MemberProfile extends Model
         'next_due_at',
         'paystack_reference',
         'paystack_customer_code',
+        'payment_failed_reason',
+        'payment_source',
     ];
 
     protected function casts(): array
     {
         return [
-            'onboarding_step' => 'integer',
             'hijri_year' => 'integer',
             'reviewed_at' => 'datetime',
             'submitted_at' => 'datetime',

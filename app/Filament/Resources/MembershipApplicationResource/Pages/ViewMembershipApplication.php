@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MembershipApplicationResource\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
 use App\Models\Setting;
+use Carbon\Carbon;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -44,10 +45,10 @@ class ViewMembershipApplication extends ViewRecord
                         TextEntry::make('membership_id')->label('Membership ID')
                             ->copyable()
                             ->copyMessage('ID copied'),
-                        TextEntry::make('submitted_at')->label('Submitted At')->dateTime('d M Y H:i'),
-                        TextEntry::make('reviewed_at')->label('Reviewed At')->dateTime('d M Y H:i'),
-                        TextEntry::make('reviewer.name')->label('Reviewed By'),
-                        TextEntry::make('approved_at')->label('Approved At')->dateTime('d M Y H:i'),
+                        TextEntry::make('submitted_at')->label('Submitted At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
+                        TextEntry::make('reviewed_at')->label('Reviewed At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
+                        TextEntry::make('approver.name')->label('Approved By'),
+                        TextEntry::make('approved_at')->label('Approved At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                         TextEntry::make('approver.name')->label('Approved By'),
                         TextEntry::make('rejection_reason')->label('Rejection Reason')
                             ->visible(fn ($record): bool => $record->onboarding_status === 'rejected' && $record->rejection_reason !== null),
@@ -110,13 +111,34 @@ class ViewMembershipApplication extends ViewRecord
 
                 Section::make('Payment Details')
                     ->schema([
-                        TextEntry::make('payment_submitted_at')->label('Payment Submitted At')->dateTime('d M Y H:i'),
+                        TextEntry::make('payment_submitted_at')->label('Payment Submitted At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                         TextEntry::make('payment_proof_path')->label('Payment Proof')
                             ->url(fn ($record) => $record->payment_proof_path ? route('admin.receipt.download', $record) : null, shouldOpenInNewTab: true)
                             ->visible(fn ($state) => $state !== null),
-                        TextEntry::make('payment_verified_at')->label('Payment Verified At')->dateTime('d M Y H:i'),
+                        TextEntry::make('payment_verified_at')->label('Payment Verified At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                         TextEntry::make('payment_verified_by')->label('Verified By'),
-                    ])->columns(2)
+                        TextEntry::make('payment_source')->label('Payment Source')
+                            ->badge()
+                            ->color(fn (?string $state): string => match ($state) {
+                                'paystack' => 'success',
+                                'manual' => 'warning',
+                                default => 'gray',
+                            })
+                            ->formatStateUsing(fn (?string $state): string => match ($state) {
+                                'paystack' => 'Paystack',
+                                'manual' => 'Manual',
+                                default => '—',
+                            }),
+                        TextEntry::make('payment_failed_reason')->label('Failure Reason')
+                            ->visible(fn ($record): bool => $record->onboarding_status === 'payment_failed' && $record->payment_failed_reason !== null),
+                        TextEntry::make('paystack_reference')->label('Paystack Reference')
+                            ->copyable()
+                            ->copyMessage('Reference copied'),
+                        TextEntry::make('paystack_customer_code')->label('Paystack Customer Code'),
+                        TextEntry::make('preferred_billing_cycle')->label('Billing Preference')
+                            ->formatStateUsing(fn (?string $state): string => ucfirst($state ?? 'monthly')),
+                        TextEntry::make('next_due_at')->label('Next Due')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
+                    ])->columns(3)
                     ->visible(fn ($record): bool => in_array($record->onboarding_status, ['payment_processing', 'payment_failed', 'active'], true)),
 
                 Section::make('Approval Preview')
@@ -238,6 +260,29 @@ class ViewMembershipApplication extends ViewRecord
                         ->success()
                         ->send();
                     $this->refreshFormData(['onboarding_status', 'payment_verified_at', 'activated_at']);
+                }),
+
+            Actions\Action::make('mark_payment_failed')
+                ->label('Mark Payment Failed')
+                ->color('danger')
+                ->icon('heroicon-o-x-circle')
+                ->visible(fn (): bool => $this->record->onboarding_status === 'payment_processing')
+                ->requiresConfirmation()
+                ->modalHeading('Mark Payment as Failed')
+                ->modalDescription('This will transition the payment status to "failed". The user will be able to retry.')
+                ->modalSubmitActionLabel('Yes, Mark Failed')
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Reason (optional)')
+                        ->placeholder('Why did the payment fail?'),
+                ])
+                ->action(function (array $data): void {
+                    MembershipApplicationResource::markPaymentFailed($this->record, $data['reason'] ?? null);
+                    Notification::make()
+                        ->title('Payment marked as failed')
+                        ->warning()
+                        ->send();
+                    $this->refreshFormData(['onboarding_status', 'payment_failed_reason']);
                 }),
 
             Actions\Action::make('download_receipt')

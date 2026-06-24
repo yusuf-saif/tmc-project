@@ -8,7 +8,7 @@
         <p class="mt-6 rounded-sm bg-gold-pale px-4 py-3 text-sm text-teal-dk">{{ session('status') }}</p>
     @endif
 
-    <form method="POST" action="{{ route('login') }}" class="mt-8 space-y-5" x-data="{ showPassword: false }">
+    <form method="POST" action="{{ route('login') }}" class="mt-8 space-y-5" x-data="{ showPassword: false, submitting: false }" @submit="submitting = true">
         @csrf
 
         <div>
@@ -37,7 +37,7 @@
             <a href="{{ route('password.request') }}" class="tmc-link">Forgot password?</a>
         </div>
 
-        <button type="submit" class="tmc-button-gold" x-data @click="$el.disabled=true;$el.textContent='Signing In...'">Sign In</button>
+        <button type="submit" class="tmc-button-gold" :disabled="submitting" x-text="submitting ? 'Signing In...' : 'Sign In'"></button>
     </form>
 
     <p class="mt-6 text-center text-sm text-ink-soft">

@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\AuditLog;
+use Carbon\Carbon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -32,7 +33,7 @@ class RecentActivityWidget extends TableWidget
                 Tables\Columns\TextColumn::make('ip_address'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('When')
-                    ->dateTime('d M Y H:i'),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
             ])
             ->paginated(false);
     }

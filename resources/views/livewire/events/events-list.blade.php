@@ -46,7 +46,7 @@
               <line x1="8" y1="2" x2="8" y2="6"/>
               <line x1="16" y1="2" x2="16" y2="6"/>
             </svg>
-            <span>{{ $event->event_date->format('D d M Y · g:ia') }}</span>
+            <span>{{ $event->event_date->hijri('D d M Y · g:ia') }}</span>
           </div>
 
           <div class="event-footer">

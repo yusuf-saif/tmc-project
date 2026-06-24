@@ -8,6 +8,7 @@ use App\Models\Broadcast;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -22,7 +23,7 @@ class BroadcastResource extends Resource
 
     protected static ?string $navigationGroup = 'Communications';
 
-    protected static ?string $navigationLabel = 'Push Broadcasts';
+    protected static ?string $navigationLabel = 'Broadcasts';
 
     protected static ?string $modelLabel = 'Broadcast';
 
@@ -114,13 +115,13 @@ class BroadcastResource extends Resource
                 Tables\Columns\TextColumn::make('delivery_count')
                     ->label('Delivered'),
                 Tables\Columns\TextColumn::make('send_at')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('Immediate'),
                 Tables\Columns\TextColumn::make('expires_at')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('Never'),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('d M Y H:i'),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
             ])
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('No broadcasts')

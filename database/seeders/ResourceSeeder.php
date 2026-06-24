@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Resource;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -16,11 +17,13 @@ class ResourceSeeder extends Seeder
             return;
         }
 
+        $categories = Category::query()->pluck('id', 'slug');
+
         $resources = [
             [
                 'title' => "Du'a for Beginning",
                 'description' => 'Begin every action with the name of Allah.',
-                'category' => 'dua_book',
+                'category_slug' => 'dua_book',
                 'type' => 'dua',
                 'body' => 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
                 'status' => 'published',
@@ -28,7 +31,7 @@ class ResourceSeeder extends Seeder
             [
                 'title' => 'Finding Sakīnah in the Chaos',
                 'description' => 'A reflection on finding calm through dhikr.',
-                'category' => 'dear_allah',
+                'category_slug' => 'dear_allah',
                 'type' => 'article',
                 'body' => 'In the rush of daily life, tranquility begins with returning the heart to remembrance.',
                 'status' => 'published',
@@ -36,14 +39,14 @@ class ResourceSeeder extends Seeder
             [
                 'title' => 'Morning Adhkar Guide',
                 'description' => 'Your daily morning remembrance checklist.',
-                'category' => 'pocket_guide',
+                'category_slug' => 'pocket_guide',
                 'type' => 'guide',
                 'status' => 'published',
             ],
             [
                 'title' => 'TMC Halaqah — Gratitude in Islam',
                 'description' => 'A recorded session on shukr.',
-                'category' => 'audio_halaqahs',
+                'category_slug' => 'audio_halaqahs',
                 'type' => 'video_link',
                 'external_url' => 'https://www.youtube.com/watch?v=example',
                 'status' => 'published',
@@ -51,9 +54,14 @@ class ResourceSeeder extends Seeder
         ];
 
         foreach ($resources as $resource) {
+            $data = $resource;
+            $slug = $data['category_slug'];
+            unset($data['category_slug']);
+            $data['category_id'] = $categories[$slug] ?? null;
+
             Resource::query()->updateOrCreate(
                 ['title' => $resource['title']],
-                $resource + [
+                $data + [
                     'created_by' => $userId,
                     'updated_by' => $userId,
                 ],

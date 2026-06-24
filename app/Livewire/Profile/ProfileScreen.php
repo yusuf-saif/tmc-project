@@ -55,7 +55,7 @@ class ProfileScreen extends Component
 
     public function getMemberSinceProperty(): string
     {
-        return auth()->user()->created_at->format('M Y');
+        return auth()->user()->created_at->hijri('M Y');
     }
 
     public function roleBadge(): array
@@ -112,6 +112,19 @@ class ProfileScreen extends Component
     public function getUnreadCountProperty(): int
     {
         return auth()->user()->unreadNotifications()->count();
+    }
+
+    public function markAsRead(string $notificationId): void
+    {
+        $notification = auth()->user()->notifications()->findOrFail($notificationId);
+        if ($notification->read_at === null) {
+            $notification->markAsRead();
+        }
+    }
+
+    public function markAllAsRead(): void
+    {
+        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
     }
 
     // ─── Referrals properties ──────────────────────────────────────

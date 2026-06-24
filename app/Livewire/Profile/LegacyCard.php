@@ -10,7 +10,7 @@ class LegacyCard extends Component
 {
     public function getMemberSinceProperty(): string
     {
-        return auth()->user()->created_at->format('M Y');
+        return auth()->user()->created_at->hijri('M Y');
     }
 
     public function getCoinsBalanceProperty(): int

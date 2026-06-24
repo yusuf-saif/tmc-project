@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\EventResource\Pages;
 use App\Models\Event;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -96,7 +97,7 @@ class EventResource extends Resource
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('event_date')
-                    ->dateTime('D M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('D M Y H:i') : '—')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('active_rsvps_count')
                     ->label('RSVPs'),

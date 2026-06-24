@@ -21,10 +21,17 @@ use App\Notifications\SubscriptionPaymentFailed as SubscriptionPaymentFailedNoti
 use App\Notifications\SubscriptionPaymentReceived as SubscriptionPaymentReceivedNotification;
 use App\Notifications\SubscriptionSuspended as SubscriptionSuspendedNotification;
 use App\Services\HijriDateService;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
-class SendBillingNotifications
+class SendBillingNotifications implements ShouldQueue
 {
+    public string $queue = 'billing';
+
+    public int $timeout = 60;
+
+    public array $backoff = [10, 30, 60];
+
     public function handle(
         SubscriptionActivated|SubscriptionExpired|SubscriptionExpiringSoon|SubscriptionSuspended|SubscriptionPaymentReceived|SubscriptionPaymentFailed|BusinessApproved|BusinessActivated|BusinessSuspended $event,
     ): void {

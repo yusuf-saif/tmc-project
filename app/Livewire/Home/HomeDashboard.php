@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Home;
 
-use App\Models\Announcement;
 use App\Services\CoinsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -38,14 +37,6 @@ class HomeDashboard extends Component
         return $this->phrases[$index] ?? $this->phrases[0];
     }
 
-    protected function latestAnnouncement(): ?Announcement
-    {
-        return Announcement::query()
-            ->published()
-            ->latest('published_at')
-            ->first();
-    }
-
     protected function upcomingEvents(): array
     {
         if (! Schema::hasTable('events')) {
@@ -68,7 +59,6 @@ class HomeDashboard extends Component
         return view('livewire.home.home-dashboard', [
             'greeting' => $this->getGreeting(),
             'dailyPhrase' => $this->getDailyPhrase(),
-            'announcement' => $this->latestAnnouncement(),
             'balance' => $user ? CoinsService::getBalance($user) : 0,
             'events' => $this->upcomingEvents(),
         ])->layout('layouts.app', [

@@ -9,6 +9,7 @@ use App\Models\UserBadge;
 use App\Models\UserRoleHistory;
 use App\Services\AuditLogService;
 use App\Services\CoinsService;
+use Carbon\Carbon;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
@@ -46,7 +47,7 @@ class UserResource extends Resource
                     ->color(fn (string $state): string => $state === 'active' ? 'success' : 'danger'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Member Since')
-                    ->formatStateUsing(fn ($state, User $record): string => $record->created_at->format('M Y')),
+                    ->formatStateUsing(fn ($state, User $record): string => $record->created_at->hijri('M Y')),
                 Tables\Columns\TextColumn::make('coins_balance')
                     ->label('Coins')
                     ->state(fn (User $record): string => CoinsService::getBalance($record).' coins'),
@@ -90,9 +91,9 @@ class UserResource extends Resource
                         TextEntry::make('status')
                             ->badge()
                             ->color(fn (string $state): string => $state === 'active' ? 'success' : 'danger'),
-                        TextEntry::make('created_at')->dateTime('d M Y H:i'),
+                        TextEntry::make('created_at')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                         TextEntry::make('profile.display_name')->label('Display Name'),
-                        TextEntry::make('profile.onboarding_completed_at')->label('Onboarding Completed')->dateTime('d M Y H:i'),
+                        TextEntry::make('profile.onboarding_completed_at')->label('Onboarding Completed')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                     ])->columns(2),
                 Section::make('Coins')
                     ->schema([
@@ -103,7 +104,7 @@ class UserResource extends Resource
                             ->label('Last 5 Entries')
                             ->state(fn (User $record) => $record->jannahCoinsLedger()->latest('created_at')->limit(5)->get())
                             ->schema([
-                                TextEntry::make('created_at')->dateTime('d M Y H:i'),
+                                TextEntry::make('created_at')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                                 TextEntry::make('reason'),
                                 TextEntry::make('amount')
                                     ->color(fn (int $state): string => $state >= 0 ? 'success' : 'danger'),
@@ -128,7 +129,7 @@ class UserResource extends Resource
                             ->state(fn (User $record) => $record->userBadges()->with('badge')->get())
                             ->schema([
                                 TextEntry::make('badge.name')->label('Badge'),
-                                TextEntry::make('awarded_at')->dateTime('d M Y H:i'),
+                                TextEntry::make('awarded_at')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                             ])
                             ->columns(2)
                             ->contained(false),

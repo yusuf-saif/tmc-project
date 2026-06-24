@@ -3,11 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\NewsletterResource\Pages;
-use App\Jobs\SendNewsletterEmailJob;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\Newsletter;
 use App\Services\AuditLogService;
+use App\Services\NotificationService;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -125,10 +126,10 @@ class NewsletterResource extends Resource
                 Tables\Columns\TextColumn::make('sent_count')
                     ->label('Sent'),
                 Tables\Columns\TextColumn::make('schedule_at')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('Not scheduled'),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('d M Y H:i'),
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
             ])
             ->defaultSort('created_at', 'desc')
             ->emptyStateHeading('No newsletters')
@@ -144,8 +145,7 @@ class NewsletterResource extends Resource
                     ->modalDescription('This will immediately queue the newsletter for delivery to all targeted recipients.')
                     ->visible(fn (Newsletter $record) => in_array($record->status, ['draft', 'scheduled']))
                     ->action(function (Newsletter $record) {
-                        $record->update(['schedule_at' => now()]);
-                        SendNewsletterEmailJob::dispatch($record);
+                        app(NotificationService::class)->queueNewsletter($record);
                         AuditLogService::log('newsletter_dispatched', $record, [], ['subject' => $record->subject]);
                     }),
                 Tables\Actions\DeleteAction::make()

@@ -22,7 +22,6 @@ use App\Livewire\Resources\ResourcesLibrary;
 use App\Livewire\Souq\ApplyForm;
 use App\Livewire\Souq\ListingDetail;
 use App\Livewire\Souq\SouqDirectory;
-use App\Models\Announcement;
 use App\Models\Setting;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Auth;
@@ -72,13 +71,6 @@ Route::middleware(['auth', 'ensure.user.state'])->group(function () {
     Route::get('/profile/edit', EditProfile::class)->name('profile.edit');
     Route::get('/profile/legacy-card', LegacyCard::class)->name('profile.legacy-card');
     Route::get('/profile/notifications', NotificationPreferences::class)->name('profile.notifications');
-    Route::get('/announcements/{slug}', function ($slug) {
-        $announcement = Announcement::published()
-            ->where('slug', $slug)
-            ->firstOrFail();
-
-        return view('announcements.show', compact('announcement'));
-    })->name('announcements.show');
 });
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {

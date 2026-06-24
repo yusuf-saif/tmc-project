@@ -30,7 +30,7 @@
                     @foreach ($events as $event)
                         <a href="{{ route('events.show', $event->slug) }}" class="block rounded-[8px] bg-white p-4 no-underline" style="border: 1px solid var(--border);">
                             <p class="text-sm font-semibold text-ink">{{ $event->title }}</p>
-                            <p class="mt-1 text-[12px] font-light text-ink-soft">{{ $event->event_date->format('d M Y, g:ia') }}</p>
+                            <p class="mt-1 text-[12px] font-light text-ink-soft">{{ $event->event_date->hijri('d M Y, g:ia') }}</p>
                         </a>
                     @endforeach
                 </div>

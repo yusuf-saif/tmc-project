@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
 use App\Models\MemberProfile;
+use Carbon\Carbon;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -57,17 +58,36 @@ class ManagePayments extends Page implements HasTable
                         'payment_failed' => 'Failed',
                         default => str($state)->replace('_', ' ')->title(),
                     }),
+                Tables\Columns\TextColumn::make('payment_source')
+                    ->label('Source')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'paystack' => 'success',
+                        'manual' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'paystack' => 'Paystack',
+                        'manual' => 'Manual',
+                        default => '—',
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('paystack_reference')
                     ->label('Reference')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('payment_failed_reason')
+                    ->label('Failure Reason')
+                    ->limit(40)
+                    ->tooltip(fn (?string $state): ?string => $state)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('payment_submitted_at')
                     ->label('Submitted')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('payment_verified_at')
                     ->label('Verified')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('—'),
             ])
             ->filters([

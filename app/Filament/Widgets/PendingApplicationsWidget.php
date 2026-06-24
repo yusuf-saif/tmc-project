@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Resources\MembershipApplicationResource;
 use App\Models\MemberProfile;
+use Carbon\Carbon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -49,7 +50,7 @@ class PendingApplicationsWidget extends TableWidget
                         : ($record->location_international ?? '')),
                 Tables\Columns\TextColumn::make('submitted_at')
                     ->label('Submitted')
-                    ->dateTime('d M Y H:i')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->sortable(),
             ])
             ->paginated(false)

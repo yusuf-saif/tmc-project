@@ -1284,6 +1284,12 @@ textarea.input { resize: vertical; min-height: 120px; }
   border-radius: var(--radius-md);
   background: white;
   border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.notif-card:hover {
+  background: #f9fafb;
 }
 
 .notif-card-unread {
@@ -1661,6 +1667,37 @@ textarea.input { resize: vertical; min-height: 120px; }
 
 .notif-list-links {
   margin-top: 12px;
+}
+
+.notif-mark-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--teal);
+  background: transparent;
+  text-decoration: none;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.notif-mark-all:hover {
+  background: var(--teal-lt);
+}
+
+.notif-mark-all-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--teal);
+}
+
+.notif-mark-all-icon {
+  color: var(--teal);
+  font-size: 14px;
+  line-height: 1;
 }
 
 .referral-list {

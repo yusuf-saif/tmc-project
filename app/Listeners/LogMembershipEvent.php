@@ -9,10 +9,15 @@ use App\Events\MembershipSubmitted;
 use App\Events\PaymentConfirmed;
 use App\Events\PaymentSubmitted;
 use App\Services\AuditLogService;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
-class LogMembershipEvent
+class LogMembershipEvent implements ShouldQueue
 {
+    public string $queue = 'membership';
+
+    public int $timeout = 30;
+
     public function handle(
         MembershipSubmitted|MembershipApproved|MembershipRejected|MembershipNeedsCorrection|PaymentSubmitted|PaymentConfirmed $event,
     ): void {

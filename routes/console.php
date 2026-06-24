@@ -4,7 +4,6 @@ use App\Events\SubscriptionExpired;
 use App\Events\SubscriptionExpiringSoon;
 use App\Jobs\SendBroadcastNotificationJob;
 use App\Jobs\SendNewsletterEmailJob;
-use App\Models\Announcement;
 use App\Models\Broadcast;
 use App\Models\InAppAnnouncement;
 use App\Models\Newsletter;
@@ -18,17 +17,6 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
-
-// ─── Publish scheduled content announcements ──────────────────────
-Schedule::call(function () {
-    Announcement::query()
-        ->where('status', 'scheduled')
-        ->where('publish_at', '<=', now())
-        ->update([
-            'status' => 'published',
-            'published_at' => now(),
-        ]);
-})->everyMinute()->name('publish-scheduled-announcements');
 
 // ─── Expire in-app announcements ──────────────────────────────────
 Schedule::call(function () {
@@ -48,6 +36,7 @@ Schedule::call(function () {
 // ─── Dispatch queued newsletters ──────────────────────────────────
 Schedule::call(function () {
     Newsletter::readyToSend()->each(function (Newsletter $newsletter) {
+        $newsletter->update(['status' => 'sending']);
         SendNewsletterEmailJob::dispatch($newsletter);
     });
 })->everyMinute()->name('dispatch-queued-newsletters');
@@ -85,3 +74,9 @@ Schedule::call(function () {
             app(BusinessStateService::class)->autoExpireBilling($listing);
         });
 })->dailyAt('00:05')->name('expire-business-billing');
+
+// ─── Recover stale Paystack payments ────────────────────────────
+Schedule::command('membership:recover-stale-payments')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->name('recover-stale-payments');

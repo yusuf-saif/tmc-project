@@ -250,4 +250,44 @@ class PaystackWebhookTest extends TestCase
         $response->assertOk();
         $response->assertJson(['status' => 'ignored']);
     }
+
+    public function test_different_references_for_same_user_are_independent(): void
+    {
+        $user = $this->createApprovedUser();
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'TMC-DIFF-REF',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'TMC-DIFF-REF',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'monthly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $user->refresh();
+        $profile = $user->memberProfile;
+        $this->assertEquals('active', $profile->onboarding_status);
+        $this->assertEquals('TMC-DIFF-REF', $profile->paystack_reference);
+    }
 }

@@ -21,6 +21,9 @@
             <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
                 <img src="{{ asset('images/img1.png') }}" alt="TMC" class="h-7 w-auto object-contain">
             </a>
+            <span class="text-[11px] font-medium text-teal-dk/70" style="font-feature-settings:'tnum';">
+              {{ now()->hijri('j M Y') }}
+            </span>
             <button type="button" aria-label="Notifications" class="text-ink-soft hover:text-ink-md">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-6 w-6">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.311 6.022c1.766.68 3.559 1.09 5.454 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>

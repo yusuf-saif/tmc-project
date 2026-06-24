@@ -4,12 +4,17 @@
         <p class="text-sm font-light leading-7 text-ink-soft">Browse reflections, guides, du\'as, and recorded reminders to return to throughout the week.</p>
     </section>
 
+    @php $categories = $this->categories @endphp
     <section class="-mx-4 overflow-x-auto px-4">
         <div class="resource-tabs">
-            @foreach (['all' => 'All', 'dua_book' => "Du'a Book", 'dear_allah' => 'Dear Allah', 'pocket_guide' => 'Pocket Guides', 'audio_halaqahs' => 'Audio & Halaqahs'] as $value => $label)
-                <button type="button" wire:click="setCategory('{{ $value }}')"
-                        class="resource-tab {{ $category === $value ? 'resource-tab-active' : 'resource-tab-inactive' }}">
-                    {{ $label }}
+            <button type="button" wire:click="setCategory('all')"
+                    class="resource-tab {{ $category === 'all' ? 'resource-tab-active' : 'resource-tab-inactive' }}">
+                All
+            </button>
+            @foreach ($categories as $cat)
+                <button type="button" wire:click="setCategory('{{ $cat->slug }}')"
+                        class="resource-tab {{ $category === $cat->slug ? 'resource-tab-active' : 'resource-tab-inactive' }}">
+                    {{ $cat->name }}
                 </button>
             @endforeach
         </div>
@@ -23,12 +28,12 @@
         <section class="grid grid-cols-2 gap-4 md:grid-cols-3">
             @foreach ($this->resources as $resource)
                 @php
-                    $badge = match ($resource->category) {
-                        'dua_book' => ['bg' => 'var(--teal-lt)', 'text' => 'var(--teal)', 'label' => "Du'a Book", 'initial' => 'D'],
-                        'dear_allah' => ['bg' => 'var(--gold-pale)', 'text' => 'var(--gold)', 'label' => 'Dear Allah', 'initial' => 'A'],
-                        'pocket_guide' => ['bg' => 'var(--plum-lt)', 'text' => '#3D1A47', 'label' => 'Pocket Guide', 'initial' => 'P'],
-                        'audio_halaqahs' => ['bg' => 'var(--mint-lt)', 'text' => 'var(--teal)', 'label' => 'Audio & Halaqahs', 'initial' => 'H'],
-                    };
+                    $badge = $resource->category ? [
+                        'bg' => $resource->category->bg_color ?? 'var(--teal-lt)',
+                        'text' => $resource->category->text_color ?? 'var(--teal)',
+                        'label' => $resource->category->name,
+                        'initial' => $resource->category->initial ?? substr($resource->category->name, 0, 1),
+                    ] : ['bg' => 'var(--teal-lt)', 'text' => 'var(--teal)', 'label' => 'Resource', 'initial' => 'R'];
                     $icon = match ($resource->type) {
                         'article' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 3.75h9A2.25 2.25 0 0 1 18.75 6v12A2.25 2.25 0 0 1 16.5 20.25h-9A2.25 2.25 0 0 1 5.25 18V6A2.25 2.25 0 0 1 7.5 3.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 8.25h7.5M8.25 12h7.5M8.25 15.75h4.5"/></svg>',
                         'dua' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-[18px] w-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75c-1.5-1.125-3.75-1.125-6 0v10.5c2.25-1.125 4.5-1.125 6 0m0-10.5c1.5-1.125 3.75-1.125 6 0v10.5c-2.25-1.125-4.5-1.125-6 0"/></svg>',

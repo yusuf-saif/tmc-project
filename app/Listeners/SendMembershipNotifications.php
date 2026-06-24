@@ -16,11 +16,18 @@ use App\Notifications\MembershipNeedsCorrection as MembershipNeedsCorrectionNoti
 use App\Notifications\MembershipPaymentConfirmed as MembershipPaymentConfirmedNotification;
 use App\Notifications\MembershipRejected as MembershipRejectedNotification;
 use App\Notifications\MembershipUnderReviewNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
-class SendMembershipNotifications
+class SendMembershipNotifications implements ShouldQueue
 {
+    public string $queue = 'membership';
+
+    public int $timeout = 60;
+
+    public array $backoff = [10, 30, 60];
+
     public function handle(
         MembershipActivated|MembershipSubmitted|MembershipApproved|MembershipRejected|MembershipNeedsCorrection|PaymentSubmitted|PaymentConfirmed $event,
     ): void {
