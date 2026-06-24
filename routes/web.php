@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\ReceiptDownloadController;
+use App\Http\Controllers\PaymentStatusController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Livewire\Community\CommunityHome;
 use App\Livewire\Community\SpaceDetail;
@@ -40,6 +42,7 @@ Route::post('/webhooks/paystack', PaystackWebhookController::class)
 Route::middleware(['auth'])->prefix('membership')->name('membership.')->group(function () {
     Route::get('/pending', PendingReview::class)->name('pending');
     Route::get('/payment', PaymentPage::class)->name('payment');
+    Route::get('/payment/status', [PaymentStatusController::class, 'check'])->name('payment.status');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -76,6 +79,10 @@ Route::middleware(['auth', 'ensure.user.state'])->group(function () {
 
         return view('announcements.show', compact('announcement'));
     })->name('announcements.show');
+});
+
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/receipt/{memberProfile}', ReceiptDownloadController::class)->name('receipt.download');
 });
 
 Route::post('/logout', function () {

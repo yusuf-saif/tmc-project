@@ -21,16 +21,60 @@ class PaymentPage extends Component
 
     public bool $submitting = false;
 
+    public string $paymentStatus = '';
+
     public function mount()
     {
+        $this->refreshStatus();
+    }
+
+    public function refreshStatus(): void
+    {
         $user = auth()->user();
+        $user->refresh();
+
         $memberProfile = $user->memberProfile;
         $legacyProfile = $user->profile;
 
         $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
 
-        if (! $status || ! in_array($status, ['approved_pending_payment', 'payment_submitted'], true)) {
-            return redirect()->route('home');
+        if (! $status) {
+            redirect()->route('membership.signup');
+
+            return;
+        }
+
+        if ($status === 'active') {
+            redirect()->route('home');
+
+            return;
+        }
+
+        if (! in_array($status, ['payment_pending', 'payment_processing', 'payment_failed'], true)) {
+            redirect()->route('home');
+
+            return;
+        }
+
+        $this->paymentStatus = $status;
+    }
+
+    public function checkPaymentStatus(): void
+    {
+        $user = auth()->user();
+        $user->refresh();
+
+        $profile = $user->memberProfile;
+        $status = $profile?->onboarding_status;
+
+        if ($status === 'active') {
+            $this->redirect(route('home'));
+
+            return;
+        }
+
+        if ($status && $status !== $this->paymentStatus) {
+            $this->paymentStatus = $status;
         }
     }
 
@@ -39,13 +83,16 @@ class PaymentPage extends Component
         $user = auth()->user();
         $memberProfile = $user->memberProfile;
 
-        if (! $memberProfile || $memberProfile->onboarding_status !== 'approved_pending_payment') {
+        if (! $memberProfile || $memberProfile->onboarding_status !== 'payment_pending') {
             return;
         }
 
         $billingCycle = $memberProfile->preferred_billing_cycle ?? 'monthly';
 
         try {
+            app(MembershipStateService::class)->markProcessing($memberProfile, $user);
+            $this->paymentStatus = 'payment_processing';
+
             $url = $paystackService->getAuthorizationUrl($user, $billingCycle);
 
             return redirect()->away($url);
@@ -78,7 +125,7 @@ class PaymentPage extends Component
 
             $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
 
-            if ($status !== 'approved_pending_payment') {
+            if ($status !== 'payment_pending') {
                 Log::warning('PaymentPage: blocked payment attempt — wrong status', [
                     'user_id' => $user->id,
                     'status' => $status,
@@ -93,7 +140,7 @@ class PaymentPage extends Component
             $profile = $memberProfile ?? $legacyProfile;
 
             if ($memberProfile) {
-                app(MembershipStateService::class)->transition($memberProfile, 'payment_submitted', $user, [
+                app(MembershipStateService::class)->transition($memberProfile, 'payment_processing', $user, [
                     'payment_submitted_at' => now(),
                     'payment_proof_path' => $path,
                 ]);
@@ -103,10 +150,11 @@ class PaymentPage extends Component
 
             if ($legacyProfile) {
                 $legacyProfile->forceFill([
-                    'membership_status' => 'payment_submitted',
+                    'membership_status' => 'payment_processing',
                 ])->saveQuietly();
             }
 
+            $this->paymentStatus = 'payment_processing';
             $this->paymentProof = null;
             $this->paymentNotes = '';
 
@@ -140,8 +188,7 @@ class PaymentPage extends Component
         $legacyProfile = $user->profile;
 
         $profile = $memberProfile ?? $legacyProfile;
-        $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
-        $submitted = $status === 'payment_submitted';
+        $status = $this->paymentStatus ?: ($memberProfile?->onboarding_status ?? $legacyProfile?->membership_status);
 
         $bankDetails = Setting::getValue('bank_details', 'Contact us for bank details');
 
@@ -152,7 +199,6 @@ class PaymentPage extends Component
             'profile' => $profile,
             'memberProfile' => $memberProfile,
             'status' => $status,
-            'submitted' => $submitted,
             'bankDetails' => $bankDetails,
             'membershipId' => $memberProfile?->membership_id ?? $legacyProfile?->membership_id,
             'billingCycle' => $billingCycle,

@@ -96,6 +96,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(MembershipActivated::class, LogBillingEvent::class);
+        Event::listen(MembershipActivated::class, SendMembershipNotifications::class);
 
         $this->validateDatabaseConnection();
     }

@@ -185,7 +185,7 @@ class MembershipApplicationTest extends TestCase
         MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
+        $this->assertEquals('payment_pending', $profile->onboarding_status);
         $this->assertEquals('M', $profile->membership_type);
         $this->assertNotNull($profile->membership_id);
         $this->assertStringStartsWith('TMC-M-', $profile->membership_id);
@@ -216,7 +216,7 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create([
             'display_name' => $user->name,
-            'membership_status' => 'approved_pending_payment',
+            'membership_status' => 'payment_pending',
             'membership_id' => 'TMC-M-1447-001',
             'approved_at' => now(),
         ]);
@@ -321,7 +321,7 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create([
             'display_name' => $user->name,
-            'membership_status' => 'payment_submitted',
+            'membership_status' => 'payment_processing',
             'membership_id' => 'TMC-M-1447-001',
         ]);
 
@@ -395,7 +395,7 @@ class MembershipApplicationTest extends TestCase
 
         $profile = MemberProfile::create([
             'user_id' => $user->id,
-            'onboarding_status' => 'approved_pending_payment',
+            'onboarding_status' => 'payment_pending',
         ]);
 
         $stateService = app(MembershipStateService::class);
@@ -416,7 +416,7 @@ class MembershipApplicationTest extends TestCase
 
         $profile = MemberProfile::create([
             'user_id' => $user->id,
-            'onboarding_status' => 'payment_submitted',
+            'onboarding_status' => 'payment_processing',
             'membership_id' => 'TMC-M-1447-001',
             'payment_submitted_at' => now(),
             'payment_proof_path' => 'payment-proofs/test.pdf',
@@ -580,7 +580,7 @@ class MembershipApplicationTest extends TestCase
 
         $profile = MemberProfile::create([
             'user_id' => $user->id,
-            'onboarding_status' => 'payment_submitted',
+            'onboarding_status' => 'payment_processing',
             'membership_id' => 'TMC-M-1447-001',
             'payment_submitted_at' => now(),
             'payment_proof_path' => 'payment-proofs/test.pdf',
@@ -634,11 +634,11 @@ class MembershipApplicationTest extends TestCase
         MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
+        $this->assertEquals('payment_pending', $profile->onboarding_status);
 
         MembershipApplicationResource::approve($profile->fresh(), 'M');
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
+        $this->assertEquals('payment_pending', $profile->onboarding_status);
     }
 
     // ─── Serial Number Integrity ────────────────────────────────────

@@ -32,7 +32,7 @@ class PaystackWebhookTest extends TestCase
 
         MemberProfile::create([
             'user_id' => $user->id,
-            'onboarding_status' => 'approved_pending_payment',
+            'onboarding_status' => 'payment_pending',
             'membership_id' => 'TMC-M-1447-001',
             'preferred_billing_cycle' => 'monthly',
             'approved_at' => now(),
@@ -232,7 +232,7 @@ class PaystackWebhookTest extends TestCase
             'x-paystack-signature' => $signature,
         ]);
         $response2->assertOk();
-        $response2->assertJson(['status' => 'already_active']);
+        $response2->assertJson(['status' => 'already_verified']);
     }
 
     public function test_unrecognized_event_is_ignored(): void

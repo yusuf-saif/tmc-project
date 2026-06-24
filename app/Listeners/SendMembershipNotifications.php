@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Events\MembershipActivated;
 use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
@@ -21,10 +22,11 @@ use Illuminate\Support\Facades\Notification;
 class SendMembershipNotifications
 {
     public function handle(
-        MembershipSubmitted|MembershipApproved|MembershipRejected|MembershipNeedsCorrection|PaymentSubmitted|PaymentConfirmed $event,
+        MembershipActivated|MembershipSubmitted|MembershipApproved|MembershipRejected|MembershipNeedsCorrection|PaymentSubmitted|PaymentConfirmed $event,
     ): void {
         try {
             match (true) {
+                $event instanceof MembershipActivated => $this->sendActivatedNotification($event),
                 $event instanceof MembershipSubmitted => $this->sendSubmittedNotifications($event),
                 $event instanceof MembershipApproved => $this->sendApprovedNotification($event),
                 $event instanceof MembershipRejected => $this->sendRejectedNotification($event),
@@ -38,6 +40,32 @@ class SendMembershipNotifications
                 'profile_id' => $event->profile->id ?? null,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    protected function sendActivatedNotification(MembershipActivated $event): void
+    {
+        $user = $event->user instanceof User ? $event->user : User::find($event->user);
+        if (! $user) {
+            return;
+        }
+
+        $profile = $user->memberProfile;
+
+        if ($profile && $profile->email_sent_at !== null) {
+            Log::info('SendMembershipNotifications: email already sent, skipping', [
+                'user_id' => $user->id,
+            ]);
+
+            return;
+        }
+
+        $user->notify(new MembershipPaymentConfirmedNotification(
+            $event->membershipId,
+        ));
+
+        if ($profile) {
+            $profile->forceFill(['email_sent_at' => now()])->saveQuietly();
         }
     }
 

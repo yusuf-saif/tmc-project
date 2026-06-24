@@ -12,7 +12,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Facades\Storage;
 
 class ViewMembershipApplication extends ViewRecord
 {
@@ -31,8 +30,9 @@ class ViewMembershipApplication extends ViewRecord
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
                                 'pending_review' => 'warning',
-                                'approved_pending_payment' => 'info',
-                                'payment_submitted' => 'info',
+                                'payment_pending' => 'info',
+                                'payment_processing' => 'info',
+                                'payment_failed' => 'danger',
                                 'active' => 'success',
                                 'rejected' => 'danger',
                                 'needs_correction' => 'danger',
@@ -111,11 +111,13 @@ class ViewMembershipApplication extends ViewRecord
                 Section::make('Payment Details')
                     ->schema([
                         TextEntry::make('payment_submitted_at')->label('Payment Submitted At')->dateTime('d M Y H:i'),
-                        TextEntry::make('payment_proof_path')->label('Payment Proof')->url(fn ($state) => $state ? Storage::url($state) : null)->visible(fn ($state) => $state !== null),
+                        TextEntry::make('payment_proof_path')->label('Payment Proof')
+                            ->url(fn ($record) => $record->payment_proof_path ? route('admin.receipt.download', $record) : null, shouldOpenInNewTab: true)
+                            ->visible(fn ($state) => $state !== null),
                         TextEntry::make('payment_verified_at')->label('Payment Verified At')->dateTime('d M Y H:i'),
                         TextEntry::make('payment_verified_by')->label('Verified By'),
                     ])->columns(2)
-                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['payment_submitted', 'active'], true)),
+                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['payment_processing', 'payment_failed', 'active'], true)),
 
                 Section::make('Approval Preview')
                     ->description('What happens when you approve this application')
@@ -223,7 +225,7 @@ class ViewMembershipApplication extends ViewRecord
                 ->label('Confirm Payment')
                 ->color('success')
                 ->icon('heroicon-o-banknotes')
-                ->visible(fn (): bool => $this->record->onboarding_status === 'payment_submitted')
+                ->visible(fn (): bool => $this->record->onboarding_status === 'payment_processing')
                 ->requiresConfirmation()
                 ->modalHeading('Confirm Membership Payment')
                 ->modalDescription('This will activate the user\'s account and give them full access.')

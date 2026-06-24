@@ -45,7 +45,7 @@ class LogBillingEvent
     {
         AuditLogService::log(
             action: 'membership_activated',
-            old: ['onboarding_status' => 'payment_submitted'],
+            old: ['onboarding_status' => 'payment_processing'],
             new: ['onboarding_status' => 'active', 'membership_id' => $event->membershipId],
             actor: $event->actor,
             targetUserId: $event->user->id,

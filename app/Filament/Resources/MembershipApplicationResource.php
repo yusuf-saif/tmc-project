@@ -30,8 +30,9 @@ class MembershipApplicationResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('onboarding_status', [
                 'pending_review',
-                'approved_pending_payment',
-                'payment_submitted',
+                'payment_pending',
+                'payment_processing',
+                'payment_failed',
                 'needs_correction',
             ])->with('user'))
             ->defaultSort('submitted_at', 'desc')
@@ -48,8 +49,9 @@ class MembershipApplicationResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'pending_review' => 'warning',
-                        'approved_pending_payment' => 'info',
-                        'payment_submitted' => 'info',
+                        'payment_pending' => 'info',
+                        'payment_processing' => 'info',
+                        'payment_failed' => 'danger',
                         'needs_correction' => 'danger',
                         default => 'gray',
                     })
@@ -69,8 +71,9 @@ class MembershipApplicationResource extends Resource
                     ->label('Status')
                     ->options([
                         'pending_review' => 'Pending Review',
-                        'approved_pending_payment' => 'Approved (Pending Payment)',
-                        'payment_submitted' => 'Payment Submitted',
+                        'payment_pending' => 'Pending Payment',
+                        'payment_processing' => 'Processing Payment',
+                        'payment_failed' => 'Payment Failed',
                         'needs_correction' => 'Needs Correction',
                     ]),
             ])
@@ -128,7 +131,7 @@ class MembershipApplicationResource extends Resource
             $generated = MembershipIdService::generate($membershipType ?? 'M');
 
             $profile->update([
-                'membership_status' => 'approved_pending_payment',
+                'membership_status' => 'payment_pending',
                 'membership_type' => $generated['membership_type'],
                 'membership_id' => $generated['membership_id'],
                 'membership_serial' => $generated['membership_serial'],

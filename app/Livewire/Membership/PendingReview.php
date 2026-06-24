@@ -21,7 +21,7 @@ class PendingReview extends Component
                 return redirect()->route('membership.signup');
             }
 
-            if (in_array($profile->onboarding_status, ['approved_pending_payment', 'payment_submitted'], true)) {
+            if (in_array($profile->onboarding_status, ['payment_pending', 'payment_processing', 'payment_failed'], true)) {
                 return redirect()->route('membership.payment');
             }
 
@@ -41,7 +41,7 @@ class PendingReview extends Component
                 return redirect()->route('home');
             }
 
-            if (in_array($profile->membership_status, ['approved_pending_payment', 'payment_submitted'], true)) {
+            if (in_array($profile->membership_status, ['payment_pending', 'payment_processing', 'payment_failed'], true)) {
                 return redirect()->route('membership.payment');
             }
 

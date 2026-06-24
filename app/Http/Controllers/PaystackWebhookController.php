@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\MembershipActivated;
+use App\Models\MemberProfile;
 use App\Models\User;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
@@ -39,15 +40,21 @@ class PaystackWebhookController extends Controller
 
         $event = $payload['event'] ?? '';
 
-        if (! in_array($event, ['charge.success', 'subscription.create', 'invoice.payment_success'], true)) {
+        if ($event !== 'charge.success') {
             return response()->json(['status' => 'ignored']);
         }
 
         $data = $payload['data'] ?? [];
-        $reference = $data['reference'] ?? $data['transaction']['reference'] ?? null;
+        $reference = $data['reference'] ?? null;
         $metadata = $data['metadata'] ?? [];
         $userId = $metadata['user_id'] ?? null;
         $billingCycle = $metadata['billing_cycle'] ?? 'monthly';
+
+        if (! $reference) {
+            Log::warning('PaystackWebhook: no reference in payload', ['payload' => $data]);
+
+            return response()->json(['error' => 'Missing reference'], 400);
+        }
 
         if (! $userId) {
             $email = $data['customer']['email'] ?? $data['email'] ?? null;
@@ -67,24 +74,18 @@ class PaystackWebhookController extends Controller
             return response()->json(['status' => 'user_not_found']);
         }
 
-        $profile = $user->memberProfile;
+        $profile = MemberProfile::where('user_id', $user->id)->first();
         if (! $profile) {
             Log::warning('PaystackWebhook: no member profile', ['user_id' => $userId]);
 
             return response()->json(['status' => 'no_profile']);
         }
 
-        if ($profile->onboarding_status === 'active') {
-            return response()->json(['status' => 'already_active']);
+        if ($profile->payment_verified_at !== null) {
+            return response()->json(['status' => 'already_verified']);
         }
 
         try {
-            if (! $reference) {
-                Log::warning('PaystackWebhook: no reference in payload', ['payload' => $data]);
-
-                return response()->json(['error' => 'Missing reference'], 400);
-            }
-
             $verifiedData = $paystackService->verifyPayment($reference);
 
             $expectedAmount = $paystackService->getAmountForBillingCycle($billingCycle) * 100;
@@ -98,6 +99,8 @@ class PaystackWebhookController extends Controller
                     'paid' => $paidAmount,
                 ]);
 
+                $profile->forceFill(['onboarding_status' => 'payment_failed'])->saveQuietly();
+
                 return response()->json(['error' => 'Payment amount does not match billing cycle'], 400);
             }
 
@@ -108,7 +111,13 @@ class PaystackWebhookController extends Controller
             };
 
             DB::transaction(function () use ($profile, $user, $reference, $nextDue): void {
-                $profile->update([
+                $locked = MemberProfile::where('id', $profile->id)->lockForUpdate()->first();
+
+                if ($locked->payment_verified_at !== null) {
+                    return;
+                }
+
+                $locked->update([
                     'onboarding_status' => 'active',
                     'paystack_reference' => $reference,
                     'payment_verified_at' => now(),
@@ -128,6 +137,8 @@ class PaystackWebhookController extends Controller
                 }
             });
 
+            $profile->refresh();
+
             MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
 
             Log::info('PaystackWebhook: membership activated', [
@@ -143,6 +154,12 @@ class PaystackWebhookController extends Controller
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
+
+            try {
+                $profile->forceFill(['onboarding_status' => 'payment_failed'])->saveQuietly();
+            } catch (\Throwable $inner) {
+                Log::warning('PaystackWebhook: could not set payment_failed', ['error' => $inner->getMessage()]);
+            }
 
             return response()->json(['error' => 'Activation failed'], 500);
         }
