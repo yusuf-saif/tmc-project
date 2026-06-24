@@ -25,7 +25,9 @@ use App\Listeners\SendBillingNotifications;
 use App\Listeners\SendMembershipNotifications;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -94,5 +96,57 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(MembershipActivated::class, LogBillingEvent::class);
+
+        $this->validateDatabaseConnection();
+    }
+
+    protected function validateDatabaseConnection(): void
+    {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
+        if (app()->runningInConsole()) {
+            try {
+                DB::connection()->getPdo();
+            } catch (\Throwable $e) {
+                echo "\n⚠️  Database connection error: {$e->getMessage()}\n";
+            }
+
+            return;
+        }
+
+        try {
+            $connection = DB::connection();
+            $driver = $connection->getDriverName();
+
+            $connection->select('SELECT 1');
+
+            if ($driver === 'sqlite') {
+                $path = $connection->getDatabaseName();
+
+                if (! file_exists($path)) {
+                    Log::warning('SQLite database file not found at: '.$path);
+
+                    return;
+                }
+
+                try {
+                    $pdo = $connection->getPdo();
+                    $pdo->exec('PRAGMA journal_mode=WAL');
+                    $pdo->exec('PRAGMA busy_timeout=5000');
+                    $pdo->exec('PRAGMA synchronous=NORMAL');
+                } catch (\Throwable $e) {
+                    Log::warning('Could not set SQLite PRAGMAs: '.$e->getMessage());
+                }
+
+                Log::info('SQLite database connected with WAL mode', ['path' => $path]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Database connection validation failed', [
+                'message' => $e->getMessage(),
+                'connection' => config('database.default'),
+            ]);
+        }
     }
 }

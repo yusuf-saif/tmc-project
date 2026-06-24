@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -20,6 +21,8 @@ class PasswordResetTest extends TestCase
         parent::setUp();
 
         $this->seed(RoleSeeder::class);
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
     }
 
     public function test_forgot_password_page_loads(): void

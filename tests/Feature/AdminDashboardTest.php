@@ -10,7 +10,9 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\CoinsService;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -80,13 +82,15 @@ class AdminDashboardTest extends TestCase
     {
         $member = User::factory()->create([
             'email' => 'blocked@example.com',
-            'password' => 'Password123!',
+            'password' => Hash::make('Password123!'),
             'status' => 'suspended',
             'referral_code' => 'BLCK7001',
             'email_verified_at' => now(),
         ]);
         $member->assignRole('member');
         $member->profile()->create(['display_name' => $member->name, 'onboarding_completed_at' => now()]);
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
 
         $response = $this->post('/login', [
             'email' => 'blocked@example.com',

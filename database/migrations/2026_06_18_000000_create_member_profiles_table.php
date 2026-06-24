@@ -27,12 +27,24 @@ return new class extends Migration
             $table->unsignedTinyInteger('onboarding_step')->default(1);
             $table->string('onboarding_status')->default('draft');
             $table->string('membership_type', 10)->nullable();
+            $table->string('preferred_billing_cycle', 20)->nullable();
             $table->string('membership_id')->nullable()->unique();
             $table->integer('hijri_year')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
+            $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('approved_at')->nullable();
             $table->text('rejection_reason')->nullable();
+            $table->text('needs_correction_notes')->nullable();
             $table->timestamp('submitted_at')->nullable();
+            $table->timestamp('payment_submitted_at')->nullable();
+            $table->string('payment_proof_path', 255)->nullable();
+            $table->foreignId('payment_verified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('payment_verified_at')->nullable();
+            $table->timestamp('activated_at')->nullable();
+            $table->timestamp('next_due_at')->nullable();
+            $table->string('paystack_reference')->nullable();
+            $table->string('paystack_customer_code')->nullable();
             $table->timestamps();
         });
     }
