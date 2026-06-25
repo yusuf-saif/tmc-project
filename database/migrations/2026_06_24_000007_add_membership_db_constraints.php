@@ -9,9 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('member_profiles', function (Blueprint $table) {
-            $table->index('onboarding_status');
-            $table->text('payment_failed_reason')->nullable()->after('payment_proof_path');
-            $table->string('payment_source', 20)->nullable()->after('payment_failed_reason');
+            if (! Schema::hasIndex('member_profiles', 'member_profiles_onboarding_status_index')) {
+                $table->index('onboarding_status');
+            }
+            if (! Schema::hasColumn('member_profiles', 'payment_failed_reason')) {
+                $table->text('payment_failed_reason')->nullable()->after('payment_proof_path');
+            }
+            if (! Schema::hasColumn('member_profiles', 'payment_source')) {
+                $table->string('payment_source', 20)->nullable()->after('payment_failed_reason');
+            }
         });
     }
 

@@ -31,7 +31,7 @@ class ViewMembershipApplication extends ViewRecord
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
                                 'pending_review' => 'warning',
-                                'payment_pending' => 'info',
+                                'approved_pending_payment' => 'info',
                                 'payment_processing' => 'info',
                                 'payment_failed' => 'danger',
                                 'active' => 'success',
@@ -111,35 +111,28 @@ class ViewMembershipApplication extends ViewRecord
 
                 Section::make('Payment Details')
                     ->schema([
-                        TextEntry::make('payment_submitted_at')->label('Payment Submitted At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
-                        TextEntry::make('payment_proof_path')->label('Payment Proof')
-                            ->url(fn ($record) => $record->payment_proof_path ? route('admin.receipt.download', $record) : null, shouldOpenInNewTab: true)
-                            ->visible(fn ($state) => $state !== null),
                         TextEntry::make('payment_verified_at')->label('Payment Verified At')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
-                        TextEntry::make('payment_verified_by')->label('Verified By'),
                         TextEntry::make('payment_source')->label('Payment Source')
                             ->badge()
                             ->color(fn (?string $state): string => match ($state) {
                                 'paystack' => 'success',
-                                'manual' => 'warning',
                                 default => 'gray',
                             })
                             ->formatStateUsing(fn (?string $state): string => match ($state) {
                                 'paystack' => 'Paystack',
-                                'manual' => 'Manual',
                                 default => '—',
                             }),
-                        TextEntry::make('payment_failed_reason')->label('Failure Reason')
-                            ->visible(fn ($record): bool => $record->onboarding_status === 'payment_failed' && $record->payment_failed_reason !== null),
                         TextEntry::make('paystack_reference')->label('Paystack Reference')
                             ->copyable()
                             ->copyMessage('Reference copied'),
                         TextEntry::make('paystack_customer_code')->label('Paystack Customer Code'),
+                        TextEntry::make('payment_failed_reason')->label('Failure Reason')
+                            ->visible(fn ($record): bool => $record->onboarding_status === 'payment_failed' && $record->payment_failed_reason !== null),
                         TextEntry::make('preferred_billing_cycle')->label('Billing Preference')
                             ->formatStateUsing(fn (?string $state): string => ucfirst($state ?? 'monthly')),
                         TextEntry::make('next_due_at')->label('Next Due')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                     ])->columns(3)
-                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['payment_processing', 'payment_failed', 'active'], true)),
+                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['approved_pending_payment', 'payment_processing', 'payment_failed', 'active'], true)),
 
                 Section::make('Approval Preview')
                     ->description('What happens when you approve this application')
@@ -152,7 +145,7 @@ class ViewMembershipApplication extends ViewRecord
                             ->state(fn () => 'A unique membership ID will be generated'),
                         TextEntry::make('payment_preview')
                             ->label('Payment Required')
-                            ->state(fn () => 'User will be prompted to complete payment before activation'),
+                            ->state(fn () => 'User will be prompted to complete payment via Paystack before activation'),
                     ])->columns(3)
                     ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review'),
             ]);
@@ -242,56 +235,6 @@ class ViewMembershipApplication extends ViewRecord
                     Notification::make()->title('Application rejected')->danger()->send();
                     $this->refreshFormData(['onboarding_status', 'rejection_reason']);
                 }),
-
-            Actions\Action::make('confirm_payment')
-                ->label('Confirm Payment')
-                ->color('success')
-                ->icon('heroicon-o-banknotes')
-                ->visible(fn (): bool => $this->record->onboarding_status === 'payment_processing')
-                ->requiresConfirmation()
-                ->modalHeading('Confirm Membership Payment')
-                ->modalDescription('This will activate the user\'s account and give them full access.')
-                ->modalSubmitActionLabel('Yes, Confirm Payment')
-                ->action(function (): void {
-                    MembershipApplicationResource::confirmPayment($this->record);
-                    Notification::make()
-                        ->title('Payment confirmed')
-                        ->body('User account activated. Full access granted.')
-                        ->success()
-                        ->send();
-                    $this->refreshFormData(['onboarding_status', 'payment_verified_at', 'activated_at']);
-                }),
-
-            Actions\Action::make('mark_payment_failed')
-                ->label('Mark Payment Failed')
-                ->color('danger')
-                ->icon('heroicon-o-x-circle')
-                ->visible(fn (): bool => $this->record->onboarding_status === 'payment_processing')
-                ->requiresConfirmation()
-                ->modalHeading('Mark Payment as Failed')
-                ->modalDescription('This will transition the payment status to "failed". The user will be able to retry.')
-                ->modalSubmitActionLabel('Yes, Mark Failed')
-                ->form([
-                    Textarea::make('reason')
-                        ->label('Reason (optional)')
-                        ->placeholder('Why did the payment fail?'),
-                ])
-                ->action(function (array $data): void {
-                    MembershipApplicationResource::markPaymentFailed($this->record, $data['reason'] ?? null);
-                    Notification::make()
-                        ->title('Payment marked as failed')
-                        ->warning()
-                        ->send();
-                    $this->refreshFormData(['onboarding_status', 'payment_failed_reason']);
-                }),
-
-            Actions\Action::make('download_receipt')
-                ->label('Download Receipt')
-                ->color('gray')
-                ->icon('heroicon-o-arrow-down-tray')
-                ->visible(fn (): bool => $this->record->payment_proof_path !== null)
-                ->url(fn () => route('admin.receipt.download', $this->record))
-                ->openUrlInNewTab(),
         ];
     }
 }

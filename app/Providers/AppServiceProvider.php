@@ -10,8 +10,6 @@ use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
 use App\Events\MembershipSubmitted;
-use App\Events\PaymentConfirmed;
-use App\Events\PaymentSubmitted;
 use App\Events\SubscriptionActivated;
 use App\Events\SubscriptionExpired;
 use App\Events\SubscriptionExpiringSoon;
@@ -67,8 +65,6 @@ class AppServiceProvider extends ServiceProvider
             MembershipApproved::class,
             MembershipRejected::class,
             MembershipNeedsCorrection::class,
-            PaymentSubmitted::class,
-            PaymentConfirmed::class,
         ];
 
         foreach ($events as $event) {

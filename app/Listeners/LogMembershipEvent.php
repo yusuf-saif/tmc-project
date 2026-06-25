@@ -6,8 +6,6 @@ use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
 use App\Events\MembershipSubmitted;
-use App\Events\PaymentConfirmed;
-use App\Events\PaymentSubmitted;
 use App\Services\AuditLogService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +17,7 @@ class LogMembershipEvent implements ShouldQueue
     public int $timeout = 30;
 
     public function handle(
-        MembershipSubmitted|MembershipApproved|MembershipRejected|MembershipNeedsCorrection|PaymentSubmitted|PaymentConfirmed $event,
+        MembershipSubmitted|MembershipApproved|MembershipRejected|MembershipNeedsCorrection $event,
     ): void {
         try {
             match (true) {
@@ -27,8 +25,6 @@ class LogMembershipEvent implements ShouldQueue
                 $event instanceof MembershipApproved => $this->logApproved($event),
                 $event instanceof MembershipRejected => $this->logRejected($event),
                 $event instanceof MembershipNeedsCorrection => $this->logNeedsCorrection($event),
-                $event instanceof PaymentSubmitted => $this->logPaymentSubmitted($event),
-                $event instanceof PaymentConfirmed => $this->logPaymentConfirmed($event),
             };
         } catch (\Throwable $e) {
             Log::error('Failed to log membership event', [
@@ -86,30 +82,6 @@ class LogMembershipEvent implements ShouldQueue
             model: $event->profile,
             old: ['onboarding_status' => 'pending_review'],
             new: ['onboarding_status' => 'needs_correction', 'needs_correction_notes' => $event->notes],
-            actor: $event->actor,
-            targetUserId: $event->profile->user_id,
-        );
-    }
-
-    protected function logPaymentSubmitted(PaymentSubmitted $event): void
-    {
-        AuditLogService::log(
-            action: 'payment_submitted',
-            model: $event->profile,
-            old: ['onboarding_status' => 'approved_pending_payment'],
-            new: ['onboarding_status' => 'payment_submitted', 'payment_proof_path' => $event->proofPath],
-            actor: $event->actor,
-            targetUserId: $event->actor->id,
-        );
-    }
-
-    protected function logPaymentConfirmed(PaymentConfirmed $event): void
-    {
-        AuditLogService::log(
-            action: 'payment_confirmed',
-            model: $event->profile,
-            old: ['onboarding_status' => $event->profile->onboarding_status],
-            new: ['onboarding_status' => 'active', 'payment_verified_at' => now()],
             actor: $event->actor,
             targetUserId: $event->profile->user_id,
         );

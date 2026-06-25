@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
-use App\Events\PaymentConfirmed;
 use App\Models\MemberProfile;
 use App\Models\Setting;
 use App\Models\User;
@@ -18,11 +17,11 @@ class MembershipStateService
     private const ALLOWED_TRANSITIONS = [
         'draft' => ['in_progress', 'pending_review'],
         'in_progress' => ['pending_review'],
-        'pending_review' => ['payment_pending', 'rejected', 'needs_correction'],
-        'payment_pending' => ['payment_processing'],
+        'pending_review' => ['approved_pending_payment', 'rejected', 'needs_correction'],
+        'approved_pending_payment' => ['payment_processing'],
         'payment_processing' => ['active', 'payment_failed'],
-        'payment_failed' => ['payment_pending'],
-        'needs_correction' => ['in_progress', 'pending_review'],
+        'payment_failed' => ['approved_pending_payment'],
+        'needs_correction' => ['pending_review'],
         'rejected' => ['pending_review'],
         'active' => [],
     ];
@@ -99,21 +98,6 @@ class MembershipStateService
             if (isset($metadata['hijri_year'])) {
                 $profile->hijri_year = $metadata['hijri_year'];
             }
-            if (isset($metadata['payment_submitted_at'])) {
-                $profile->payment_submitted_at = $metadata['payment_submitted_at'];
-            }
-            if (isset($metadata['payment_proof_path'])) {
-                $profile->payment_proof_path = $metadata['payment_proof_path'];
-            }
-            if (isset($metadata['payment_verified_at'])) {
-                $profile->payment_verified_at = $metadata['payment_verified_at'];
-            }
-            if (isset($metadata['payment_verified_by'])) {
-                $profile->payment_verified_by = $metadata['payment_verified_by'];
-            }
-            if (isset($metadata['activated_at'])) {
-                $profile->activated_at = $metadata['activated_at'];
-            }
 
             $profile->save();
 
@@ -148,7 +132,7 @@ class MembershipStateService
             $profile->membership_id = $generated['membership_id'];
             $profile->hijri_year = $generated['membership_hijri_year'];
 
-            $this->transition($profile, 'payment_pending', $admin, [
+            $this->transition($profile, 'approved_pending_payment', $admin, [
                 'reviewed_by' => $admin->id,
                 'reviewed_at' => now(),
                 'approved_by' => $admin->id,
@@ -212,47 +196,22 @@ class MembershipStateService
         return $profile->fresh();
     }
 
-    public function markProcessing(MemberProfile $profile, User $actor): MemberProfile
+    public function resubmit(MemberProfile $profile, User $user): MemberProfile
     {
-        return $this->transition($profile, 'payment_processing', $actor);
-    }
-
-    public function markFailed(MemberProfile $profile, User $actor): MemberProfile
-    {
-        return $this->transition($profile, 'payment_failed', $actor);
-    }
-
-    public function confirmPayment(MemberProfile $profile, User $admin): MemberProfile
-    {
-        DB::transaction(function () use ($profile, $admin): void {
-            $this->transition($profile, 'active', $admin, [
-                'payment_verified_at' => now(),
-                'payment_verified_by' => $admin->id,
-                'activated_at' => now(),
+        return DB::transaction(function () use ($profile, $user): MemberProfile {
+            $this->transition($profile, 'pending_review', $user, [
+                'needs_correction_notes' => null,
+                'rejection_reason' => null,
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'approved_by' => null,
+                'approved_at' => null,
             ]);
 
-            $nextDue = match ($profile->preferred_billing_cycle ?? 'monthly') {
-                'quarterly' => now()->addMonths(3),
-                'yearly' => now()->addYear(),
-                default => now()->addMonth(),
-            };
-            $profile->update(['next_due_at' => $nextDue]);
+            $this->syncLegacyProfileStatus($profile, 'pending_review');
 
-            $profile->user?->forceFill(['status' => 'active'])->saveQuietly();
-
-            $legacy = $profile->user?->profile;
-            if ($legacy) {
-                $legacy->forceFill([
-                    'membership_status' => 'active',
-                    'payment_status' => 'paid',
-                    'membership_fee_paid_at' => now(),
-                ])->saveQuietly();
-            }
+            return $profile->fresh();
         });
-
-        PaymentConfirmed::dispatch($profile->fresh(), $admin);
-
-        return $profile->fresh();
     }
 
     protected function syncUserStatus(MemberProfile $profile, string $oldStatus, string $newStatus): void
@@ -265,7 +224,7 @@ class MembershipStateService
         $statusMap = [
             'in_progress' => 'onboarding',
             'pending_review' => 'pending_review',
-            'payment_pending' => 'pending_review',
+            'approved_pending_payment' => 'pending_review',
             'payment_processing' => 'pending_review',
             'payment_failed' => 'pending_review',
             'rejected' => 'rejected',
@@ -292,7 +251,7 @@ class MembershipStateService
         }
 
         $legacy->forceFill([
-            'membership_status' => 'payment_pending',
+            'membership_status' => 'approved_pending_payment',
             'membership_type' => $membershipType,
             'membership_id' => $generated['membership_id'],
             'membership_serial' => $generated['membership_serial'],

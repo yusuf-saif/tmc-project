@@ -24,7 +24,7 @@ class PaystackWebhookTest extends TestCase
         Config::set('paystack.webhookSecret', 'whsec_test_fake');
     }
 
-    protected function createApprovedUser(): User
+    protected function createApprovedUser(string $reference = 'TMC-TEST123'): User
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'pending_review']);
         $user->assignRole('member');
@@ -32,10 +32,11 @@ class PaystackWebhookTest extends TestCase
 
         MemberProfile::create([
             'user_id' => $user->id,
-            'onboarding_status' => 'payment_pending',
+            'onboarding_status' => 'approved_pending_payment',
             'membership_id' => 'TMC-M-1447-001',
             'preferred_billing_cycle' => 'monthly',
             'approved_at' => now(),
+            'paystack_reference' => $reference,
         ]);
 
         return $user;
@@ -48,7 +49,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_verified_payment_activates_membership(): void
     {
-        $user = $this->createApprovedUser();
+        $user = $this->createApprovedUser('TMC-TEST123');
 
         $payload = [
             'event' => 'charge.success',
@@ -95,7 +96,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_failed_payment_does_not_activate(): void
     {
-        $user = $this->createApprovedUser();
+        $user = $this->createApprovedUser('TMC-TEST123');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -155,7 +156,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_payment_amount_mismatch_is_rejected(): void
     {
-        $user = $this->createApprovedUser();
+        $user = $this->createApprovedUser('TMC-TEST-UNDERPAID');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -197,7 +198,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_webhook_is_idempotent(): void
     {
-        $user = $this->createApprovedUser();
+        $user = $this->createApprovedUser('TMC-TEST123');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -253,7 +254,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_different_references_for_same_user_are_independent(): void
     {
-        $user = $this->createApprovedUser();
+        $user = $this->createApprovedUser('TMC-DIFF-REF');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -289,5 +290,126 @@ class PaystackWebhookTest extends TestCase
         $profile = $user->memberProfile;
         $this->assertEquals('active', $profile->onboarding_status);
         $this->assertEquals('TMC-DIFF-REF', $profile->paystack_reference);
+    }
+
+    public function test_unmatched_reference_returns_no_profile(): void
+    {
+        // Profile has paystack_reference = 'TMC-TEST123', webhook sends different reference
+        $this->createApprovedUser('TMC-TEST123');
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'UNMATCHED-REF',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => 'nobody@test.com'],
+                'metadata' => ['user_id' => 999],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'no_profile']);
+    }
+
+    public function test_wrong_status_does_not_activate(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'pending_review']);
+        $user->assignRole('member');
+        $user->profile()->create(['display_name' => $user->name]);
+
+        // Profile is in pending_review, not approved_pending_payment
+        MemberProfile::create([
+            'user_id' => $user->id,
+            'onboarding_status' => 'pending_review',
+            'preferred_billing_cycle' => 'monthly',
+            'paystack_reference' => 'WRONG-STATUS-REF',
+        ]);
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'WRONG-STATUS-REF',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'WRONG-STATUS-REF',
+                'status' => 'success',
+                'amount' => 500000,
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertStatus(400);
+        $response->assertJson(['error' => 'Profile not in approvable state']);
+
+        $user->refresh();
+        $this->assertNotEquals('active', $user->status);
+    }
+
+    public function test_webhook_accepts_payment_processing_status(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'pending_review']);
+        $user->assignRole('member');
+        $user->profile()->create(['display_name' => $user->name]);
+
+        MemberProfile::create([
+            'user_id' => $user->id,
+            'onboarding_status' => 'payment_processing',
+            'membership_id' => 'TMC-M-1447-001',
+            'preferred_billing_cycle' => 'monthly',
+            'approved_at' => now(),
+            'paystack_reference' => 'PROCESSING-REF',
+        ]);
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'PROCESSING-REF',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'PROCESSING-REF',
+                'status' => 'success',
+                'amount' => 500000,
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $profile = $user->fresh()->memberProfile;
+        $this->assertEquals('active', $profile->onboarding_status);
     }
 }

@@ -53,7 +53,7 @@ class FortifyLoginResponse implements LoginResponseContract
             return route('membership.signup');
         }
 
-        if (in_array($status, ['payment_pending', 'payment_processing', 'payment_failed'], true)) {
+        if (in_array($status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
             return route('membership.payment');
         }
 

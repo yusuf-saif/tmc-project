@@ -8,9 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('member_profiles', function (Blueprint $table) {
-            $table->index('payment_verified_at');
-        });
+        if (! Schema::hasIndex('member_profiles', 'member_profiles_payment_verified_at_index')) {
+            Schema::table('member_profiles', function (Blueprint $table) {
+                $table->index('payment_verified_at');
+            });
+        }
     }
 
     public function down(): void

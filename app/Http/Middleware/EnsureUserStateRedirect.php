@@ -60,7 +60,7 @@ class EnsureUserStateRedirect
         }
 
         // ── Approved — awaiting payment ─────────────────────────────
-        if (in_array($status, ['payment_pending', 'payment_processing', 'payment_failed'], true)) {
+        if (in_array($status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
             return redirect()->route('membership.payment');
         }
 

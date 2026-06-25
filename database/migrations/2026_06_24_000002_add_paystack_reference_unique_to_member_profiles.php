@@ -8,9 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('member_profiles', function (Blueprint $table) {
-            $table->unique('paystack_reference');
-        });
+        if (! Schema::hasIndex('member_profiles', 'member_profiles_paystack_reference_unique')) {
+            Schema::table('member_profiles', function (Blueprint $table) {
+                $table->unique('paystack_reference');
+            });
+        }
     }
 
     public function down(): void

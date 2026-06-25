@@ -37,13 +37,4 @@ class MembershipApprovalService
             return $this->stateService->needsCorrection($profile, $notes, $admin);
         });
     }
-
-    public function confirmPayment(MemberProfile $profile): MemberProfile
-    {
-        $admin = auth()->user();
-
-        return DB::transaction(function () use ($profile, $admin): MemberProfile {
-            return $this->stateService->confirmPayment($profile, $admin);
-        });
-    }
 }

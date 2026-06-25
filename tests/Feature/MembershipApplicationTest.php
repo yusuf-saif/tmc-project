@@ -184,7 +184,7 @@ class MembershipApplicationTest extends TestCase
         MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('payment_pending', $profile->onboarding_status);
+        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
         $this->assertEquals('M', $profile->membership_type);
         $this->assertNotNull($profile->membership_id);
         $this->assertStringStartsWith('TMC-M-', $profile->membership_id);
@@ -215,7 +215,7 @@ class MembershipApplicationTest extends TestCase
         $user->assignRole('member');
         $user->profile()->create([
             'display_name' => $user->name,
-            'membership_status' => 'payment_pending',
+            'membership_status' => 'approved_pending_payment',
             'membership_id' => 'TMC-M-1447-001',
             'approved_at' => now(),
         ]);
@@ -394,42 +394,13 @@ class MembershipApplicationTest extends TestCase
 
         $profile = MemberProfile::create([
             'user_id' => $user->id,
-            'onboarding_status' => 'payment_pending',
+            'onboarding_status' => 'approved_pending_payment',
         ]);
 
         $stateService = app(MembershipStateService::class);
 
         $this->expectException(RuntimeException::class);
         $stateService->transition($profile, 'rejected');
-    }
-
-    public function test_state_after_payment_confirmation_is_active(): void
-    {
-        $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
-
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'payment_processing',
-            'membership_id' => 'TMC-M-1447-001',
-            'payment_submitted_at' => now(),
-            'payment_proof_path' => 'payment-proofs/test.pdf',
-        ]);
-
-        $this->actingAs($admin);
-        $approvalService = app(MembershipApprovalService::class);
-        $profile = $approvalService->confirmPayment($profile);
-
-        $this->assertEquals('active', $profile->onboarding_status);
-        $this->assertNotNull($profile->payment_verified_at);
-        $this->assertEquals($admin->id, $profile->payment_verified_by);
-        $this->assertNotNull($profile->activated_at);
-        $this->assertEquals('active', $user->fresh()->status);
     }
 
     // ─── Needs Correction Flow ──────────────────────────────────────
@@ -486,11 +457,7 @@ class MembershipApplicationTest extends TestCase
 
         $profile->refresh();
         $stateService = app(MembershipStateService::class);
-        $stateService->transition($profile, 'in_progress');
-
-        $this->assertEquals('in_progress', $profile->fresh()->onboarding_status);
-
-        $stateService->transition($profile->fresh(), 'pending_review');
+        $stateService->resubmit($profile, $user);
 
         $this->assertEquals('pending_review', $profile->fresh()->onboarding_status);
     }
@@ -567,33 +534,6 @@ class MembershipApplicationTest extends TestCase
         ]);
     }
 
-    public function test_payment_confirmation_creates_audit_log(): void
-    {
-        $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
-
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'payment_processing',
-            'membership_id' => 'TMC-M-1447-001',
-            'payment_submitted_at' => now(),
-            'payment_proof_path' => 'payment-proofs/test.pdf',
-        ]);
-
-        $this->actingAs($admin);
-        $approvalService = app(MembershipApprovalService::class);
-        $approvalService->confirmPayment($profile);
-
-        $this->assertDatabaseHas('audit_logs', [
-            'action' => 'payment_confirmed',
-        ]);
-    }
-
     // ─── Role-Based Access Enforcement ──────────────────────────────
 
     public function test_moderator_cannot_approve_applications(): void
@@ -633,11 +573,11 @@ class MembershipApplicationTest extends TestCase
         MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('payment_pending', $profile->onboarding_status);
+        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
 
         MembershipApplicationResource::approve($profile->fresh(), 'M');
         $profile->refresh();
-        $this->assertEquals('payment_pending', $profile->onboarding_status);
+        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
     }
 
     // ─── Serial Number Integrity ────────────────────────────────────

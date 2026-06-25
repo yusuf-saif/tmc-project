@@ -7,7 +7,6 @@ use App\Models\MemberProfile;
 use App\Models\UserProfile;
 use App\Services\MembershipApprovalService;
 use App\Services\MembershipIdService;
-use App\Services\MembershipStateService;
 use Carbon\Carbon;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -32,7 +31,7 @@ class MembershipApplicationResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('onboarding_status', [
                 'pending_review',
-                'payment_pending',
+                'approved_pending_payment',
                 'payment_processing',
                 'payment_failed',
                 'needs_correction',
@@ -51,7 +50,7 @@ class MembershipApplicationResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'pending_review' => 'warning',
-                        'payment_pending' => 'info',
+                        'approved_pending_payment' => 'info',
                         'payment_processing' => 'info',
                         'payment_failed' => 'danger',
                         'needs_correction' => 'danger',
@@ -73,7 +72,7 @@ class MembershipApplicationResource extends Resource
                     ->label('Status')
                     ->options([
                         'pending_review' => 'Pending Review',
-                        'payment_pending' => 'Pending Payment',
+                        'approved_pending_payment' => 'Approved — Pending Payment',
                         'payment_processing' => 'Processing Payment',
                         'payment_failed' => 'Payment Failed',
                         'needs_correction' => 'Needs Correction',
@@ -133,7 +132,7 @@ class MembershipApplicationResource extends Resource
             $generated = MembershipIdService::generate($membershipType ?? 'M');
 
             $profile->update([
-                'membership_status' => 'payment_pending',
+                'membership_status' => 'approved_pending_payment',
                 'membership_type' => $generated['membership_type'],
                 'membership_id' => $generated['membership_id'],
                 'membership_serial' => $generated['membership_serial'],
@@ -166,37 +165,5 @@ class MembershipApplicationResource extends Resource
         }
 
         app(MembershipApprovalService::class)->needsCorrection($profile, $notes);
-    }
-
-    public static function markPaymentFailed(MemberProfile|UserProfile $profile, ?string $reason = null): void
-    {
-        if ($profile instanceof UserProfile) {
-            return;
-        }
-
-        $actor = auth()->user();
-
-        app(MembershipStateService::class)->markFailed($profile, $actor);
-
-        if ($reason) {
-            $profile->forceFill(['payment_failed_reason' => $reason])->saveQuietly();
-        }
-    }
-
-    public static function confirmPayment(MemberProfile|UserProfile $profile): void
-    {
-        if ($profile instanceof UserProfile) {
-            $profile->update([
-                'membership_status' => 'active',
-                'payment_status' => 'paid',
-                'membership_fee_paid_at' => now(),
-            ]);
-
-            $profile->user?->forceFill(['status' => 'active'])->saveQuietly();
-
-            return;
-        }
-
-        app(MembershipApprovalService::class)->confirmPayment($profile);
     }
 }

@@ -38,7 +38,7 @@ class EnsureMembershipComplete
                 return redirect()->route('membership.signup');
             }
 
-            if (in_array($status, ['approved_pending_payment', 'payment_submitted'], true)) {
+            if (in_array($status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
                 return redirect()->route('membership.payment');
             }
 

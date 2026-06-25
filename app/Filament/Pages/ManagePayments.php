@@ -30,10 +30,10 @@ class ManagePayments extends Page implements HasTable
         return $table
             ->query(
                 MemberProfile::query()
-                    ->whereIn('onboarding_status', ['payment_processing', 'payment_failed'])
+                    ->whereIn('onboarding_status', ['approved_pending_payment', 'payment_processing', 'payment_failed'])
                     ->with('user')
             )
-            ->defaultSort('payment_submitted_at', 'desc')
+            ->defaultSort('updated_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Name')
@@ -49,29 +49,17 @@ class ManagePayments extends Page implements HasTable
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
+                        'approved_pending_payment' => 'info',
                         'payment_processing' => 'warning',
                         'payment_failed' => 'danger',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'approved_pending_payment' => 'Awaiting Payment',
                         'payment_processing' => 'Processing',
                         'payment_failed' => 'Failed',
                         default => str($state)->replace('_', ' ')->title(),
                     }),
-                Tables\Columns\TextColumn::make('payment_source')
-                    ->label('Source')
-                    ->badge()
-                    ->color(fn (?string $state): string => match ($state) {
-                        'paystack' => 'success',
-                        'manual' => 'warning',
-                        default => 'gray',
-                    })
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'paystack' => 'Paystack',
-                        'manual' => 'Manual',
-                        default => '—',
-                    })
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('paystack_reference')
                     ->label('Reference')
                     ->searchable()
@@ -81,10 +69,6 @@ class ManagePayments extends Page implements HasTable
                     ->limit(40)
                     ->tooltip(fn (?string $state): ?string => $state)
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('payment_submitted_at')
-                    ->label('Submitted')
-                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('payment_verified_at')
                     ->label('Verified')
                     ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
@@ -94,6 +78,7 @@ class ManagePayments extends Page implements HasTable
                 Tables\Filters\SelectFilter::make('onboarding_status')
                     ->label('Status')
                     ->options([
+                        'approved_pending_payment' => 'Awaiting Payment',
                         'payment_processing' => 'Processing',
                         'payment_failed' => 'Failed',
                     ]),

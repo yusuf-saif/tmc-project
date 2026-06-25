@@ -40,8 +40,8 @@
             </div>
         @endif
 
-        {{-- STATE: payment_pending — show payment form --}}
-        @if ($status === 'payment_pending')
+        {{-- STATE: approved_pending_payment — show Paystack payment button --}}
+        @if ($status === 'approved_pending_payment')
             <h1 class="font-display text-4xl leading-none text-teal-dk">Membership Payment</h1>
 
             <div class="mt-6 space-y-4">
@@ -69,59 +69,12 @@
                     @error('paystack') <p class="mt-2 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div class="relative flex justify-center text-xs uppercase">
-                        <span class="bg-white px-2 text-ink-soft">Or pay via bank transfer</span>
-                    </div>
-                </div>
-
-                <div class="rounded-sm bg-ivory p-5 text-left text-sm text-ink-soft">
-                    <h3 class="mb-2 text-sm font-semibold text-ink-md">Payment Instructions</h3>
-                    <p class="leading-7">
-                        Please transfer the membership fee using the account details below, then upload your payment receipt for verification.
-                    </p>
-                    <div class="mt-4 space-y-2">
-                        {!! nl2br(e($bankDetails)) !!}
-                    </div>
-                </div>
-
-                <div class="rounded-sm border border-teal-lt bg-white p-5 text-left text-sm">
-                    <h3 class="mb-3 text-sm font-semibold text-ink-md">Upload Payment Receipt</h3>
-
-                    <form wire:submit="submitPayment" class="space-y-4">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-ink-md">Payment Receipt (JPG, PNG, PDF — max 5MB)</label>
-                            <input type="file" wire:model="paymentProof"
-                                   class="block w-full text-sm text-ink-soft file:mr-4 file:rounded-sm file:border-0 file:bg-teal file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-teal-dk">
-                            <div wire:loading wire:target="paymentProof" class="mt-1 text-xs text-ink-soft">Uploading...</div>
-                            @error('paymentProof') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-ink-md">Notes (optional)</label>
-                            <textarea wire:model="paymentNotes" rows="2"
-                                      class="w-full rounded-sm border border-gray-200 p-2 text-sm focus:border-teal focus:ring-1 focus:ring-teal"
-                                      placeholder="Any additional information..."></textarea>
-                            @error('paymentNotes') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                        </div>
-
-                        <button type="submit" wire:loading.attr="disabled" wire:target="submitPayment"
-                                class="w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
-                            <span wire:loading.remove wire:target="submitPayment">Submit Payment Receipt</span>
-                            <span wire:loading wire:target="submitPayment">Submitting...</span>
-                        </button>
-                    </form>
-                </div>
-
                 <p class="text-center text-xs text-ink-soft">
-                    Your payment will be verified by an admin. You'll be notified once confirmed.
+                    After payment, you'll be redirected back here while we confirm your transaction.
                 </p>
             </div>
 
-        {{-- STATE: payment_processing — show spinner --}}
+        {{-- STATE: payment_processing — show spinner with polling --}}
         @elseif ($status === 'payment_processing')
             <h1 class="font-display text-4xl leading-none text-teal-dk">Processing Payment</h1>
 
@@ -133,7 +86,7 @@
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
-                    <p class="text-sm text-ink-md">We are processing your payment. This may take a moment.</p>
+                    <p class="text-sm text-ink-md">We are confirming your payment. This may take a moment.</p>
                     <p class="mt-2 text-xs text-ink-soft">You will be automatically redirected once payment is confirmed.</p>
                     <button type="button" wire:click="checkPaymentStatus"
                             class="mt-4 text-xs font-medium text-teal underline transition hover:text-teal-dk">
@@ -163,7 +116,7 @@
                         </svg>
                     </div>
                     <p class="text-sm text-ink-md">Your payment could not be processed.</p>
-                    <p class="mt-1 text-xs text-ink-soft">You can try again with a different card, or use the bank transfer option below. If the issue persists, contact support.</p>
+                    <p class="mt-1 text-xs text-ink-soft">You can try again with a different card. If the issue persists, contact support.</p>
                 </div>
 
                 @if ($membershipId)
@@ -187,42 +140,6 @@
                         Retry Payment with Card
                     </button>
                     @error('paystack') <p class="mt-2 text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
-
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div class="relative flex justify-center text-xs uppercase">
-                        <span class="bg-white px-2 text-ink-soft">Or pay via bank transfer</span>
-                    </div>
-                </div>
-
-                <div class="rounded-sm border border-teal-lt bg-white p-5 text-left text-sm">
-                    <h3 class="mb-3 text-sm font-semibold text-ink-md">Upload Payment Receipt</h3>
-
-                    <form wire:submit="submitPayment" class="space-y-4">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-ink-md">Payment Receipt (JPG, PNG, PDF — max 5MB)</label>
-                            <input type="file" wire:model="paymentProof"
-                                   class="block w-full text-sm text-ink-soft file:mr-4 file:rounded-sm file:border-0 file:bg-teal file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-teal-dk">
-                            <div wire:loading wire:target="paymentProof" class="mt-1 text-xs text-ink-soft">Uploading...</div>
-                            @error('paymentProof') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-ink-md">Notes (optional)</label>
-                            <textarea wire:model="paymentNotes" rows="2"
-                                      class="w-full rounded-sm border border-gray-200 p-2 text-sm focus:border-teal focus:ring-1 focus:ring-teal"
-                                      placeholder="Any additional information..."></textarea>
-                            @error('paymentNotes') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                        </div>
-
-                        <button type="submit" wire:loading.attr="disabled" wire:target="submitPayment"
-                                class="w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
-                            Submit Payment Receipt
-                        </button>
-                    </form>
                 </div>
             </div>
 

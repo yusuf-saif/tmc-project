@@ -4,9 +4,11 @@ namespace App\Livewire\Membership;
 
 use App\Models\Goal;
 use App\Models\Interest;
+use App\Models\MemberProfile;
 use App\Models\MembershipOnboardingDraft;
 use App\Models\Setting;
 use App\Services\MembershipSignupService;
+use App\Services\MembershipStateService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -58,6 +60,8 @@ class MembershipSignupWizard extends Component
 
     public bool $submitting = false;
 
+    public bool $isCorrection = false;
+
     public array $nigerianStates = [
         'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
         'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
@@ -92,10 +96,30 @@ class MembershipSignupWizard extends Component
             $user = auth()->user();
             $profile = $user->memberProfile;
 
-            if ($profile && in_array($profile->onboarding_status, ['pending_review', 'submitted', 'under_review', 'payment_pending', 'payment_processing', 'payment_failed', 'active'], true)) {
-                $this->redirect(route('membership.pending'));
+            if ($profile) {
+                // Correction mode: user was asked to fix their application
+                if ($profile->onboarding_status === 'needs_correction') {
+                    $this->loadFromExistingProfile($profile);
+                    $this->loadBillingOptions();
+                    $this->isCorrection = true;
 
-                return;
+                    return;
+                }
+
+                // Already submitted or in payment flow — redirect
+                if (in_array($profile->onboarding_status, [
+                    'pending_review', 'submitted', 'under_review',
+                    'approved_pending_payment', 'payment_processing', 'payment_failed',
+                    'active',
+                ], true)) {
+                    if (in_array($profile->onboarding_status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
+                        $this->redirect(route('membership.payment'));
+                    } else {
+                        $this->redirect(route('membership.pending'));
+                    }
+
+                    return;
+                }
             }
         }
 
@@ -120,6 +144,27 @@ class MembershipSignupWizard extends Component
             'draft' => $draftModel->id,
             'ref' => $this->referralCode ?: null,
         ])));
+    }
+
+    protected function loadFromExistingProfile(MemberProfile $profile): void
+    {
+        $this->step = 6;
+        $this->firstName = $profile->first_name ?? '';
+        $this->lastName = $profile->last_name ?? '';
+        $this->email = $profile->user?->email ?? '';
+        $this->locationCountry = $profile->location_country ?? 'Nigeria';
+        $this->locationState = $profile->location_state ?? '';
+        $this->locationInternational = $profile->location_international ?? '';
+        $this->ageGroup = $profile->age_group ?? '';
+        $this->maritalStatus = $profile->marital_status ?? '';
+        $this->phone = $profile->phone ?? '';
+        $this->igUsername = $profile->ig_username ?? '';
+        $this->fbUsername = $profile->fb_username ?? '';
+        $this->xUsername = $profile->x_username ?? '';
+        $this->tiktokUsername = $profile->tiktok_username ?? '';
+        $this->preferredBillingCycle = $profile->preferred_billing_cycle ?? 'monthly';
+        $this->selectedInterests = $profile->user?->interests?->pluck('slug')?->toArray() ?? [];
+        $this->selectedGoals = $profile->user?->goals?->pluck('slug')?->toArray() ?? [];
     }
 
     protected function loadFromDraft(MembershipOnboardingDraft $draft): void
@@ -250,6 +295,12 @@ class MembershipSignupWizard extends Component
             return;
         }
 
+        if ($this->isCorrection) {
+            $this->submitCorrection();
+
+            return;
+        }
+
         $draft = MembershipOnboardingDraft::find($this->draftUuid);
 
         if (! $draft || $draft->status === 'submitted') {
@@ -308,6 +359,70 @@ class MembershipSignupWizard extends Component
         $this->redirect(route('membership.pending'));
     }
 
+    public function submitCorrection(): void
+    {
+        if ($this->submitting) {
+            return;
+        }
+
+        $user = auth()->user();
+        $profile = $user->memberProfile;
+
+        if (! $profile || $profile->onboarding_status !== 'needs_correction') {
+            $this->redirect(route('membership.pending'));
+
+            return;
+        }
+
+        $this->submitting = true;
+
+        try {
+            $this->validate($this->fullValidationRules());
+
+            $profile->forceFill([
+                'first_name' => $this->firstName,
+                'last_name' => $this->lastName,
+                'location_country' => $this->locationCountry,
+                'location_state' => $this->locationState === '' ? null : $this->locationState,
+                'location_international' => $this->locationInternational === '' ? null : $this->locationInternational,
+                'age_group' => $this->ageGroup,
+                'marital_status' => $this->maritalStatus,
+                'phone' => $this->phone,
+                'ig_username' => $this->igUsername === '' ? null : $this->igUsername,
+                'fb_username' => $this->fbUsername === '' ? null : $this->fbUsername,
+                'x_username' => $this->xUsername === '' ? null : $this->xUsername,
+                'tiktok_username' => $this->tiktokUsername === '' ? null : $this->tiktokUsername,
+                'preferred_billing_cycle' => $this->preferredBillingCycle,
+            ])->save();
+
+            $interestIds = Interest::whereIn('slug', $this->selectedInterests)->pluck('id')->all();
+            $user->interests()->sync($interestIds);
+
+            $goalIds = Goal::whereIn('slug', $this->selectedGoals)->pluck('id')->all();
+            $user->goals()->sync($goalIds);
+
+            app(MembershipStateService::class)->resubmit($profile, $user);
+
+            Log::info('MembershipSignupWizard: correction submitted', [
+                'user_id' => $user->id,
+                'profile_id' => $profile->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('MembershipSignupWizard: correction failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+            $this->submitting = false;
+            $this->addError('submit', 'Could not resubmit. Please try again.');
+
+            return;
+        }
+
+        $this->submitting = false;
+
+        $this->redirect(route('membership.pending'));
+    }
+
     public function getProgressPercentageProperty(): int
     {
         return (int) round(($this->step / 6) * 100);
@@ -347,7 +462,7 @@ class MembershipSignupWizard extends Component
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-            'password' => $hasPassword ? ['nullable'] : ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
+            'password' => $hasPassword || $this->isCorrection ? ['nullable'] : ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
             'locationCountry' => ['required', 'string', 'max:255'],
             'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
             'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
@@ -367,7 +482,7 @@ class MembershipSignupWizard extends Component
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-                'password' => ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
+                'password' => $this->isCorrection ? ['nullable'] : ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],
@@ -404,7 +519,7 @@ class MembershipSignupWizard extends Component
             'interests' => $interests,
             'goals' => $goals,
         ])->layout('layouts.guest-livewire', [
-            'title' => 'Signup',
+            'title' => $this->isCorrection ? 'Update Application' : 'Signup',
         ]);
     }
 }
