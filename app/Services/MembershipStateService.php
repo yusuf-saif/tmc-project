@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\MembershipActivated;
 use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
@@ -126,8 +127,9 @@ class MembershipStateService
 
         $generated = MembershipIdService::generate($membershipType);
         $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
+        $skipVerification = config('paystack.skipVerification', false);
 
-        DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward, $admin): void {
+        DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward, $admin, $skipVerification): void {
             $profile->membership_type = $membershipType;
             $profile->membership_id = $generated['membership_id'];
             $profile->hijri_year = $generated['membership_hijri_year'];
@@ -145,7 +147,37 @@ class MembershipStateService
                 'coins_awarded' => $coinReward,
             ]);
 
-            $this->syncLegacyProfileApproval($profile, $generated, $membershipType, $admin->id);
+            if ($skipVerification) {
+                $profile->forceFill([
+                    'onboarding_status' => 'active',
+                    'payment_verified_at' => now(),
+                    'activated_at' => now(),
+                    'payment_source' => 'paystack',
+                    'next_due_at' => now()->addMonth(),
+                ])->save();
+
+                $user = $profile->user;
+                if ($user) {
+                    $user->forceFill(['status' => 'active'])->saveQuietly();
+                }
+
+                $legacy = $profile->user?->profile;
+                if ($legacy) {
+                    $legacy->forceFill([
+                        'membership_status' => 'active',
+                        'payment_status' => 'paid',
+                        'membership_fee_paid_at' => now(),
+                        'membership_type' => $membershipType,
+                        'membership_id' => $generated['membership_id'],
+                        'membership_serial' => $generated['membership_serial'],
+                        'membership_hijri_year' => $generated['membership_hijri_year'],
+                        'approved_at' => now(),
+                        'approved_by' => $admin->id,
+                    ])->saveQuietly();
+                }
+            } else {
+                $this->syncLegacyProfileApproval($profile, $generated, $membershipType, $admin->id);
+            }
 
             if ($coinReward > 0 && $profile->user) {
                 CoinsService::award($profile->user, $coinReward, 'manual', null, "Membership approval ({$membershipType})");
@@ -158,6 +190,10 @@ class MembershipStateService
         });
 
         MembershipApproved::dispatch($profile->fresh(), $admin, $membershipType, $generated['membership_id'], $coinReward);
+
+        if ($skipVerification) {
+            MembershipActivated::dispatch($profile->user, $profile->membership_id ?? 'N/A', $profile->user);
+        }
 
         return $profile->fresh();
     }
