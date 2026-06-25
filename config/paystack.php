@@ -34,4 +34,17 @@ return [
 
     'webhookSecret' => env('PAYSTACK_WEBHOOK_SECRET'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Skip Paystack Verification (testing bypass)
+    |--------------------------------------------------------------------------
+    |
+    | When true, the PaymentPage polling will activate the user immediately
+    | upon returning from Paystack without verifying the transaction.
+    | Only enable for testing.
+    |
+    */
+
+    'skipVerification' => env('PAYSTACK_SKIP_VERIFICATION', false),
+
 ];

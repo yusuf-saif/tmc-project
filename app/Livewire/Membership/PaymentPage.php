@@ -67,7 +67,11 @@ class PaymentPage extends Component
         }
 
         if ($status === 'payment_processing' && $profile->paystack_reference && $profile->payment_verified_at === null) {
-            $this->verifyPaymentWithPaystack($profile, $user);
+            if (config('paystack.skipVerification', false)) {
+                $this->activateWithoutVerification($profile, $user);
+            } else {
+                $this->verifyPaymentWithPaystack($profile, $user);
+            }
         }
 
         $profile->refresh();
@@ -161,6 +165,69 @@ class PaymentPage extends Component
             ]);
         } catch (\Throwable $e) {
             Log::info('PaymentPage: Paystack verification not yet ready', [
+                'user_id' => $user->id,
+                'reference' => $profile->paystack_reference,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function activateWithoutVerification($profile, $user): void
+    {
+        try {
+            $billingCycle = $profile->preferred_billing_cycle ?? 'monthly';
+
+            $nextDue = match ($billingCycle) {
+                'quarterly' => now()->addMonths(3),
+                'yearly' => now()->addYear(),
+                default => now()->addMonth(),
+            };
+
+            DB::transaction(function () use ($profile, $user, $nextDue): void {
+                $locked = MemberProfile::where('id', $profile->id)->lockForUpdate()->first();
+
+                if ($locked->payment_verified_at !== null) {
+                    return;
+                }
+
+                $locked->update([
+                    'onboarding_status' => 'active',
+                    'payment_verified_at' => now(),
+                    'activated_at' => now(),
+                    'next_due_at' => $nextDue,
+                    'payment_source' => 'paystack',
+                ]);
+
+                $user->forceFill(['status' => 'active'])->saveQuietly();
+
+                $legacy = $user->profile;
+                if ($legacy) {
+                    $legacy->forceFill([
+                        'membership_status' => 'active',
+                        'payment_status' => 'paid',
+                        'membership_fee_paid_at' => now(),
+                    ])->saveQuietly();
+                }
+            });
+
+            $profile->refresh();
+
+            AuditLogService::log(
+                action: 'payment_verified_bypass',
+                model: $profile,
+                old: ['onboarding_status' => 'payment_processing'],
+                new: ['onboarding_status' => 'active', 'membership_id' => $profile->membership_id],
+                targetUserId: $user->id,
+            );
+
+            MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
+
+            Log::info('PaymentPage: payment bypassed (skip verification)', [
+                'user_id' => $user->id,
+                'reference' => $profile->paystack_reference,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('PaymentPage: bypass activation failed', [
                 'user_id' => $user->id,
                 'reference' => $profile->paystack_reference,
                 'error' => $e->getMessage(),
