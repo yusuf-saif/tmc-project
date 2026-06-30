@@ -28,7 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         AppServiceProvider::class,
         FortifyServiceProvider::class,
+        \Sentry\Laravel\ServiceProvider::class,
     ])
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();

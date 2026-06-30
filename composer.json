@@ -16,6 +16,7 @@
         "laravel/tinker": "^2.9",
         "minishlink/web-push": "^10.1",
         "resend/resend-laravel": "^1.4",
+        "sentry/sentry-laravel": "^4.26",
         "spatie/laravel-backup": "^9.3",
         "spatie/laravel-permission": "^6.25"
     },
