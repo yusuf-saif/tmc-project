@@ -6,6 +6,7 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Http\Responses\FortifyLoginResponse;
+use App\Http\Responses\FortifyRegisterResponse;
 use App\Http\Responses\FortifyVerifyEmailResponse;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
 use Laravel\Fortify\Fortify;
 
@@ -26,6 +28,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, FortifyLoginResponse::class);
+        $this->app->singleton(RegisterResponseContract::class, FortifyRegisterResponse::class);
         $this->app->singleton(VerifyEmailResponseContract::class, FortifyVerifyEmailResponse::class);
 
         Fortify::loginView(fn () => view('auth.login'));
