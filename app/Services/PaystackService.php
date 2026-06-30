@@ -34,9 +34,9 @@ class PaystackService
         };
     }
 
-    public function initializePayment(User $user, string $billingCycle, string $reference): array
+    public function initializePayment(User $user, string $billingCycle, string $reference, ?int $finalAmountKobo = null, array $extraMetadata = []): array
     {
-        $amount = $this->getAmountForBillingCycle($billingCycle);
+        $amount = $finalAmountKobo ?? $this->getAmountForBillingCycle($billingCycle) * 100;
 
         Log::info('PaystackService: initializing payment', [
             'user_id' => $user->id,
@@ -49,15 +49,15 @@ class PaystackService
             'Authorization' => "Bearer {$this->secretKey}",
             'Content-Type' => 'application/json',
         ])->post("{$this->baseUrl}/transaction/initialize", [
-            'amount' => $amount * 100,
+            'amount' => $amount,
             'email' => $user->email,
             'reference' => $reference,
             'callback_url' => route('membership.payment'),
-            'metadata' => [
+            'metadata' => array_merge([
                 'user_id' => $user->id,
                 'billing_cycle' => $billingCycle,
                 'membership_type' => 'membership_payment',
-            ],
+            ], $extraMetadata),
         ]);
 
         $body = $response->json();
@@ -120,11 +120,11 @@ class PaystackService
         return 'TMC-'.strtoupper(uniqid());
     }
 
-    public function getAuthorizationUrl(User $user, string $billingCycle): string
+    public function getAuthorizationUrl(User $user, string $billingCycle, ?int $finalAmountKobo = null, array $extraMetadata = []): string
     {
         $reference = $this->generateReference();
 
-        $data = $this->initializePayment($user, $billingCycle, $reference);
+        $data = $this->initializePayment($user, $billingCycle, $reference, $finalAmountKobo, $extraMetadata);
 
         MemberProfile::where('user_id', $user->id)->update([
             'paystack_reference' => $reference,
@@ -138,9 +138,9 @@ class PaystackService
         return $data['authorization_url'];
     }
 
-    public function initializeSouqListingPayment(SouqListing $listing): string
+    public function initializeSouqListingPayment(SouqListing $listing, ?int $finalAmountKobo = null, array $extraMetadata = []): string
     {
-        $amountKobo = (int) Setting::get('souq_listing_fee_kobo');
+        $amountKobo = $finalAmountKobo ?? (int) Setting::get('souq_listing_fee_kobo');
         $reference = $this->generateReference();
 
         Log::info('PaystackService: initializing Souq listing payment', [
@@ -157,11 +157,11 @@ class PaystackService
             'email' => $listing->owner->email,
             'reference' => $reference,
             'callback_url' => route('souq.apply'),
-            'metadata' => [
+            'metadata' => array_merge([
                 'user_id' => $listing->owner->id,
                 'payment_type' => 'souq_listing_fee',
                 'listing_id' => $listing->id,
-            ],
+            ], $extraMetadata),
         ]);
 
         $body = $response->json();

@@ -30,17 +30,12 @@
         <p class="mt-4 text-sm font-light leading-7 text-ink-soft">{{ $this->referralCount }} sister(s) joined with your link</p>
     </section>
 
-    <section class="space-y-4">
-        <h2 class="text-sm font-semibold text-ink">Redeem Your Coins</h2>
-        <div class="grid grid-cols-3 gap-3">
-            @foreach (range(1, 3) as $placeholder)
-                <div class="flex min-h-24 flex-col items-center justify-center rounded-[8px] border border-dashed opacity-50" style="border-color: var(--border);">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-5 w-5 text-ink-soft"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z"/></svg>
-                    <p class="mt-2 text-center text-[12px] font-light italic text-ink-soft">Coming soon</p>
-                </div>
-            @endforeach
-        </div>
-        <p class="text-center text-[12px] font-light leading-6 text-ink-soft">The rewards catalog is launching soon — keep earning, insha'Allah ✧</p>
+    <section class="space-y-4 rounded-[12px] p-5" style="background: var(--mint-lt); border: 1px solid var(--border);">
+        <h2 class="text-sm font-semibold text-ink">Your Jannah Coins Are Worth ₦{{ number_format(($this->balance * App\Services\CoinsService::coinValueKobo()) / 100) }}</h2>
+        <p class="text-[12px] font-light leading-6 text-ink-soft">
+            Apply them as a discount on your membership renewal or Souq listing fee —
+            up to {{ App\Services\CoinsService::maxRedemptionPercent() }}% off any payment.
+        </p>
     </section>
 
     <section class="space-y-4 rounded-[12px] bg-white p-5" style="border: 1px solid var(--border);">
@@ -64,6 +59,10 @@
                         'referral' => 'Referral bonus',
                         'manual' => 'Admin award',
                         'admin_adjustment' => 'Adjustment',
+                        'welcome' => 'Welcome bonus',
+                        'badge_reward' => 'Badge reward',
+                        'redemption_membership' => 'Membership discount',
+                        'redemption_souq' => 'Souq fee discount',
                         default => ucfirst(str_replace('_', ' ', $row->reason)),
                     } }}</span>
                     <span class="text-right font-semibold {{ $row->amount >= 0 ? 'text-green-600' : 'text-red-500' }}">{{ $row->amount >= 0 ? '+' : '' }}{{ $row->amount }}</span>

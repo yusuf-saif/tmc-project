@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Souq;
 
+use App\Models\Setting;
 use App\Models\SouqListing;
+use App\Services\CoinsService;
 use App\Services\PaystackService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -35,6 +37,8 @@ class ApplyForm extends Component
     public bool $hasPending = false;
 
     public bool $hasApprovedUnpaid = false;
+
+    public bool $applyCoins = false;
 
     public ?SouqListing $approvedListing = null;
 
@@ -88,7 +92,24 @@ class ApplyForm extends Component
             return;
         }
 
-        $url = $paystack->initializeSouqListingPayment($this->approvedUnpaidListing);
+        $user = auth()->user();
+        $feeAmountKobo = (int) Setting::get('souq_listing_fee_kobo');
+        $extraMetadata = [];
+        $finalAmountKobo = null;
+
+        if ($this->applyCoins) {
+            $redemption = CoinsService::calculateMaxDiscount($user, $feeAmountKobo);
+
+            if ($redemption['eligible']) {
+                $finalAmountKobo = $redemption['final_amount_kobo'];
+                $extraMetadata = [
+                    'redemption_applied' => true,
+                    'coins_used' => $redemption['coins_to_use'],
+                ];
+            }
+        }
+
+        $url = $paystack->initializeSouqListingPayment($this->approvedUnpaidListing, $finalAmountKobo, $extraMetadata);
 
         $this->redirect($url);
     }
@@ -123,7 +144,19 @@ class ApplyForm extends Component
 
     public function render(): View
     {
-        return view('livewire.souq.apply-form')
-            ->layout('layouts.app', ['title' => 'List Your Business']);
+        $user = auth()->user();
+        $feeAmountKobo = (int) Setting::get('souq_listing_fee_kobo');
+        $redemption = CoinsService::calculateMaxDiscount($user, $feeAmountKobo);
+        $feeAmountNaira = (int) ($feeAmountKobo / 100);
+
+        $finalFeeAmount = $this->applyCoins && $redemption['eligible']
+            ? (int) floor($redemption['final_amount_kobo'] / 100)
+            : $feeAmountNaira;
+
+        return view('livewire.souq.apply-form', [
+            'redemption' => $redemption,
+            'feeAmount' => $feeAmountNaira,
+            'finalFeeAmount' => $finalFeeAmount,
+        ])->layout('layouts.app', ['title' => 'List Your Business']);
     }
 }

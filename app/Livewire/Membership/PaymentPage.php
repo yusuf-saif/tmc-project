@@ -4,6 +4,7 @@ namespace App\Livewire\Membership;
 
 use App\Models\MemberProfile;
 use App\Services\AuditLogService;
+use App\Services\CoinsService;
 use App\Services\MembershipStateService;
 use App\Services\PaystackService;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,8 @@ class PaymentPage extends Component
     public bool $submitting = false;
 
     public string $paymentStatus = '';
+
+    public bool $applyCoins = false;
 
     public function mount()
     {
@@ -191,12 +194,30 @@ class PaymentPage extends Component
         try {
             $this->paymentStatus = 'onboarding';
 
-            $url = $paystackService->getAuthorizationUrl($user, $billingCycle);
+            $tierAmountKobo = $paystackService->getAmountForBillingCycle($billingCycle) * 100;
+            $extraMetadata = [];
+            $finalAmountKobo = null;
+
+            if ($this->applyCoins) {
+                $redemption = CoinsService::calculateMaxDiscount($user, $tierAmountKobo);
+
+                if ($redemption['eligible']) {
+                    $finalAmountKobo = $redemption['final_amount_kobo'];
+                    $extraMetadata = [
+                        'redemption_applied' => true,
+                        'coins_used' => $redemption['coins_to_use'],
+                    ];
+                }
+            }
+
+            $url = $paystackService->getAuthorizationUrl($user, $billingCycle, $finalAmountKobo, $extraMetadata);
 
             Log::info('PaymentPage: redirecting to Paystack', [
                 'user_id' => $user->id,
                 'profile_id' => $memberProfile->id,
                 'billing_cycle' => $billingCycle,
+                'final_amount_kobo' => $finalAmountKobo ?? $tierAmountKobo,
+                'redemption_applied' => $this->applyCoins,
             ]);
 
             return redirect()->away($url);
@@ -223,6 +244,13 @@ class PaymentPage extends Component
         $billingCycle = $memberProfile?->preferred_billing_cycle ?? 'monthly';
         $amountDue = app(PaystackService::class)->getAmountForBillingCycle($billingCycle);
 
+        $tierAmountKobo = $amountDue * 100;
+        $redemption = CoinsService::calculateMaxDiscount($user, $tierAmountKobo);
+
+        $finalAmountDue = $this->applyCoins && $redemption['eligible']
+            ? (int) floor($redemption['final_amount_kobo'] / 100)
+            : $amountDue;
+
         return view('livewire.membership.payment-page', [
             'profile' => $profile,
             'memberProfile' => $memberProfile,
@@ -230,6 +258,8 @@ class PaymentPage extends Component
             'membershipId' => $memberProfile?->membership_id,
             'billingCycle' => $billingCycle,
             'amountDue' => $amountDue,
+            'redemption' => $redemption,
+            'finalAmountDue' => $finalAmountDue,
         ])->layout('layouts.guest-livewire', [
             'title' => 'Membership Payment',
         ]);

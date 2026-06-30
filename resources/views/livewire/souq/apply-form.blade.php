@@ -16,11 +16,30 @@
             <div class="rounded-[8px] p-4" style="background: var(--gold-pale); border: 1px solid rgba(200, 168, 75, 0.25);">
                 <p class="text-sm font-semibold text-ink">{{ $approvedUnpaidListing->business_name }}</p>
                 <p class="mt-2 text-sm font-light leading-7 text-ink-soft">
-                    Pay your monthly listing fee of ₦{{ number_format($approvedUnpaidListing->monthly_fee) }} to go live on the Souq.
+                    Listing fee: ₦{{ number_format($finalFeeAmount) }}
+                    @if ($applyCoins && $redemption['eligible'])
+                        <span class="text-teal">(₦{{ number_format($feeAmount - $finalFeeAmount) }} covered by {{ $redemption['coins_to_use'] }} coins)</span>
+                    @endif
                 </p>
             </div>
+
+            @if ($redemption['eligible'])
+                <div class="rounded-[8px] border p-4" style="border-color: var(--teal-lt); background: rgba(210, 235, 230, 0.3);">
+                    <label class="flex cursor-pointer items-center gap-3">
+                        <input type="checkbox" wire:model.live="applyCoins" class="h-4 w-4 rounded border-teal text-teal focus:ring-teal">
+                        <div>
+                            <p class="text-sm font-medium text-teal-dk">Apply your Jannah Coins</p>
+                            <p class="text-[12px] font-light text-ink-soft">
+                                Save ₦{{ number_format($redemption['discount_kobo'] / 100) }} using {{ $redemption['coins_to_use'] }} coins
+                                (max {{ app(\App\Services\CoinsService::class)::maxRedemptionPercent() }}% of this fee)
+                            </p>
+                        </div>
+                    </label>
+                </div>
+            @endif
+
             <button type="button" wire:click="payListing" wire:loading.attr="disabled" class="tmc-button-gold max-w-[220px] no-underline">
-                Pay Now
+                Pay ₦{{ number_format($finalFeeAmount) }} Now
             </button>
         </section>
     @elseif ($submitted)

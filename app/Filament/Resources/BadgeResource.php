@@ -30,6 +30,11 @@ class BadgeResource extends Resource
             Forms\Components\Textarea::make('description')->required()->columnSpanFull(),
             Forms\Components\FileUpload::make('icon_path')->disk('public')->directory('badges/icons')->image(),
             Forms\Components\Textarea::make('criteria')->required()->columnSpanFull(),
+            Forms\Components\TextInput::make('coin_reward')
+                ->label('Coin Reward')
+                ->numeric()
+                ->default(0)
+                ->helperText('Coins awarded to the user when this badge is granted'),
             Forms\Components\Toggle::make('is_active')->default(true),
         ]);
     }
@@ -39,6 +44,9 @@ class BadgeResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
+                Tables\Columns\TextColumn::make('coin_reward')
+                    ->label('Coin Reward')
+                    ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
             ])
             ->emptyStateHeading('No badges')

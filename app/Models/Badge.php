@@ -16,12 +16,14 @@ class Badge extends Model
         'icon_path',
         'criteria',
         'is_active',
+        'coin_reward',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'coin_reward' => 'integer',
         ];
     }
 

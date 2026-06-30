@@ -92,6 +92,20 @@ class SettingsRegistry
             'label' => 'Starter Coins Amount',
             'description' => 'Coins awarded to a new member on signup (welcome bonus).',
         ],
+        'coin_value_kobo' => [
+            'group' => 'coins',
+            'type' => 'int',
+            'default' => 500,
+            'label' => 'Value Per Coin (kobo)',
+            'description' => 'How much one Jannah Coin is worth when redeemed as a discount (500 kobo = ₦5).',
+        ],
+        'max_redemption_percent' => [
+            'group' => 'coins',
+            'type' => 'int',
+            'default' => 20,
+            'label' => 'Max Redemption (% of payment)',
+            'description' => 'Maximum percentage of any single payment that can be covered using coins.',
+        ],
         'notify_renewal_reminders_enabled' => [
             'group' => 'notifications',
             'type' => 'bool',

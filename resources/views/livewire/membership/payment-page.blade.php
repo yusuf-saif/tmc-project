@@ -54,16 +54,34 @@
 
                 <div class="rounded-sm bg-ivory p-5 text-center">
                     <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Amount Due</p>
-                    <p class="mt-1 font-display text-4xl text-teal-dk">₦{{ number_format($amountDue) }}</p>
+                    <p class="mt-1 font-display text-4xl text-teal-dk">₦{{ number_format($finalAmountDue) }}</p>
+                    @if ($applyCoins && $redemption['eligible'])
+                        <p class="mt-1 text-xs text-teal">₦{{ number_format($amountDue - $finalAmountDue) }} covered by {{ $redemption['coins_to_use'] }} Jannah Coins</p>
+                    @endif
                     <p class="mt-1 text-sm text-ink-soft">{{ ucfirst($billingCycle) }} billing</p>
                 </div>
+
+                @if ($redemption['eligible'])
+                    <div class="rounded-sm border border-teal-lt bg-teal-lt/30 p-4">
+                        <label class="flex cursor-pointer items-center gap-3">
+                            <input type="checkbox" wire:model.live="applyCoins" class="h-4 w-4 rounded border-teal text-teal focus:ring-teal">
+                            <div>
+                                <p class="text-sm font-medium text-teal-dk">Apply your Jannah Coins</p>
+                                <p class="text-xs text-ink-soft">
+                                    Save ₦{{ number_format($redemption['discount_kobo'] / 100) }} using {{ $redemption['coins_to_use'] }} coins
+                                    (max {{ app(\App\Services\CoinsService::class)::maxRedemptionPercent() }}% of this payment)
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                @endif
 
                 <div class="rounded-sm border border-teal bg-white p-5 text-center">
                     <h3 class="text-sm font-semibold text-teal-dk">Pay Online with Card</h3>
                     <p class="mt-1 text-xs text-ink-soft">Secure payment via Paystack</p>
                     <button type="button" wire:click="redirectToPaystack" wire:loading.attr="disabled"
                             class="mt-4 w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
-                        <span wire:loading.remove wire:target="redirectToPaystack">Pay ₦{{ number_format($amountDue) }} with Card</span>
+                        <span wire:loading.remove wire:target="redirectToPaystack">Pay ₦{{ number_format($finalAmountDue) }} with Card</span>
                         <span wire:loading wire:target="redirectToPaystack">Connecting to Paystack...</span>
                     </button>
                     @error('paystack') <p class="mt-2 text-xs text-red-500">{{ $message }}</p> @enderror
@@ -128,9 +146,24 @@
 
                 <div class="rounded-sm bg-ivory p-5 text-center">
                     <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Amount Due</p>
-                    <p class="mt-1 font-display text-4xl text-teal-dk">₦{{ number_format($amountDue) }}</p>
+                    <p class="mt-1 font-display text-4xl text-teal-dk">₦{{ number_format($finalAmountDue) }}</p>
                     <p class="mt-1 text-sm text-ink-soft">{{ ucfirst($billingCycle) }} billing</p>
                 </div>
+
+                @if ($redemption['eligible'])
+                    <div class="rounded-sm border border-teal-lt bg-teal-lt/30 p-4">
+                        <label class="flex cursor-pointer items-center gap-3">
+                            <input type="checkbox" wire:model.live="applyCoins" class="h-4 w-4 rounded border-teal text-teal focus:ring-teal">
+                            <div>
+                                <p class="text-sm font-medium text-teal-dk">Apply your Jannah Coins</p>
+                                <p class="text-xs text-ink-soft">
+                                    Save ₦{{ number_format($redemption['discount_kobo'] / 100) }} using {{ $redemption['coins_to_use'] }} coins
+                                    (max {{ app(\App\Services\CoinsService::class)::maxRedemptionPercent() }}% of this payment)
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                @endif
 
                 <div class="rounded-sm border border-teal bg-white p-5 text-center">
                     <h3 class="text-sm font-semibold text-teal-dk">Try Again</h3>

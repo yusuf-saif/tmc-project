@@ -186,6 +186,17 @@ class UserResource extends Resource
             'awarded_by' => auth()->id(),
         ]);
 
+        $badge = Badge::find($badgeId);
+
+        if ($badge && $badge->coin_reward > 0) {
+            app(CoinsService::class)->award(
+                $record,
+                $badge->coin_reward,
+                'badge_reward',
+                $badge->id,
+            );
+        }
+
         AuditLogService::log('badge_awarded', $record, [], ['badge_id' => $badgeId]);
     }
 

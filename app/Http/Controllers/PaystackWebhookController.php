@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Services\AuditLogService;
 use App\Services\BusinessStateService;
+use App\Services\CoinsService;
 use App\Services\MembershipStateService;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
@@ -149,6 +150,15 @@ class PaystackWebhookController extends Controller
 
             app(MembershipStateService::class)->recordPayment($profile, $profile->user, $billingCycle);
 
+            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
+                app(CoinsService::class)->applyRedemption(
+                    $profile->user,
+                    (int) $metadata['coins_used'],
+                    'membership',
+                    $profile->id,
+                );
+            }
+
             $profile->refresh();
 
             AuditLogService::log(
@@ -256,6 +266,15 @@ class PaystackWebhookController extends Controller
             }
 
             app(BusinessStateService::class)->activate($listing);
+
+            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
+                app(CoinsService::class)->applyRedemption(
+                    $listing->owner,
+                    (int) $metadata['coins_used'],
+                    'souq',
+                    $listing->id,
+                );
+            }
 
             $listing->refresh();
 
