@@ -119,7 +119,7 @@ class MembershipStateService
             $profile->payment_status = 'paid';
             $profile->payment_verified_at ??= now();
             $profile->first_paid_at ??= now();
-            $profile->current_period_ends_at = now()->addDays(30);
+            $profile->current_period_ends_at = now()->addDays((int) Setting::get('membership_billing_cycle_days'));
             $profile->reminder_sent_at = null;
             $profile->save();
 
@@ -149,7 +149,7 @@ class MembershipStateService
         }
 
         if (now()->greaterThan($periodEnd) && $profile->grace_period_ends_at === null) {
-            $profile->grace_period_ends_at = $periodEnd->copy()->addDays(7);
+            $profile->grace_period_ends_at = $periodEnd->copy()->addDays((int) Setting::get('membership_grace_period_days'));
             $profile->save();
         }
 
@@ -192,7 +192,7 @@ class MembershipStateService
     public function approve(MemberProfile $profile, string $membershipType, User $admin): MemberProfile
     {
         $generated = MembershipIdService::generate($membershipType);
-        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
+        $coinReward = (int) Setting::get('membership_approval_coins');
 
         DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward, $admin): void {
             $profile->membership_type = $membershipType;

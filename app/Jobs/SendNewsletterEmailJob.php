@@ -35,16 +35,19 @@ class SendNewsletterEmailJob implements ShouldQueue
 
         $count = 0;
 
-        $users->each(function ($user) use (&$count) {
-            try {
-                Mail::to($user->email)->queue(
-                    new NewsletterMail($this->newsletter, $user)
-                );
-                $count++;
-            } catch (\Exception $e) {
-                Log::warning("Failed to queue newsletter email to {$user->email}: {$e->getMessage()}");
-            }
-        });
+        $users->chunk($this->batchSize)
+            ->each(function ($chunk, $index) use (&$count) {
+                $chunk->each(function ($user) use (&$count, $index) {
+                    try {
+                        Mail::to($user->email)
+                            ->queue(new NewsletterMail($this->newsletter, $user))
+                            ->delay(now()->addSeconds($index * 10));
+                        $count++;
+                    } catch (\Exception $e) {
+                        Log::warning("Failed to queue newsletter email to {$user->email}: {$e->getMessage()}");
+                    }
+                });
+            });
 
         $this->newsletter->update([
             'status' => 'sent',

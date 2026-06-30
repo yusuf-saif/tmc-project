@@ -4,29 +4,34 @@ namespace App\Filament\Pages;
 
 use App\Models\Setting;
 use App\Services\AuditLogService;
+use App\Settings\SettingsRegistry;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
-class SettingsPage extends Page
+class SettingsPage extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static ?string $navigationLabel = 'Settings';
 
     protected static ?string $navigationGroup = 'Configuration';
 
-    protected static string $view = 'filament.pages.settings-page';
-
     protected static ?string $slug = 'settings';
 
-    public string $bankDetails = '';
+    protected static string $view = 'filament.pages.settings-page';
 
-    public string $donateMessage = '';
-
-    public int $starterCoinsAmount = 50;
-
-    public int $referralCoinsAmount = 25;
-
-    public int $membershipApprovalCoins = 100;
+    public array $settings = [];
 
     public static function canAccess(): bool
     {
@@ -35,22 +40,117 @@ class SettingsPage extends Page
 
     public function mount(): void
     {
-        $this->bankDetails = Setting::getValue('bank_details');
-        $this->donateMessage = Setting::getValue('donate_message');
-        $this->starterCoinsAmount = (int) Setting::getValue('starter_coins_amount', '50');
-        $this->referralCoinsAmount = (int) Setting::getValue('referral_coins_amount', '25');
-        $this->membershipApprovalCoins = (int) Setting::getValue('membership_approval_coins', '100');
+        foreach (SettingsRegistry::all() as $key => $config) {
+            $this->settings[$key] = Setting::get($key);
+        }
+
+        $this->form->fill($this->settings);
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema($this->buildFormSchema())
+            ->statePath('settings');
+    }
+
+    protected function buildFormSchema(): array
+    {
+        $groups = SettingsRegistry::keysByGroup();
+        $tabs = [];
+
+        foreach (SettingsRegistry::groups() as $groupKey => $groupLabel) {
+            $keys = $groups[$groupKey] ?? [];
+            if (empty($keys)) {
+                continue;
+            }
+
+            $fields = [];
+            foreach ($keys as $key) {
+                $field = $this->buildField($key);
+                if ($field) {
+                    $fields[] = $field;
+                }
+            }
+
+            if (empty($fields)) {
+                continue;
+            }
+
+            $tabs[] = Tab::make($groupLabel)
+                ->schema($fields);
+        }
+
+        return [
+            Tabs::make('settings')
+                ->tabs($tabs)
+                ->columnSpanFull(),
+        ];
+    }
+
+    protected function buildField(string $key): ?\Filament\Forms\Components\Component
+    {
+        $type = SettingsRegistry::type($key);
+        $label = SettingsRegistry::label($key);
+        $description = SettingsRegistry::description($key);
+
+        if ($type === null || $label === null) {
+            return null;
+        }
+
+        $field = match ($type) {
+            'int' => TextInput::make($key)
+                ->label($label)
+                ->numeric()
+                ->integer()
+                ->helperText($description),
+            'string' => TextInput::make($key)
+                ->label($label)
+                ->maxLength(255)
+                ->helperText($description),
+            'text' => Textarea::make($key)
+                ->label($label)
+                ->rows(4)
+                ->helperText($description),
+            'bool' => Toggle::make($key)
+                ->label($label)
+                ->helperText($description),
+            default => null,
+        };
+
+        return $field;
     }
 
     public function save(): void
     {
-        Setting::query()->updateOrCreate(['key' => 'bank_details'], ['value' => $this->bankDetails]);
-        Setting::query()->updateOrCreate(['key' => 'donate_message'], ['value' => $this->donateMessage]);
-        Setting::query()->updateOrCreate(['key' => 'starter_coins_amount'], ['value' => (string) $this->starterCoinsAmount]);
-        Setting::query()->updateOrCreate(['key' => 'referral_coins_amount'], ['value' => (string) $this->referralCoinsAmount]);
-        Setting::query()->updateOrCreate(['key' => 'membership_approval_coins'], ['value' => (string) $this->membershipApprovalCoins]);
+        $data = $this->form->getState();
 
-        AuditLogService::log('settings_updated', null, [], ['keys' => ['bank_details', 'donate_message', 'starter_coins_amount', 'referral_coins_amount', 'membership_approval_coins']]);
-        session()->flash('success', 'Settings saved');
+        $updatedKeys = [];
+
+        foreach ($data as $key => $value) {
+            if (! SettingsRegistry::has($key)) {
+                continue;
+            }
+
+            Setting::set($key, $value);
+            $updatedKeys[] = $key;
+        }
+
+        AuditLogService::log('settings_updated', null, [], ['keys' => $updatedKeys]);
+
+        Notification::make()
+            ->title('Settings saved')
+            ->success()
+            ->send();
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('save')
+                ->label('Save Settings')
+                ->submit('save')
+                ->keyBindings(['mod+s']),
+        ];
     }
 }

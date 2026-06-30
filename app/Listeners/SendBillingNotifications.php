@@ -20,6 +20,7 @@ use App\Notifications\SubscriptionExpiringSoon as SubscriptionExpiringSoonNotifi
 use App\Notifications\SubscriptionPaymentFailed as SubscriptionPaymentFailedNotification;
 use App\Notifications\SubscriptionPaymentReceived as SubscriptionPaymentReceivedNotification;
 use App\Notifications\SubscriptionSuspended as SubscriptionSuspendedNotification;
+use App\Models\Setting;
 use App\Services\HijriDateService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
@@ -103,6 +104,14 @@ class SendBillingNotifications implements ShouldQueue
 
     protected function businessApproved(BusinessApproved $event): void
     {
+        if (! (bool) Setting::get('notify_souq_approval_enabled')) {
+            Log::info('Souq approval notification suppressed (disabled in settings)', [
+                'listing_id' => $event->listing->id,
+            ]);
+
+            return;
+        }
+
         $event->listing->owner->notify(new BusinessApprovedNotification(
             $event->listing->business_name,
             $event->monthlyFee,

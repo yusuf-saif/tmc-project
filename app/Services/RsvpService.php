@@ -6,6 +6,7 @@ use App\Jobs\SendEventReminderNotification;
 use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\User;
+use App\Models\Setting;
 use DomainException;
 
 class RsvpService
@@ -30,8 +31,10 @@ class RsvpService
             'cancelled_at' => null,
         ])->save();
 
+        $reminderHours = (int) Setting::get('event_reminder_hours_before');
+
         SendEventReminderNotification::dispatch($user, $event)
-            ->delay($event->event_date->copy()->subDay()->max(now()));
+            ->delay($event->event_date->copy()->subHours($reminderHours)->max(now()));
     }
 
     public function cancel(User $user, Event $event): void

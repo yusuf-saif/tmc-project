@@ -17,6 +17,7 @@ use App\Events\SubscriptionPaymentFailed;
 use App\Events\SubscriptionPaymentReceived;
 use App\Events\SubscriptionSuspended;
 use App\Listeners\AwardReferralCoins;
+use App\Listeners\AwardWelcomeCoins;
 use App\Listeners\LogBillingEvent;
 use App\Listeners\LogMembershipEvent;
 use App\Listeners\SendBillingNotifications;
@@ -95,6 +96,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Event::listen(MembershipActivated::class, AwardReferralCoins::class);
+        Event::listen(MembershipActivated::class, AwardWelcomeCoins::class);
         Event::listen(MembershipActivated::class, LogBillingEvent::class);
         Event::listen(MembershipActivated::class, SendMembershipNotifications::class);
 

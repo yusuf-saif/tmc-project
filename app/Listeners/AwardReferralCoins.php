@@ -39,7 +39,7 @@ class AwardReferralCoins
                 return;
             }
 
-            $amount = (int) Setting::getValue('referral_coins_amount', '25');
+            $amount = (int) Setting::get('referral_coins_amount');
 
             JannahCoinsLedger::query()->create([
                 'user_id' => $referrer->id,

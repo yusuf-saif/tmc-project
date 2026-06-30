@@ -27,10 +27,10 @@ class PaystackService
 
     public function getAmountForBillingCycle(string $cycle): int
     {
-        return (int) match ($cycle) {
-            'quarterly' => Setting::getValue('membership_fee_quarterly', '12000'),
-            'yearly' => Setting::getValue('membership_fee_yearly', '40000'),
-            default => Setting::getValue('membership_fee_monthly', '5000'),
+        return match ($cycle) {
+            'quarterly' => (int) Setting::get('membership_fee_quarterly'),
+            'yearly' => (int) Setting::get('membership_fee_yearly'),
+            default => (int) Setting::get('membership_fee_monthly'),
         };
     }
 
@@ -140,8 +140,7 @@ class PaystackService
 
     public function initializeSouqListingPayment(SouqListing $listing): string
     {
-        $feeNaira = (int) Setting::getValue('souq_listing_fee', '50');
-        $amountKobo = $feeNaira * 100;
+        $amountKobo = (int) Setting::get('souq_listing_fee_kobo');
         $reference = $this->generateReference();
 
         Log::info('PaystackService: initializing Souq listing payment', [

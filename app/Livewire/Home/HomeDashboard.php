@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Home;
 
+use App\Models\Event;
 use App\Services\CoinsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -43,10 +43,9 @@ class HomeDashboard extends Component
             return [];
         }
 
-        return DB::table('events')
-            ->where('status', 'published')
-            ->where('event_date', '>=', now())
-            ->orderBy('event_date', 'asc')
+        return Event::published()
+            ->upcoming()
+            ->orderBy('event_date')
             ->limit(3)
             ->get()
             ->all();

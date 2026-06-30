@@ -3,15 +3,10 @@
 namespace App\Filament\Resources\MembershipApplicationResource\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
-use App\Models\Setting;
 use Carbon\Carbon;
-use Filament\Actions;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewMembershipApplication extends ViewRecord
@@ -20,8 +15,6 @@ class ViewMembershipApplication extends ViewRecord
 
     public function infolist(Infolist $infolist): Infolist
     {
-        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
-
         return $infolist
             ->schema([
                 Section::make('Application Status')
@@ -30,14 +23,11 @@ class ViewMembershipApplication extends ViewRecord
                             ->label('Status')
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
-                                'pending_review' => 'warning',
-                                'approved_pending_payment' => 'info',
-                                'payment_processing' => 'info',
-                                'payment_failed' => 'danger',
+                                'registered' => 'gray',
                                 'active' => 'success',
-                                'rejected' => 'danger',
-                                'needs_correction' => 'danger',
-                                'in_progress' => 'gray',
+                                'member' => 'primary',
+                                'suspended' => 'danger',
+                                'onboarding' => 'warning',
                                 default => 'gray',
                             })
                             ->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->title()),
@@ -132,109 +122,14 @@ class ViewMembershipApplication extends ViewRecord
                             ->formatStateUsing(fn (?string $state): string => ucfirst($state ?? 'monthly')),
                         TextEntry::make('next_due_at')->label('Next Due')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                     ])->columns(3)
-                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['approved_pending_payment', 'payment_processing', 'payment_failed', 'active'], true)),
+                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['active', 'member', 'onboarding'], true)),
 
-                Section::make('Approval Preview')
-                    ->description('What happens when you approve this application')
-                    ->schema([
-                        TextEntry::make('coin_preview')
-                            ->label('Coin Reward')
-                            ->state(fn () => "{$coinReward} Jannah Coins will be credited to user wallet"),
-                        TextEntry::make('membership_preview')
-                            ->label('Membership ID')
-                            ->state(fn () => 'A unique membership ID will be generated'),
-                        TextEntry::make('payment_preview')
-                            ->label('Payment Required')
-                            ->state(fn () => 'User will be prompted to complete payment via Paystack before activation'),
-                    ])->columns(3)
-                    ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review'),
+
             ]);
     }
 
     protected function getHeaderActions(): array
     {
-        $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
-
-        return [
-            Actions\Action::make('approve')
-                ->label('Approve')
-                ->color('success')
-                ->icon('heroicon-o-check-circle')
-                ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
-                ->requiresConfirmation()
-                ->modalHeading('Approve Membership Application')
-                ->modalDescription("This will generate a membership ID and transition the user to \"approved — pending payment\". {$coinReward} Jannah Coins will be credited.")
-                ->modalSubmitActionLabel('Yes, Approve')
-                ->form([
-                    Select::make('membership_type')
-                        ->label('Membership Type')
-                        ->options([
-                            'M' => 'M - Member',
-                            'SM' => 'SM - Student Member',
-                            'E' => 'E - Exco',
-                        ])
-                        ->required(),
-                ])
-                ->action(function (array $data) use ($coinReward): void {
-                    if (! in_array($this->record->fresh()->onboarding_status, ['pending_review'], true)) {
-                        Notification::make()
-                            ->title('Already approved')
-                            ->body('This application has already been processed.')
-                            ->warning()
-                            ->send();
-
-                        return;
-                    }
-
-                    MembershipApplicationResource::approve($this->record, $data['membership_type']);
-                    Notification::make()
-                        ->title('Application approved')
-                        ->body("Membership ID generated. {$coinReward} coins credited. User must pay before activation.")
-                        ->success()
-                        ->send();
-                    $this->refreshFormData(['onboarding_status', 'membership_id', 'reviewed_at', 'approved_at']);
-                }),
-
-            Actions\Action::make('needs_correction')
-                ->label('Request Correction')
-                ->color('warning')
-                ->icon('heroicon-o-pencil-square')
-                ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
-                ->requiresConfirmation()
-                ->modalHeading('Request Application Correction')
-                ->modalDescription('The applicant will be notified and asked to update their application.')
-                ->modalSubmitActionLabel('Send Request')
-                ->form([
-                    Textarea::make('notes')
-                        ->label('What needs to be corrected?')
-                        ->required()
-                        ->placeholder('Please specify what the applicant needs to update...'),
-                ])
-                ->action(function (array $data): void {
-                    MembershipApplicationResource::needsCorrection($this->record, $data['notes']);
-                    Notification::make()->title('Correction requested')->warning()->send();
-                    $this->refreshFormData(['onboarding_status', 'needs_correction_notes']);
-                }),
-
-            Actions\Action::make('reject')
-                ->label('Reject')
-                ->color('danger')
-                ->icon('heroicon-o-x-circle')
-                ->visible(fn (): bool => $this->record->onboarding_status === 'pending_review')
-                ->requiresConfirmation()
-                ->modalHeading('Reject Membership Application')
-                ->modalDescription('This action cannot be undone. The applicant will be notified.')
-                ->modalSubmitActionLabel('Yes, Reject')
-                ->form([
-                    Textarea::make('reason')
-                        ->label('Reason for rejection')
-                        ->required(),
-                ])
-                ->action(function (array $data): void {
-                    MembershipApplicationResource::reject($this->record, $data['reason']);
-                    Notification::make()->title('Application rejected')->danger()->send();
-                    $this->refreshFormData(['onboarding_status', 'rejection_reason']);
-                }),
-        ];
+        return [];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Event;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,6 +20,12 @@ class SendEventReminderNotification implements ShouldQueue
 
     public function handle(): void
     {
+        if (! (bool) Setting::get('notify_event_reminders_enabled')) {
+            Log::info("Event reminder suppressed (disabled in settings) for {$this->user->name} - {$this->event->title}");
+
+            return;
+        }
+
         Log::info("Event reminder for {$this->user->name} - {$this->event->title}");
     }
 }

@@ -30,7 +30,7 @@ class StatsOverviewWidget extends BaseWidget
                 ->where('updated_at', '>=', now()->subDays(30))
                 ->whereHas('profile', fn ($query) => $query->whereNotNull('onboarding_completed_at'))
                 ->count(),
-            'pending_approvals' => MemberProfile::query()->where('onboarding_status', 'pending_review')->count(),
+            'new_registrations_count' => MemberProfile::query()->where('onboarding_status', 'registered')->count(),
             'pending_souq' => SouqListing::query()->pending()->count(),
             'upcoming_events' => Event::query()->published()->upcoming()->count(),
             'coins_awarded' => (int) JannahCoinsLedger::query()->where('type', 'earned')->sum('amount'),
@@ -70,10 +70,10 @@ class StatsOverviewWidget extends BaseWidget
                 ->description('Active in last 30 days')
                 ->descriptionIcon('heroicon-o-arrow-trending-up')
                 ->color('success'),
-            Stat::make('Pending Approvals', $stats['pending_approvals'])
-                ->description('Awaiting review')
-                ->descriptionIcon('heroicon-o-clock')
-                ->color('warning'),
+            Stat::make('New Registrations', $stats['new_registrations_count'])
+                ->description('Awaiting profile completion')
+                ->descriptionIcon('heroicon-o-user-plus')
+                ->color('gray'),
             Stat::make('Jannah Coins Awarded', number_format($stats['coins_awarded']))
                 ->description('Total earned')
                 ->descriptionIcon('heroicon-o-star')

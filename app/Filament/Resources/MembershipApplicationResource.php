@@ -21,20 +21,14 @@ class MembershipApplicationResource extends Resource
 
     protected static ?string $navigationGroup = 'Approvals';
 
-    protected static ?string $navigationLabel = 'Pending Members';
+    protected static ?string $navigationLabel = 'Member Profiles';
 
     protected static ?int $navigationSort = 1;
 
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('onboarding_status', [
-                'pending_review',
-                'approved_pending_payment',
-                'payment_processing',
-                'payment_failed',
-                'needs_correction',
-            ])->with('user'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('user'))
             ->defaultSort('submitted_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
@@ -48,11 +42,11 @@ class MembershipApplicationResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'pending_review' => 'warning',
-                        'approved_pending_payment' => 'info',
-                        'payment_processing' => 'info',
-                        'payment_failed' => 'danger',
-                        'needs_correction' => 'danger',
+                        'registered' => 'gray',
+                        'active' => 'success',
+                        'member' => 'primary',
+                        'suspended' => 'danger',
+                        'onboarding' => 'warning',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => str($state)->replace('_', ' ')->title()),
@@ -70,18 +64,18 @@ class MembershipApplicationResource extends Resource
                 Tables\Filters\SelectFilter::make('onboarding_status')
                     ->label('Status')
                     ->options([
-                        'pending_review' => 'Pending Review',
-                        'approved_pending_payment' => 'Approved — Pending Payment',
-                        'payment_processing' => 'Processing Payment',
-                        'payment_failed' => 'Payment Failed',
-                        'needs_correction' => 'Needs Correction',
+                        'registered' => 'Registered',
+                        'active' => 'Active',
+                        'member' => 'Member',
+                        'suspended' => 'Suspended',
+                        'onboarding' => 'Legacy: Awaiting Payment',
                     ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
             ])
-            ->emptyStateHeading('No pending applications')
-            ->emptyStateDescription('All membership applications have been reviewed.')
+            ->emptyStateHeading('No member profiles found')
+            ->emptyStateDescription('Member profiles will appear here once users complete registration.')
             ->emptyStateIcon('heroicon-o-clipboard-document-check')
             ->bulkActions([]);
     }
@@ -125,16 +119,19 @@ class MembershipApplicationResource extends Resource
         return false;
     }
 
+    /** @deprecated This resource no longer manages approval actions. Keep for MembershipApprovalService backward compat. */
     public static function approve(MemberProfile $profile, ?string $membershipType = 'M'): void
     {
         app(MembershipApprovalService::class)->approve($profile, $membershipType ?? 'M');
     }
 
+    /** @deprecated This resource no longer manages rejection actions. Keep for MembershipApprovalService backward compat. */
     public static function reject(MemberProfile $profile, string $reason): void
     {
         app(MembershipApprovalService::class)->reject($profile, $reason);
     }
 
+    /** @deprecated This resource no longer manages correction actions. Keep for MembershipApprovalService backward compat. */
     public static function needsCorrection(MemberProfile $profile, string $notes): void
     {
         app(MembershipApprovalService::class)->needsCorrection($profile, $notes);

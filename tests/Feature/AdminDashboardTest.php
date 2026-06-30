@@ -142,10 +142,10 @@ class AdminDashboardTest extends TestCase
         $this->actingAs($this->superAdmin);
 
         Livewire::test(SettingsPage::class)
-            ->set('bankDetails', 'Bank XYZ\n12345678')
+            ->fillForm(['bank_details' => 'Bank XYZ'])
             ->call('save');
 
-        $this->assertSame('Bank XYZ\n12345678', Setting::getValue('bank_details'));
+        $this->assertSame('Bank XYZ', Setting::getValue('bank_details'));
     }
 
     public function test_admin_cannot_access_settings(): void

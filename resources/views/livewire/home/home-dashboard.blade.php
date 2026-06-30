@@ -147,7 +147,7 @@
   {{-- Support TMC --}}
   <div class="page-pad anim-fade-up delay-4" style="margin-bottom:8px;">
     <a href="{{ route('community') }}" class="support-cta">
-      <span class="support-cta-text">Support our sisterhood →</span>
+      <span class="support-cta-text">{{ \App\Models\Setting::get('support_banner_text') }}</span>
     </a>
   </div>
 

@@ -105,17 +105,17 @@ class MembershipSignupWizard extends Component
         $this->billingOptions = [
             'monthly' => [
                 'label' => 'Monthly',
-                'price' => (int) Setting::getValue('membership_fee_monthly', '5000'),
+                'price' => (int) Setting::get('membership_fee_monthly'),
                 'interval' => 'per month',
             ],
             'quarterly' => [
                 'label' => 'Quarterly',
-                'price' => (int) Setting::getValue('membership_fee_quarterly', '12000'),
+                'price' => (int) Setting::get('membership_fee_quarterly'),
                 'interval' => 'per quarter',
             ],
             'yearly' => [
                 'label' => 'Yearly',
-                'price' => (int) Setting::getValue('membership_fee_yearly', '40000'),
+                'price' => (int) Setting::get('membership_fee_yearly'),
                 'interval' => 'per year',
             ],
         ];

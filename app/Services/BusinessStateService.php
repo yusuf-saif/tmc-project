@@ -43,7 +43,7 @@ class BusinessStateService
                 ? (float) $monthlyFee
                 : (float) ((float) $listing->monthly_fee > 0
                     ? $listing->monthly_fee
-                    : (float) ((int) Setting::getValue('souq_listing_fee', '50')));
+                    : (float) ((int) Setting::get('souq_listing_fee_kobo') / 100));
 
             $listing->fill([
                 'status' => 'approved_unpaid',
@@ -107,7 +107,7 @@ class BusinessStateService
         return DB::transaction(function () use ($listing, $actor): SouqListing {
             $billingStart = now();
             $hijri = app(HijriDateService::class);
-            $billingEnd = $hijri->addMonthsHijri($billingStart, 1);
+            $billingEnd = $hijri->addMonthsHijri($billingStart, (int) Setting::get('souq_billing_months'));
 
             $listing->fill([
                 'status' => 'active',

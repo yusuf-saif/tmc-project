@@ -227,7 +227,7 @@ class PaystackWebhookController extends Controller
         try {
             $verifiedData = $paystackService->verifyPayment($reference);
 
-            $expectedAmount = (int) Setting::getValue('souq_listing_fee', '50') * 100;
+            $expectedAmount = (int) Setting::get('souq_listing_fee_kobo');
             $paidAmount = (int) ($verifiedData['amount'] ?? 0);
 
             Log::info('PaystackWebhook: Souq amount check', [

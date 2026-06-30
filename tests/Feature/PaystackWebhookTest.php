@@ -433,7 +433,7 @@ class PaystackWebhookTest extends TestCase
             'contact_email' => 'shop@test.com',
             'status' => 'approved_unpaid',
             'paystack_reference' => 'SOUQ-REF-001',
-            'monthly_fee' => 50.00,
+            'monthly_fee' => 5000.00,
         ]);
 
         $payload = [
@@ -441,7 +441,7 @@ class PaystackWebhookTest extends TestCase
             'data' => [
                 'reference' => 'SOUQ-REF-001',
                 'status' => 'success',
-                'amount' => 5000,
+                'amount' => 500000,
                 'metadata' => [
                     'payment_type' => 'souq_listing_fee',
                     'listing_id' => $listing->id,
@@ -455,7 +455,7 @@ class PaystackWebhookTest extends TestCase
                 'data' => [
                     'status' => 'success',
                     'reference' => 'SOUQ-REF-001',
-                    'amount' => 5000,
+                    'amount' => 500000,
                 ],
             ]),
         ]);
