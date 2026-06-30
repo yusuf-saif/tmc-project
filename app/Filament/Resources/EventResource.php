@@ -59,6 +59,9 @@ class EventResource extends Resource
                 Forms\Components\DateTimePicker::make('end_date'),
                 Forms\Components\FileUpload::make('cover_image_path')
                     ->image()
+                    ->imageResizeMode('cover')
+                    ->imageResizeTargetWidth(800)
+                    ->imageResizeUpscale(false)
                     ->disk('public')
                     ->directory('events/covers')
                     ->maxSize(2048),

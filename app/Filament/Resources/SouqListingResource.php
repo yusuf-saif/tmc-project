@@ -54,6 +54,10 @@ class SouqListingResource extends Resource
                 ->rows(4)
                 ->columnSpanFull(),
             Forms\Components\FileUpload::make('logo_path')
+                ->image()
+                ->imageResizeMode('cover')
+                ->imageResizeTargetWidth(400)
+                ->imageResizeUpscale(false)
                 ->disk('public')
                 ->directory('souq/logos')
                 ->image(),

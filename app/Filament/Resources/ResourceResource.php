@@ -67,6 +67,10 @@ class ResourceResource extends Resource
             Forms\Components\TextInput::make('external_url')
                 ->url(),
             Forms\Components\FileUpload::make('thumbnail_path')
+                ->image()
+                ->imageResizeMode('cover')
+                ->imageResizeTargetWidth(400)
+                ->imageResizeUpscale(false)
                 ->disk('public')
                 ->directory('resources/thumbnails')
                 ->image(),

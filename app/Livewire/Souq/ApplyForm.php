@@ -8,6 +8,7 @@ use App\Services\CoinsService;
 use App\Services\PaystackService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use App\Services\ImageProcessingService;
 use Livewire\WithFileUploads;
 
 class ApplyForm extends Component
@@ -67,7 +68,8 @@ class ApplyForm extends Component
             'logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $path = $this->logo ? $this->logo->store('souq/logos', 'public') : null;
+        /* @phpstan-ignore-next-line */
+        $path = $this->logo ? app(ImageProcessingService::class)->resizeAndStore($this->logo, "souq/logos", 400) : null;
 
         SouqListing::query()->create([
             'user_id' => auth()->id(),
