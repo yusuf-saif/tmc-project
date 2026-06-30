@@ -3,9 +3,9 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SouqListingResource\Pages;
-use App\Jobs\SouqApprovedNotification;
 use App\Models\SouqListing;
 use App\Services\AuditLogService;
+use App\Services\BusinessStateService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -77,7 +77,9 @@ class SouqListingResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'pending' => 'warning',
+                        'approved_unpaid' => 'info',
                         'approved' => 'success',
+                        'active' => 'success',
                         'rejected' => 'danger',
                         'archived' => 'gray',
                         default => 'gray',
@@ -101,7 +103,7 @@ class SouqListingResource extends Resource
                 Tables\Actions\Action::make('approve')
                     ->label('Approve')
                     ->color('success')
-                    ->visible(fn (SouqListing $record): bool => in_array($record->status, ['pending', 'rejected'], true))
+                    ->visible(fn (SouqListing $record): bool => $record->status === 'pending')
                     ->action(function (SouqListing $record): void {
                         static::approveListing($record);
 
@@ -172,30 +174,12 @@ class SouqListingResource extends Resource
 
     public static function approveListing(SouqListing $record): void
     {
-        $old = $record->status;
-
-        $record->update([
-            'status' => 'approved',
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-        ]);
-
-        SouqApprovedNotification::dispatch($record->owner, $record);
-        AuditLogService::log('souq_approved', $record, ['status' => $old], ['status' => 'approved']);
+        app(BusinessStateService::class)->approve($record, null);
     }
 
     public static function rejectListing(SouqListing $record, string $adminNote): void
     {
-        $old = $record->status;
-
-        $record->update([
-            'status' => 'rejected',
-            'admin_note' => $adminNote,
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-        ]);
-
-        AuditLogService::log('souq_rejected', $record, ['status' => $old], ['status' => 'rejected', 'admin_note' => $adminNote]);
+        app(BusinessStateService::class)->reject($record, $adminNote);
     }
 
     public static function archiveListing(SouqListing $record): void

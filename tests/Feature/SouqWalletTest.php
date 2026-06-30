@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\SouqListingResource;
 use App\Livewire\Souq\ApplyForm;
 use App\Livewire\Wallet\WalletScreen;
+use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;
 use App\Services\CoinsService;
@@ -49,7 +50,7 @@ class SouqWalletTest extends TestCase
             'category' => 'fashion',
             'description' => 'Fashion listing',
             'contact_email' => 'noor@example.com',
-            'status' => 'approved',
+            'status' => 'active',
         ]);
 
         SouqListing::query()->create([
@@ -58,7 +59,7 @@ class SouqWalletTest extends TestCase
             'category' => 'food_catering',
             'description' => 'Food listing',
             'contact_email' => 'barakah@example.com',
-            'status' => 'approved',
+            'status' => 'active',
         ]);
 
         $this->actingAs($this->member)
@@ -83,7 +84,7 @@ class SouqWalletTest extends TestCase
             ->get('/souq')
             ->assertDontSee('Hidden Listing');
 
-        $pending->update(['status' => 'approved']);
+        $pending->update(['status' => 'active']);
 
         $this->actingAs($this->member)
             ->get('/souq')
@@ -98,7 +99,7 @@ class SouqWalletTest extends TestCase
             'category' => 'creative',
             'description' => 'Approved listing',
             'contact_email' => 'visible@example.com',
-            'status' => 'approved',
+            'status' => 'active',
         ]);
 
         $this->actingAs($this->member)
@@ -190,9 +191,9 @@ class SouqWalletTest extends TestCase
 
         $listing->refresh();
 
-        $this->assertSame('approved', $listing->status);
+        $this->assertSame('approved_unpaid', $listing->status);
         $this->assertDatabaseHas('audit_logs', [
-            'action' => 'souq_approved',
+            'action' => 'business_approved',
             'auditable_id' => $listing->id,
         ]);
     }
@@ -214,6 +215,57 @@ class SouqWalletTest extends TestCase
         CoinsService::deduct($this->member, 10, 'manual', 'Adjustment');
 
         $this->assertSame(65, CoinsService::getBalance($this->member));
+    }
+
+    public function test_active_listing_visible_on_public_souq_page(): void
+    {
+        SouqListing::query()->create([
+            'user_id' => $this->member->id,
+            'business_name' => 'Active Shop',
+            'category' => 'fashion',
+            'description' => 'An active listing',
+            'contact_email' => 'active@example.com',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->member)
+            ->get('/souq')
+            ->assertOk()
+            ->assertSee('Active Shop');
+    }
+
+    public function test_approved_unpaid_listing_not_visible_publicly(): void
+    {
+        SouqListing::query()->create([
+            'user_id' => $this->member->id,
+            'business_name' => 'Unpaid Listing',
+            'category' => 'services',
+            'description' => 'Approved but not paid',
+            'contact_email' => 'unpaid@example.com',
+            'status' => 'approved_unpaid',
+        ]);
+
+        $this->actingAs($this->member)
+            ->get('/souq')
+            ->assertOk()
+            ->assertDontSee('Unpaid Listing');
+    }
+
+    public function test_rejected_listing_not_visible_publicly(): void
+    {
+        SouqListing::query()->create([
+            'user_id' => $this->member->id,
+            'business_name' => 'Rejected Biz',
+            'category' => 'other',
+            'description' => 'Rejected listing',
+            'contact_email' => 'rejected@example.com',
+            'status' => 'rejected',
+        ]);
+
+        $this->actingAs($this->member)
+            ->get('/souq')
+            ->assertOk()
+            ->assertDontSee('Rejected Biz');
     }
 
     protected function createOnboardedUser(string $email, string $referralCode, string $role): User

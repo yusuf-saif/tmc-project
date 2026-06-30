@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Events\BusinessActivated;
+use App\Events\BusinessApproved;
+use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -11,8 +14,8 @@ use RuntimeException;
 class BusinessStateService
 {
     const ALLOWED_TRANSITIONS = [
-        'pending' => ['approved', 'rejected'],
-        'approved' => ['active'],
+        'pending' => ['approved_unpaid', 'rejected'],
+        'approved_unpaid' => ['active'],
         'active' => ['suspended'],
         'suspended' => ['active'],
         'rejected' => ['pending'],
@@ -23,23 +26,29 @@ class BusinessStateService
         return in_array($toStatus, self::ALLOWED_TRANSITIONS[$fromStatus] ?? [], true);
     }
 
-    public function approve(SouqListing $listing, ?string $monthlyFee, User $admin): SouqListing
+    public function approve(SouqListing $listing, ?string $monthlyFee, ?User $actor = null): SouqListing
     {
-        if (! $this->canTransition($listing->status, 'approved')) {
-            Log::warning('BusinessStateService: invalid transition to approved', [
+        $actor ??= auth()->user();
+
+        if (! $this->canTransition($listing->status, 'approved_unpaid')) {
+            Log::warning('BusinessStateService: invalid transition to approved_unpaid', [
                 'listing_id' => $listing->id,
                 'from' => $listing->status,
             ]);
             throw new RuntimeException("Cannot approve listing in status: {$listing->status}");
         }
 
-        return DB::transaction(function () use ($listing, $monthlyFee, $admin): SouqListing {
-            $fee = $monthlyFee !== null ? (float) $monthlyFee : (float) ($listing->monthly_fee ?: 0);
+        return DB::transaction(function () use ($listing, $monthlyFee, $actor): SouqListing {
+            $fee = $monthlyFee !== null
+                ? (float) $monthlyFee
+                : (float) ((float) $listing->monthly_fee > 0
+                    ? $listing->monthly_fee
+                    : (float) ((int) Setting::getValue('souq_listing_fee', '50')));
 
             $listing->fill([
-                'status' => 'approved',
+                'status' => 'approved_unpaid',
                 'monthly_fee' => $fee,
-                'reviewed_by' => $admin->id,
+                'reviewed_by' => $actor->id,
                 'reviewed_at' => now(),
             ])->save();
 
@@ -47,26 +56,30 @@ class BusinessStateService
                 action: 'business_approved',
                 model: $listing,
                 old: ['status' => 'pending'],
-                new: ['status' => 'approved', 'monthly_fee' => $fee],
-                actor: $admin,
+                new: ['status' => 'approved_unpaid', 'monthly_fee' => $fee],
+                actor: $actor,
                 targetUserId: $listing->user_id,
             );
+
+            BusinessApproved::dispatch($listing, $actor, (float) $fee);
 
             return $listing->fresh();
         });
     }
 
-    public function reject(SouqListing $listing, string $reason, User $admin): SouqListing
+    public function reject(SouqListing $listing, string $reason, ?User $actor = null): SouqListing
     {
+        $actor ??= auth()->user();
+
         if (! $this->canTransition($listing->status, 'rejected')) {
             throw new RuntimeException("Cannot reject listing in status: {$listing->status}");
         }
 
-        return DB::transaction(function () use ($listing, $reason, $admin): SouqListing {
+        return DB::transaction(function () use ($listing, $reason, $actor): SouqListing {
             $listing->fill([
                 'status' => 'rejected',
                 'admin_note' => $reason,
-                'reviewed_by' => $admin->id,
+                'reviewed_by' => $actor->id,
                 'reviewed_at' => now(),
             ])->save();
 
@@ -75,7 +88,7 @@ class BusinessStateService
                 model: $listing,
                 old: ['status' => 'pending'],
                 new: ['status' => 'rejected', 'reason' => $reason],
-                actor: $admin,
+                actor: $actor,
                 targetUserId: $listing->user_id,
             );
 
@@ -83,13 +96,15 @@ class BusinessStateService
         });
     }
 
-    public function activate(SouqListing $listing, User $admin): SouqListing
+    public function activate(SouqListing $listing, ?User $actor = null): SouqListing
     {
         if (! $this->canTransition($listing->status, 'active')) {
             throw new RuntimeException("Cannot activate listing in status: {$listing->status}");
         }
 
-        return DB::transaction(function () use ($listing, $admin): SouqListing {
+        $actor ??= $listing->owner;
+
+        return DB::transaction(function () use ($listing, $actor): SouqListing {
             $billingStart = now();
             $hijri = app(HijriDateService::class);
             $billingEnd = $hijri->addMonthsHijri($billingStart, 1);
@@ -105,23 +120,27 @@ class BusinessStateService
             AuditLogService::log(
                 action: 'business_activated',
                 model: $listing,
-                old: ['status' => 'approved'],
+                old: ['status' => 'approved_unpaid'],
                 new: ['status' => 'active', 'billing_end_date' => $billingEnd],
-                actor: $admin,
+                actor: $actor,
                 targetUserId: $listing->user_id,
             );
+
+            BusinessActivated::dispatch($listing, $actor);
 
             return $listing->fresh();
         });
     }
 
-    public function suspend(SouqListing $listing, string $reason, User $admin): SouqListing
+    public function suspend(SouqListing $listing, string $reason, ?User $actor = null): SouqListing
     {
+        $actor ??= auth()->user();
+
         if (! $this->canTransition($listing->status, 'suspended')) {
             throw new RuntimeException("Cannot suspend listing in status: {$listing->status}");
         }
 
-        return DB::transaction(function () use ($listing, $reason, $admin): SouqListing {
+        return DB::transaction(function () use ($listing, $reason, $actor): SouqListing {
             $listing->fill([
                 'status' => 'suspended',
                 'billing_status' => 'suspended',
@@ -134,7 +153,7 @@ class BusinessStateService
                 model: $listing,
                 old: ['status' => 'active'],
                 new: ['status' => 'suspended', 'reason' => $reason],
-                actor: $admin,
+                actor: $actor,
                 targetUserId: $listing->user_id,
             );
 

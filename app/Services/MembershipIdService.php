@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MembershipSerial;
 use App\Models\User;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -37,19 +38,7 @@ class MembershipIdService
 
     public static function getCurrentHijriYear(): int
     {
-        try {
-            if (class_exists(\IntlCalendar::class)) {
-                $calendar = \IntlCalendar::createInstance(null, 'ar_SA@calendar=islamic');
-
-                return $calendar->get(\IntlCalendar::FIELD_YEAR);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('MembershipIdService: IntlCalendar failed, using fallback', [
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        return (int) floor(((int) date('Y') - 622) * (33 / 32));
+        return App::make(HijriDateService::class)->currentYear();
     }
 
     public static function generate(string $membershipType): array

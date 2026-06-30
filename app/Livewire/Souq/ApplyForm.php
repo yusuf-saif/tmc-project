@@ -3,6 +3,7 @@
 namespace App\Livewire\Souq;
 
 use App\Models\SouqListing;
+use App\Services\PaystackService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -33,7 +34,11 @@ class ApplyForm extends Component
 
     public bool $hasPending = false;
 
+    public bool $hasApprovedUnpaid = false;
+
     public ?SouqListing $approvedListing = null;
+
+    public ?SouqListing $approvedUnpaidListing = null;
 
     public function mount(): void
     {
@@ -43,7 +48,7 @@ class ApplyForm extends Component
 
     public function submit(): void
     {
-        if ($this->hasApproved || $this->hasPending) {
+        if ($this->hasApproved || $this->hasPending || $this->hasApprovedUnpaid) {
             return;
         }
 
@@ -77,20 +82,43 @@ class ApplyForm extends Component
         $this->syncListingState();
     }
 
+    public function payListing(PaystackService $paystack): void
+    {
+        if (! $this->approvedUnpaidListing) {
+            return;
+        }
+
+        $url = $paystack->initializeSouqListingPayment($this->approvedUnpaidListing);
+
+        $this->redirect($url);
+    }
+
     protected function syncListingState(): void
     {
         $this->approvedListing = SouqListing::query()
             ->where('user_id', auth()->id())
-            ->where('status', 'approved')
+            ->whereIn('status', ['approved', 'active'])
             ->first();
+
+        $this->hasApproved = $this->approvedListing !== null;
+
+        $this->approvedUnpaidListing = SouqListing::query()
+            ->where('user_id', auth()->id())
+            ->where('status', 'approved_unpaid')
+            ->first();
+
+        $this->hasApprovedUnpaid = $this->approvedUnpaidListing !== null;
 
         $pending = SouqListing::query()
             ->where('user_id', auth()->id())
             ->where('status', 'pending')
             ->first();
 
-        $this->hasApproved = $this->approvedListing !== null;
         $this->hasPending = $pending !== null;
+
+        if ($this->hasApproved || $this->hasApprovedUnpaid || $this->hasPending) {
+            $this->submitted = false;
+        }
     }
 
     public function render(): View

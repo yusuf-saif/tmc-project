@@ -21,7 +21,7 @@ class SouqDirectory extends Component
     public function getSouqListingsProperty()
     {
         return SouqListing::query()
-            ->approved()
+            ->active()
             ->when($this->category !== 'all', fn ($query) => $query->where('category', $this->category))
             ->when($this->search !== '', fn ($query) => $query->where('business_name', 'like', "%{$this->search}%"))
             ->with('owner')

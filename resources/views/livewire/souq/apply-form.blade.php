@@ -9,6 +9,20 @@
             </div>
             <a href="{{ route('souq.show', $approvedListing->slug) }}" class="tmc-button-gold max-w-[220px] no-underline">View Listing</a>
         </section>
+    @elseif ($hasApprovedUnpaid && $approvedUnpaidListing)
+        <section class="space-y-4 rounded-[8px] bg-white p-6" style="border: 1px solid var(--border);">
+            <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>
+            <p class="text-sm font-light leading-7 text-ink-soft">Your listing has been approved!</p>
+            <div class="rounded-[8px] p-4" style="background: var(--gold-pale); border: 1px solid rgba(200, 168, 75, 0.25);">
+                <p class="text-sm font-semibold text-ink">{{ $approvedUnpaidListing->business_name }}</p>
+                <p class="mt-2 text-sm font-light leading-7 text-ink-soft">
+                    Pay your monthly listing fee of ₦{{ number_format($approvedUnpaidListing->monthly_fee) }} to go live on the Souq.
+                </p>
+            </div>
+            <button type="button" wire:click="payListing" wire:loading.attr="disabled" class="tmc-button-gold max-w-[220px] no-underline">
+                Pay Now
+            </button>
+        </section>
     @elseif ($submitted)
         <section class="space-y-4 rounded-[8px] bg-white p-6 text-center" style="border: 1px solid var(--border);">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>

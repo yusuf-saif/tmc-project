@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\MemberProfile;
 use App\Models\Setting;
+use App\Models\SouqListing;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -135,5 +136,54 @@ class PaystackService
         ]);
 
         return $data['authorization_url'];
+    }
+
+    public function initializeSouqListingPayment(SouqListing $listing): string
+    {
+        $feeNaira = (int) Setting::getValue('souq_listing_fee', '50');
+        $amountKobo = $feeNaira * 100;
+        $reference = $this->generateReference();
+
+        Log::info('PaystackService: initializing Souq listing payment', [
+            'listing_id' => $listing->id,
+            'reference' => $reference,
+            'amount_kobo' => $amountKobo,
+        ]);
+
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$this->secretKey}",
+            'Content-Type' => 'application/json',
+        ])->post("{$this->baseUrl}/transaction/initialize", [
+            'amount' => $amountKobo,
+            'email' => $listing->owner->email,
+            'reference' => $reference,
+            'callback_url' => route('souq.apply'),
+            'metadata' => [
+                'user_id' => $listing->owner->id,
+                'payment_type' => 'souq_listing_fee',
+                'listing_id' => $listing->id,
+            ],
+        ]);
+
+        $body = $response->json();
+
+        if (! $response->successful() || empty($body['data']['authorization_url'])) {
+            Log::error('PaystackService: Souq payment initialization failed', [
+                'listing_id' => $listing->id,
+                'http_status' => $response->status(),
+                'response' => $body,
+            ]);
+            throw new \RuntimeException('Payment initialization failed. Please try again.');
+        }
+
+        $listing->update(['paystack_reference' => $reference]);
+
+        Log::info('PaystackService: Souq payment initialized successfully', [
+            'listing_id' => $listing->id,
+            'reference' => $reference,
+            'authorization_url' => $body['data']['authorization_url'] ?? null,
+        ]);
+
+        return $body['data']['authorization_url'];
     }
 }

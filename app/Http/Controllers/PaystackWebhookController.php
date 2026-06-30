@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\MemberProfile;
+use App\Models\Setting;
+use App\Models\SouqListing;
 use App\Services\AuditLogService;
+use App\Services\BusinessStateService;
 use App\Services\MembershipStateService;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
@@ -54,9 +57,12 @@ class PaystackWebhookController extends Controller
 
         $data = $payload['data'] ?? [];
         $reference = $data['reference'] ?? null;
+        $metadata = $data['metadata'] ?? [];
+        $paymentType = $metadata['payment_type'] ?? 'membership_payment';
 
         Log::info('PaystackWebhook: processing charge.success', [
             'reference' => $reference,
+            'payment_type' => $paymentType,
         ]);
 
         if (! $reference) {
@@ -65,7 +71,12 @@ class PaystackWebhookController extends Controller
             return response()->json(['error' => 'Missing reference'], 400);
         }
 
-        // Step 1: Find member by paystack_reference
+        if ($paymentType === 'souq_listing_fee') {
+            return $this->handleSouqPayment($data, $reference, $metadata, $paystackService);
+        }
+
+        // === Existing membership payment flow (unchanged) ===
+
         $profile = MemberProfile::where('paystack_reference', $reference)->first();
 
         if (! $profile) {
@@ -83,7 +94,6 @@ class PaystackWebhookController extends Controller
             'payment_verified_at' => $profile->payment_verified_at,
         ]);
 
-        // Step 2: Idempotency check — if already verified, exit safely
         if ($profile->payment_verified_at !== null) {
             Log::info('PaystackWebhook: payment already verified, skipping (idempotent)', [
                 'profile_id' => $profile->id,
@@ -93,7 +103,6 @@ class PaystackWebhookController extends Controller
             return response()->json(['status' => 'already_verified']);
         }
 
-        // Step 3: Validate status — must be in a state where payment is accepted
         $allowedForWebhook = ['onboarding', 'active', 'suspended'];
 
         if (! in_array($profile->onboarding_status, $allowedForWebhook, true)) {
@@ -107,7 +116,6 @@ class PaystackWebhookController extends Controller
         }
 
         try {
-            // Step 4: Verify payment with Paystack API and validate amount
             $verifiedData = $paystackService->verifyPayment($reference);
 
             $billingCycle = $profile->preferred_billing_cycle ?? 'monthly';
@@ -139,7 +147,6 @@ class PaystackWebhookController extends Controller
                 return response()->json(['error' => 'Payment amount does not match billing cycle'], 400);
             }
 
-            // Step 5: Record payment via shared service
             app(MembershipStateService::class)->recordPayment($profile, $profile->user, $billingCycle);
 
             $profile->refresh();
@@ -171,6 +178,99 @@ class PaystackWebhookController extends Controller
             } catch (\Throwable $inner) {
                 Log::warning('PaystackWebhook: could not save profile after error', ['error' => $inner->getMessage()]);
             }
+
+            return response()->json(['error' => 'Activation failed'], 500);
+        }
+    }
+
+    protected function handleSouqPayment(
+        array $data,
+        string $reference,
+        array $metadata,
+        PaystackService $paystackService,
+    ): JsonResponse {
+        $listing = SouqListing::where('paystack_reference', $reference)->first();
+
+        if (! $listing) {
+            Log::warning('PaystackWebhook: no Souq listing found for reference', [
+                'reference' => $reference,
+            ]);
+
+            return response()->json(['status' => 'no_listing']);
+        }
+
+        Log::info('PaystackWebhook: Souq listing found by reference', [
+            'listing_id' => $listing->id,
+            'business_name' => $listing->business_name,
+            'status' => $listing->status,
+        ]);
+
+        if ($listing->status === 'active') {
+            Log::info('PaystackWebhook: Souq listing already active, skipping (idempotent)', [
+                'listing_id' => $listing->id,
+                'reference' => $reference,
+            ]);
+
+            return response()->json(['status' => 'already_active']);
+        }
+
+        if ($listing->status !== 'approved_unpaid') {
+            Log::warning('PaystackWebhook: Souq listing not in payable state', [
+                'listing_id' => $listing->id,
+                'status' => $listing->status,
+                'expected' => 'approved_unpaid',
+            ]);
+
+            return response()->json(['error' => 'Listing not in payable state'], 400);
+        }
+
+        try {
+            $verifiedData = $paystackService->verifyPayment($reference);
+
+            $expectedAmount = (int) Setting::getValue('souq_listing_fee', '50') * 100;
+            $paidAmount = (int) ($verifiedData['amount'] ?? 0);
+
+            Log::info('PaystackWebhook: Souq amount check', [
+                'listing_id' => $listing->id,
+                'expected' => $expectedAmount,
+                'paid' => $paidAmount,
+            ]);
+
+            if ($paidAmount < $expectedAmount) {
+                Log::warning('PaystackWebhook: Souq payment amount mismatch', [
+                    'reference' => $reference,
+                    'listing_id' => $listing->id,
+                    'expected' => $expectedAmount,
+                    'paid' => $paidAmount,
+                ]);
+
+                AuditLogService::log(
+                    action: 'paystack_amount_mismatch',
+                    model: $listing,
+                    old: ['status' => $listing->status],
+                    new: ['status' => $listing->status, 'reason' => "Paid {$paidAmount} instead of {$expectedAmount}"],
+                    targetUserId: $listing->user_id,
+                );
+
+                return response()->json(['error' => 'Payment amount does not match listing fee'], 400);
+            }
+
+            app(BusinessStateService::class)->activate($listing);
+
+            $listing->refresh();
+
+            Log::info('PaystackWebhook: Souq listing activated successfully', [
+                'listing_id' => $listing->id,
+                'reference' => $reference,
+                'billing_end_date' => $listing->billing_end_date?->toIso8601String(),
+            ]);
+
+            return response()->json(['status' => 'activated']);
+        } catch (\Throwable $e) {
+            Log::error('PaystackWebhook: Souq activation failed', [
+                'listing_id' => $listing->id,
+                'error' => $e->getMessage(),
+            ]);
 
             return response()->json(['error' => 'Activation failed'], 500);
         }

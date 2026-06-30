@@ -14,7 +14,7 @@ class ListingDetail extends Component
     public function mount(string $slug): void
     {
         $this->listing = SouqListing::query()
-            ->approved()
+            ->active()
             ->where('slug', $slug)
             ->firstOrFail();
     }

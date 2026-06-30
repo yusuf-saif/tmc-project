@@ -218,7 +218,7 @@ class SubscriptionBillingTest extends TestCase
     {
         $monthly = $this->createSubscription($this->monthlyPlan);
         $result = app(SubscriptionStateService::class)->activate($monthly, $this->admin);
-        $this->assertTrue($result->end_date->diffInDays($result->start_date) >= 28);
+        $this->assertTrue($result->end_date->diffInDays($result->start_date, true) >= 28);
 
         $annual = Subscription::create([
             'user_id' => $this->member->id,
@@ -226,7 +226,7 @@ class SubscriptionBillingTest extends TestCase
             'status' => 'active',
         ]);
         $result2 = app(SubscriptionStateService::class)->activate($annual, $this->admin);
-        $this->assertTrue($result2->end_date->diffInDays($result2->start_date) >= 340);
+        $this->assertTrue($result2->end_date->diffInDays($result2->start_date, true) >= 340);
     }
 
     public function test_expire_transitions_from_active_to_expired(): void
@@ -303,7 +303,7 @@ class SubscriptionBillingTest extends TestCase
 
         $result = app(BusinessStateService::class)->approve($listing, '15.00', $this->admin);
 
-        $this->assertSame('approved', $result->status);
+        $this->assertSame('approved_unpaid', $result->status);
         $this->assertSame(15.00, (float) $result->monthly_fee);
         $this->assertNotNull($result->reviewed_by);
         $this->assertNotNull($result->reviewed_at);
@@ -416,9 +416,9 @@ class SubscriptionBillingTest extends TestCase
     {
         $service = app(BusinessStateService::class);
 
-        $this->assertTrue($service->canTransition('pending', 'approved'));
+        $this->assertTrue($service->canTransition('pending', 'approved_unpaid'));
         $this->assertTrue($service->canTransition('pending', 'rejected'));
-        $this->assertTrue($service->canTransition('approved', 'active'));
+        $this->assertTrue($service->canTransition('approved_unpaid', 'active'));
         $this->assertTrue($service->canTransition('active', 'suspended'));
         $this->assertTrue($service->canTransition('suspended', 'active'));
         $this->assertTrue($service->canTransition('rejected', 'pending'));

@@ -124,7 +124,7 @@ class LogBillingEvent implements ShouldQueue
         AuditLogService::log(
             action: 'business_approved',
             old: ['status' => 'pending'],
-            new: ['status' => 'approved', 'monthly_fee' => $event->monthlyFee],
+            new: ['status' => 'approved_unpaid', 'monthly_fee' => $event->monthlyFee],
             actor: $event->actor,
             targetUserId: $event->listing->user_id,
         );
@@ -134,7 +134,7 @@ class LogBillingEvent implements ShouldQueue
     {
         AuditLogService::log(
             action: 'business_activated',
-            old: ['status' => 'approved'],
+            old: ['status' => 'approved_unpaid'],
             new: ['status' => 'active'],
             actor: $event->actor,
             targetUserId: $event->listing->user_id,

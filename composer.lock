@@ -4,8 +4,71 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6647697463aba0205a8a9891da4fb83a",
+    "content-hash": "d2b8dd55e0a1cf072d0d6876f75fa170",
     "packages": [
+        {
+            "name": "alkoumi/laravel-hijri-date",
+            "version": "v1.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/yusuf-saif/laravel-hijri-date.git",
+                "reference": "ee726cf66349e8ab15f6f0b4041b9c96b7919742"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/yusuf-saif/laravel-hijri-date/zipball/ee726cf66349e8ab15f6f0b4041b9c96b7919742",
+                "reference": "ee726cf66349e8ab15f6f0b4041b9c96b7919742",
+                "shasum": ""
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Alkoumi\\LaravelHijriDate\\LaravelHijriDateServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Alkoumi\\LaravelHijriDate\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mohammed Alkoumi",
+                    "email": "komy66@gmail.com"
+                }
+            ],
+            "description": "Laravel package to Convert laravel date to our Amazing 💝 Hjri date {ummul qura and vice versa} . to look like [ الخميس ، ٢٢ ربيع الآخر ، ١٤٤١ - ٠٧:٤٩ مساءً]",
+            "homepage": "https://be.net/komy",
+            "keywords": [
+                "date",
+                "hijri-calendar",
+                "hijri-date",
+                "hijri-date",
+                "hjri",
+                "laravel-hijri-date",
+                "ummul-qura",
+                "ummul-qura-calendar"
+            ],
+            "support": {
+                "source": "https://github.com/yusuf-saif/laravel-hijri-date/tree/v1.0.4"
+            },
+            "funding": [
+                {
+                    "type": "github",
+                    "url": "https://github.com/"
+                },
+                {
+                    "type": "patreon",
+                    "url": "https://www.patreon.com/mohammadelkoumi"
+                }
+            ],
+            "time": "2020-11-27T09:41:21+00:00"
+        },
         {
             "name": "anourvalar/eloquent-serialize",
             "version": "1.3.8",
@@ -11524,7 +11587,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,

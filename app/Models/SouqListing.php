@@ -23,7 +23,9 @@ class SouqListing extends Model
 
     public const STATUS_OPTIONS = [
         'pending' => 'Pending',
-        'approved' => 'Approved',
+        'approved_unpaid' => 'Approved — Awaiting Payment',
+        'active' => 'Active',
+        'approved' => 'Approved (Legacy)',
         'rejected' => 'Rejected',
         'archived' => 'Archived',
     ];
@@ -57,6 +59,7 @@ class SouqListing extends Model
         'monthly_fee',
         'last_billed_at',
         'billing_suspended_at',
+        'paystack_reference',
     ];
 
     protected function casts(): array
@@ -97,14 +100,20 @@ class SouqListing extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
-    public function scopeApproved($query)
+    public function scopeActive($query)
     {
-        return $query->where('status', 'approved');
+        return $query->where('status', 'active');
     }
 
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    /** @deprecated Use scopeActive() — kept for callers not yet migrated */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'active');
     }
 
     public function categoryLabel(): string

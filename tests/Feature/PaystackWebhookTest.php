@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\MemberProfile;
+use App\Models\Setting;
+use App\Models\SouqListing;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -411,5 +413,67 @@ class PaystackWebhookTest extends TestCase
 
         $profile = $user->fresh()->memberProfile;
         $this->assertEquals('member', $profile->onboarding_status);
+    }
+
+    public function test_souq_webhook_activates_approved_unpaid_listing(): void
+    {
+        $user = User::factory()->create(['email' => 'souq@test.com']);
+        $user->assignRole('member');
+
+        Setting::create([
+            'key' => 'souq_listing_fee',
+            'value' => '50',
+        ]);
+
+        $listing = SouqListing::query()->create([
+            'user_id' => $user->id,
+            'business_name' => 'Souq Shop',
+            'category' => 'fashion',
+            'description' => 'Pay to activate',
+            'contact_email' => 'shop@test.com',
+            'status' => 'approved_unpaid',
+            'paystack_reference' => 'SOUQ-REF-001',
+            'monthly_fee' => 50.00,
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'SOUQ-REF-001',
+                'status' => 'success',
+                'amount' => 5000,
+                'metadata' => [
+                    'payment_type' => 'souq_listing_fee',
+                    'listing_id' => $listing->id,
+                ],
+            ],
+        ];
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'SOUQ-REF-001',
+                    'amount' => 5000,
+                ],
+            ]),
+        ]);
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $listing->refresh();
+
+        $this->assertSame('active', $listing->status);
+        $this->assertSame('active', $listing->billing_status);
+        $this->assertNotNull($listing->billing_start_date);
+        $this->assertNotNull($listing->billing_end_date);
     }
 }
