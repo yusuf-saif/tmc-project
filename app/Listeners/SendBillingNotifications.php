@@ -22,6 +22,7 @@ use App\Notifications\SubscriptionPaymentReceived as SubscriptionPaymentReceived
 use App\Notifications\SubscriptionSuspended as SubscriptionSuspendedNotification;
 use App\Models\Setting;
 use App\Services\HijriDateService;
+use App\Services\PushNotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
@@ -58,48 +59,90 @@ class SendBillingNotifications implements ShouldQueue
 
     protected function subscriptionActivated(SubscriptionActivated $event): void
     {
+        $user = $event->subscription->user;
         $hijri = app(HijriDateService::class);
-        $event->subscription->user->notify(new SubscriptionActivatedNotification(
+        $user->notify(new SubscriptionActivatedNotification(
             $event->subscription,
             $hijri->formatHijriDate($event->subscription->end_date, 'd M Y'),
         ));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Subscription Activated',
+            "Your {$event->subscription->plan?->name} subscription is now active.",
+        );
     }
 
     protected function subscriptionExpired(SubscriptionExpired $event): void
     {
-        $event->subscription->user->notify(new SubscriptionExpiredNotification(
-            $event->subscription->plan?->name ?? 'Membership',
-        ));
+        $user = $event->subscription->user;
+        $planName = $event->subscription->plan?->name ?? 'Membership';
+        $user->notify(new SubscriptionExpiredNotification($planName));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Subscription Expired',
+            "Your {$planName} subscription has expired.",
+            route('home'),
+        );
     }
 
     protected function subscriptionExpiringSoon(SubscriptionExpiringSoon $event): void
     {
-        $event->subscription->user->notify(new SubscriptionExpiringSoonNotification(
+        $user = $event->subscription->user;
+        $user->notify(new SubscriptionExpiringSoonNotification(
             $event->subscription,
             $event->daysRemaining,
         ));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Subscription Expiring Soon',
+            "Your subscription will expire in {$event->daysRemaining} day(s).",
+            route('home'),
+        );
     }
 
     protected function subscriptionSuspended(SubscriptionSuspended $event): void
     {
-        $event->subscription->user->notify(new SubscriptionSuspendedNotification(
-            $event->reason,
-        ));
+        $user = $event->subscription->user;
+        $user->notify(new SubscriptionSuspendedNotification($event->reason));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Subscription Suspended',
+            "Your subscription has been suspended.",
+            route('home'),
+        );
     }
 
     protected function paymentReceived(SubscriptionPaymentReceived $event): void
     {
-        $event->subscription->user->notify(new SubscriptionPaymentReceivedNotification(
+        $user = $event->subscription->user;
+        $planName = $event->subscription->plan?->name ?? 'Subscription';
+        $user->notify(new SubscriptionPaymentReceivedNotification(
             $event->amount,
-            $event->subscription->plan?->name ?? 'Subscription',
+            $planName,
         ));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Payment Received',
+            "Payment received for {$planName}.",
+        );
     }
 
     protected function paymentFailed(SubscriptionPaymentFailed $event): void
     {
-        $event->subscription->user->notify(new SubscriptionPaymentFailedNotification(
-            $event->reason,
-        ));
+        $user = $event->subscription->user;
+        $user->notify(new SubscriptionPaymentFailedNotification($event->reason));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Payment Failed',
+            "Payment failed. {$event->reason}",
+            route('home'),
+        );
     }
 
     protected function businessApproved(BusinessApproved $event): void
@@ -112,24 +155,48 @@ class SendBillingNotifications implements ShouldQueue
             return;
         }
 
-        $event->listing->owner->notify(new BusinessApprovedNotification(
+        $owner = $event->listing->owner;
+        $owner->notify(new BusinessApprovedNotification(
             $event->listing->business_name,
             $event->monthlyFee,
         ));
+
+        app(PushNotificationService::class)->send(
+            $owner,
+            'Listing Approved',
+            "Your business listing \"{$event->listing->business_name}\" has been approved.",
+            route('souq'),
+        );
     }
 
     protected function businessActivated(BusinessActivated $event): void
     {
-        $event->listing->owner->notify(new BusinessActivatedNotification(
+        $owner = $event->listing->owner;
+        $owner->notify(new BusinessActivatedNotification(
             $event->listing->business_name,
         ));
+
+        app(PushNotificationService::class)->send(
+            $owner,
+            'Listing Active',
+            "Your business listing \"{$event->listing->business_name}\" is now active.",
+            route('souq'),
+        );
     }
 
     protected function businessSuspended(BusinessSuspended $event): void
     {
-        $event->listing->owner->notify(new BusinessSuspendedNotification(
+        $owner = $event->listing->owner;
+        $owner->notify(new BusinessSuspendedNotification(
             $event->listing->business_name,
             $event->reason,
         ));
+
+        app(PushNotificationService::class)->send(
+            $owner,
+            'Listing Suspended',
+            "Your business listing \"{$event->listing->business_name}\" has been suspended.",
+            route('souq'),
+        );
     }
 }

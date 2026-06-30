@@ -18,7 +18,7 @@ class BusinessApproved extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -30,5 +30,14 @@ class BusinessApproved extends Notification implements ShouldQueue
             ->line("Your monthly fee is \$ {$this->monthlyFee}.")
             ->line('Please complete your payment to activate the listing.')
             ->action('Complete Payment', url('/souq/payment'));
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Listing Approved',
+            'body' => "Your business listing \"{$this->businessName}\" has been approved.",
+            'action_url' => '/souq/payment',
+        ];
     }
 }

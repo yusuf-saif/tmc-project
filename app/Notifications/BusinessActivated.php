@@ -17,7 +17,7 @@ class BusinessActivated extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -27,5 +27,14 @@ class BusinessActivated extends Notification implements ShouldQueue
             ->greeting('Assalamu Alaikum!')
             ->line("Your business listing \"{$this->businessName}\" is now active and visible to the community.")
             ->line('May Allah bless your business.');
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Listing Active',
+            'body' => "Your business listing \"{$this->businessName}\" is now active.",
+            'action_url' => '/souq',
+        ];
     }
 }

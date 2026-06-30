@@ -4,6 +4,8 @@
 
 /* ── TOKENS ─────────────────────────────────────────── */
 @layer base {
+  [x-cloak] { display: none !important; }
+
   :root {
     --teal:        #1A6B72;
     --teal-dk:     #0D3F44;

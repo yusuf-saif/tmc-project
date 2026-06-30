@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ReceiptDownloadController;
 use App\Http\Controllers\PaymentStatusController;
 use App\Http\Controllers\PaystackWebhookController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Livewire\Community\CommunityHome;
 use App\Livewire\Community\SpaceDetail;
 use App\Livewire\Community\SupportForm;
@@ -46,6 +47,9 @@ Route::middleware(['auth'])->prefix('membership')->name('membership.')->group(fu
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('/wallet', '/profile?tab=wallet')->name('wallet');
+
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::delete('/push/subscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 });
 
 Route::middleware(['auth', 'ensure.user.state'])->group(function () {

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\MemberProfile;
 use App\Models\Setting;
 use App\Notifications\MembershipRenewalReminder;
+use App\Services\PushNotificationService;
 use Illuminate\Console\Command;
 
 class SendMembershipRenewalReminders extends Command
@@ -35,9 +36,21 @@ class SendMembershipRenewalReminders extends Command
             ->get();
 
         $sent = 0;
+        $pushService = app(PushNotificationService::class);
 
         foreach ($profiles as $profile) {
-            $profile->user?->notify(new MembershipRenewalReminder($profile));
+            $user = $profile->user;
+            if (! $user) {
+                continue;
+            }
+
+            $user->notify(new MembershipRenewalReminder($profile));
+            $pushService->send(
+                $user,
+                'Renew Your Membership',
+                'Your membership period is ending soon. Renew now to keep your access active.',
+                route('home'),
+            );
             $profile->reminder_sent_at = now();
             $profile->save();
             $sent++;

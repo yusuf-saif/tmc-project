@@ -14,6 +14,7 @@ use App\Notifications\MembershipNeedsCorrection as MembershipNeedsCorrectionNoti
 use App\Notifications\MembershipPaymentConfirmed as MembershipPaymentConfirmedNotification;
 use App\Notifications\MembershipRejected as MembershipRejectedNotification;
 use App\Notifications\MembershipUnderReviewNotification;
+use App\Services\PushNotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -66,6 +67,13 @@ class SendMembershipNotifications implements ShouldQueue
         $user->notify(new MembershipPaymentConfirmedNotification(
             $event->membershipId,
         ));
+
+        app(PushNotificationService::class)->send(
+            $user,
+            'Welcome to TMC',
+            'Your membership is active. Welcome to The Muhsinat Club!',
+            route('home'),
+        );
 
         if ($profile) {
             $profile->forceFill(['payment_confirmed_email_sent_at' => now()])->saveQuietly();

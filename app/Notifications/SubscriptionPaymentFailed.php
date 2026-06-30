@@ -17,7 +17,7 @@ class SubscriptionPaymentFailed extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -29,5 +29,14 @@ class SubscriptionPaymentFailed extends Notification implements ShouldQueue
             ->line("Reason: {$this->reason}")
             ->line('Please update your payment information to continue your subscription.')
             ->action('Update Payment', url('/subscription/payment'));
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Payment Failed',
+            'body' => "Payment failed. Reason: {$this->reason}",
+            'action_url' => '/subscription/payment',
+        ];
     }
 }

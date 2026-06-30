@@ -10,6 +10,7 @@
   <title>{{ $title ?? 'The Muhsinat Club' }}</title>
   <link rel="icon" href="{{ asset('images/img1.png') }}">
   <link rel="apple-touch-icon" href="{{ asset('images/img1.png') }}">
+  <link rel="manifest" href="{{ asset('manifest.json') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -32,20 +33,7 @@
     <span class="text-[11px] font-medium text-teal-dk/70" style="font-feature-settings:'tnum';">
       {{ now()->hijri('j M Y') }}
     </span>
-    <a href="{{ route('profile', ['tab' => 'notifications']) }}" class="topbar-btn" aria-label="Notifications">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round"
-              d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31
-                 A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75
-                 a8.967 8.967 0 0 1-2.311 6.022c1.766.68 3.559 1.09
-                 5.454 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0
-                 m5.714 0a3 3 0 1 1-5.714 0"/>
-      </svg>
-      @if(auth()->check() && auth()->user()->unreadNotifications()->count() > 0)
-        <span class="notif-badge"></span>
-      @endif
-    </a>
+    <livewire:notifications.bell />
   </header>
 
   {{-- Main content --}}
@@ -93,5 +81,150 @@
 <livewire:announcement-popup />
 
 @livewireScripts
+
+<div id="install-banner" class="hidden" style="
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  max-width: 440px; width: calc(100% - 32px);
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border); border-radius: 16px;
+  padding: 14px 16px; z-index: 90;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-md);">
+  <div>
+    <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
+              font-size: 0.875rem; color: var(--ink); margin: 0;">
+      Add TMC to your home screen
+    </p>
+    <p style="font-family: 'Nunito', sans-serif; font-weight: 300;
+              font-size: 0.75rem; color: var(--ink-soft); margin: 0;">
+      Quick access, just like an app
+    </p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button onclick="installPWA()" class="btn btn-gold btn-sm">Install</button>
+    <button onclick="dismissInstallBanner()" style="background:none;
+      border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer;">&times;</button>
+  </div>
+</div>
+
+<div id="ios-install-banner" class="hidden" style="
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  max-width: 440px; width: calc(100% - 32px);
+  background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border); border-radius: 16px;
+  padding: 14px 16px; z-index: 90;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-md);">
+  <div>
+    <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
+              font-size: 0.875rem; color: var(--ink); margin: 0;">
+      Add TMC to your home screen
+    </p>
+    <p style="font-family: 'Nunito', sans-serif; font-weight: 300;
+              font-size: 0.75rem; color: var(--ink-soft); margin: 0;">
+      Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong>
+    </p>
+  </div>
+  <button onclick="dismissIOSBanner()" style="background:none;
+    border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer; flex-shrink: 0;">&times;</button>
+</div>
+
+<script>
+const VAPID_PUBLIC_KEY = '{{ config('services.webpush.public_key') }}';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    let visits = parseInt(localStorage.getItem('tmc_visits') || '0') + 1;
+    localStorage.setItem('tmc_visits', visits);
+
+    if (visits >= 2 && Notification.permission === 'default') {
+      requestPushPermission(reg);
+    } else if (Notification.permission === 'granted') {
+      subscribeToPush(reg);
+    }
+  });
+}
+
+async function requestPushPermission(reg) {
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') subscribeToPush(reg);
+}
+
+async function subscribeToPush(reg) {
+  try {
+    const existing = await reg.pushManager.getSubscription();
+    const sub = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    await fetch('/push/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+      },
+      body: JSON.stringify(sub)
+    });
+  } catch (e) {
+    console.warn('Push subscription failed:', e);
+  }
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  let installVisits = parseInt(localStorage.getItem('tmc_install_visits') || '0') + 1;
+  localStorage.setItem('tmc_install_visits', installVisits);
+
+  if (installVisits >= 3 && !localStorage.getItem('tmc_install_dismissed')) {
+    document.getElementById('install-banner')?.classList.remove('hidden');
+  }
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+  }
+  document.getElementById('install-banner')?.classList.add('hidden');
+}
+
+function dismissInstallBanner() {
+  localStorage.setItem('tmc_install_dismissed', '1');
+  document.getElementById('install-banner')?.classList.add('hidden');
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+  return ('standalone' in window.navigator) && window.navigator.standalone;
+}
+
+if (isIOS() && !isInStandaloneMode() &&
+    !localStorage.getItem('tmc_ios_install_dismissed')) {
+  let iosVisits = parseInt(localStorage.getItem('tmc_ios_visits') || '0') + 1;
+  localStorage.setItem('tmc_ios_visits', iosVisits);
+  if (iosVisits >= 2) {
+    document.getElementById('ios-install-banner')?.classList.remove('hidden');
+  }
+}
+
+function dismissIOSBanner() {
+  localStorage.setItem('tmc_ios_install_dismissed', '1');
+  document.getElementById('ios-install-banner')?.classList.add('hidden');
+}
+</script>
 </body>
 </html>

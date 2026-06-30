@@ -17,7 +17,7 @@ class SubscriptionExpired extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -28,5 +28,14 @@ class SubscriptionExpired extends Notification implements ShouldQueue
             ->line("Your {$this->planName} subscription has expired.")
             ->line('Please renew your subscription to continue enjoying our services.')
             ->action('Renew Now', url('/subscription/plans'));
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Subscription Expired',
+            'body' => "Your {$this->planName} subscription has expired.",
+            'action_url' => '/subscription/plans',
+        ];
     }
 }

@@ -18,7 +18,7 @@ class SubscriptionPaymentReceived extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -28,5 +28,14 @@ class SubscriptionPaymentReceived extends Notification implements ShouldQueue
             ->greeting('Assalamu Alaikum!')
             ->line("We have received your payment of $ {$this->amount} for {$this->planName}.")
             ->line('Thank you for your continued support.');
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Payment Received',
+            'body' => "Payment of ₦{$this->amount} received for {$this->planName}.",
+            'action_url' => '/',
+        ];
     }
 }

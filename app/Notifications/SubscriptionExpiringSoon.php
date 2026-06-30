@@ -19,7 +19,7 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -30,5 +30,14 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
             ->line("Your {$this->subscription->plan?->name} subscription will expire in {$this->daysRemaining} day(s).")
             ->line('Please renew your subscription to avoid any interruption of services.')
             ->action('Renew Now', url('/subscription/plans'));
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Subscription Expiring Soon',
+            'body' => "Your {$this->subscription->plan?->name} subscription will expire in {$this->daysRemaining} day(s).",
+            'action_url' => '/subscription/plans',
+        ];
     }
 }

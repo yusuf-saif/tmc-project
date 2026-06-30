@@ -18,7 +18,7 @@ class BusinessSuspended extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -29,5 +29,14 @@ class BusinessSuspended extends Notification implements ShouldQueue
             ->line("Your business listing \"{$this->businessName}\" has been suspended.")
             ->line("Reason: {$this->reason}")
             ->line('Please contact the administration for further assistance.');
+    }
+
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'title' => 'Listing Suspended',
+            'body' => "Your business listing \"{$this->businessName}\" has been suspended. Reason: {$this->reason}",
+            'action_url' => '/souq',
+        ];
     }
 }

@@ -30,5 +30,8 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="VAPID_PUBLIC_KEY" value="BJf5YC4TR0O_FcaE39e1ia4h5h05qqXa-UGafGIH_QwYkf1vgsYaBJgq0W92-gBdjqIUgj9TxO0Fjs7eBH0sQ7M"/>
+        <env name="VAPID_PRIVATE_KEY" value="CmMCmQHq4Kuis7tYaU1VvZ6sceKW9Q2rGmbattXtMu8"/>
+        <env name="VAPID_SUBJECT" value="mailto:noreply@themuhsinatclub.com"/>
     </php>
 </phpunit>
