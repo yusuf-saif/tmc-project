@@ -2,11 +2,10 @@
 
 namespace App\Livewire\Membership;
 
-use App\Events\MembershipActivated;
 use App\Models\MemberProfile;
 use App\Services\AuditLogService;
+use App\Services\MembershipStateService;
 use App\Services\PaystackService;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
@@ -27,9 +26,8 @@ class PaymentPage extends Component
         $user->refresh();
 
         $memberProfile = $user->memberProfile;
-        $legacyProfile = $user->profile;
 
-        $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status;
+        $status = $memberProfile?->onboarding_status;
 
         if (! $status) {
             redirect()->route('membership.signup');
@@ -37,13 +35,9 @@ class PaymentPage extends Component
             return;
         }
 
-        if ($status === 'active') {
-            redirect()->route('home');
+        $allowedStatuses = ['onboarding', 'active', 'suspended'];
 
-            return;
-        }
-
-        if (! in_array($status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
+        if (! in_array($status, $allowedStatuses, true)) {
             redirect()->route('home');
 
             return;
@@ -60,13 +54,15 @@ class PaymentPage extends Component
         $profile = $user->memberProfile;
         $status = $profile?->onboarding_status;
 
-        if ($status === 'active') {
+        $allowedForVerification = ['onboarding', 'active', 'suspended'];
+
+        if ($status === 'member') {
             $this->redirect(route('home'));
 
             return;
         }
 
-        if ($status === 'payment_processing' && $profile->paystack_reference && $profile->payment_verified_at === null) {
+        if (in_array($status, $allowedForVerification) && $profile->paystack_reference && $profile->payment_verified_at === null) {
             if (config('paystack.skipVerification', false)) {
                 $this->activateWithoutVerification($profile, $user);
             } else {
@@ -77,7 +73,7 @@ class PaymentPage extends Component
         $profile->refresh();
         $updatedStatus = $profile->onboarding_status;
 
-        if ($updatedStatus === 'active') {
+        if ($updatedStatus === 'member') {
             $this->redirect(route('home'));
 
             return;
@@ -94,8 +90,8 @@ class PaymentPage extends Component
             $paystackService = app(PaystackService::class);
             $verifiedData = $paystackService->verifyPayment($profile->paystack_reference);
 
-            $billingCycle = $profile->preferred_billing_cycle ?? 'monthly';
-            $expectedAmount = $paystackService->getAmountForBillingCycle($billingCycle) * 100;
+            $planLabel = $profile->preferred_billing_cycle ?? 'monthly';
+            $expectedAmount = $paystackService->getAmountForBillingCycle($planLabel) * 100;
             $paidAmount = (int) ($verifiedData['amount'] ?? 0);
 
             if ($paidAmount < $expectedAmount) {
@@ -107,57 +103,23 @@ class PaymentPage extends Component
                 ]);
 
                 $profile->forceFill([
-                    'onboarding_status' => 'payment_failed',
                     'payment_failed_reason' => "Paid {$paidAmount} instead of {$expectedAmount}",
                 ])->saveQuietly();
 
                 return;
             }
 
-            $nextDue = match ($billingCycle) {
-                'quarterly' => now()->addMonths(3),
-                'yearly' => now()->addYear(),
-                default => now()->addMonth(),
-            };
-
-            DB::transaction(function () use ($profile, $user, $nextDue): void {
-                $locked = MemberProfile::where('id', $profile->id)->lockForUpdate()->first();
-
-                if ($locked->payment_verified_at !== null) {
-                    return;
-                }
-
-                $locked->update([
-                    'onboarding_status' => 'active',
-                    'payment_verified_at' => now(),
-                    'activated_at' => now(),
-                    'next_due_at' => $nextDue,
-                    'payment_source' => 'paystack',
-                ]);
-
-                $user->forceFill(['status' => 'active'])->saveQuietly();
-
-                $legacy = $user->profile;
-                if ($legacy) {
-                    $legacy->forceFill([
-                        'membership_status' => 'active',
-                        'payment_status' => 'paid',
-                        'membership_fee_paid_at' => now(),
-                    ])->saveQuietly();
-                }
-            });
+            app(MembershipStateService::class)->recordPayment($profile, $user, $planLabel);
 
             $profile->refresh();
 
             AuditLogService::log(
                 action: 'payment_verified_polling',
                 model: $profile,
-                old: ['onboarding_status' => 'payment_processing'],
-                new: ['onboarding_status' => 'active', 'membership_id' => $profile->membership_id],
+                old: ['onboarding_status' => $profile->onboarding_status],
+                new: ['onboarding_status' => $profile->onboarding_status, 'membership_id' => $profile->membership_id],
                 targetUserId: $user->id,
             );
-
-            MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
 
             Log::info('PaymentPage: payment verified via polling', [
                 'user_id' => $user->id,
@@ -175,52 +137,19 @@ class PaymentPage extends Component
     protected function activateWithoutVerification($profile, $user): void
     {
         try {
-            $billingCycle = $profile->preferred_billing_cycle ?? 'monthly';
+            $planLabel = $profile->preferred_billing_cycle ?? 'monthly';
 
-            $nextDue = match ($billingCycle) {
-                'quarterly' => now()->addMonths(3),
-                'yearly' => now()->addYear(),
-                default => now()->addMonth(),
-            };
-
-            DB::transaction(function () use ($profile, $user, $nextDue): void {
-                $locked = MemberProfile::where('id', $profile->id)->lockForUpdate()->first();
-
-                if ($locked->payment_verified_at !== null) {
-                    return;
-                }
-
-                $locked->update([
-                    'onboarding_status' => 'active',
-                    'payment_verified_at' => now(),
-                    'activated_at' => now(),
-                    'next_due_at' => $nextDue,
-                    'payment_source' => 'paystack',
-                ]);
-
-                $user->forceFill(['status' => 'active'])->saveQuietly();
-
-                $legacy = $user->profile;
-                if ($legacy) {
-                    $legacy->forceFill([
-                        'membership_status' => 'active',
-                        'payment_status' => 'paid',
-                        'membership_fee_paid_at' => now(),
-                    ])->saveQuietly();
-                }
-            });
+            app(MembershipStateService::class)->recordPayment($profile, $user, $planLabel);
 
             $profile->refresh();
 
             AuditLogService::log(
                 action: 'payment_verified_bypass',
                 model: $profile,
-                old: ['onboarding_status' => 'payment_processing'],
-                new: ['onboarding_status' => 'active', 'membership_id' => $profile->membership_id],
+                old: ['onboarding_status' => $profile->onboarding_status],
+                new: ['onboarding_status' => $profile->onboarding_status, 'membership_id' => $profile->membership_id],
                 targetUserId: $user->id,
             );
-
-            MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
 
             Log::info('PaymentPage: payment bypassed (skip verification)', [
                 'user_id' => $user->id,
@@ -244,7 +173,9 @@ class PaymentPage extends Component
         $user = auth()->user();
         $memberProfile = $user->memberProfile;
 
-        if (! $memberProfile || $memberProfile->onboarding_status !== 'approved_pending_payment') {
+        $allowedForRedirect = ['onboarding', 'active', 'suspended'];
+
+        if (! $memberProfile || ! in_array($memberProfile->onboarding_status, $allowedForRedirect, true)) {
             Log::warning('PaymentPage: blocked Paystack redirect — wrong status', [
                 'user_id' => $user->id,
                 'status' => $memberProfile?->onboarding_status,
@@ -258,8 +189,7 @@ class PaymentPage extends Component
         $billingCycle = $memberProfile->preferred_billing_cycle ?? 'monthly';
 
         try {
-            $memberProfile->forceFill(['onboarding_status' => 'payment_processing'])->saveQuietly();
-            $this->paymentStatus = 'payment_processing';
+            $this->paymentStatus = 'onboarding';
 
             $url = $paystackService->getAuthorizationUrl($user, $billingCycle);
 
@@ -286,10 +216,9 @@ class PaymentPage extends Component
     {
         $user = auth()->user();
         $memberProfile = $user->memberProfile;
-        $legacyProfile = $user->profile;
 
-        $profile = $memberProfile ?? $legacyProfile;
-        $status = $this->paymentStatus ?: ($memberProfile?->onboarding_status ?? $legacyProfile?->membership_status);
+        $profile = $memberProfile;
+        $status = $this->paymentStatus ?: ($memberProfile?->onboarding_status);
 
         $billingCycle = $memberProfile?->preferred_billing_cycle ?? 'monthly';
         $amountDue = app(PaystackService::class)->getAmountForBillingCycle($billingCycle);
@@ -298,7 +227,7 @@ class PaymentPage extends Component
             'profile' => $profile,
             'memberProfile' => $memberProfile,
             'status' => $status,
-            'membershipId' => $memberProfile?->membership_id ?? $legacyProfile?->membership_id,
+            'membershipId' => $memberProfile?->membership_id,
             'billingCycle' => $billingCycle,
             'amountDue' => $amountDue,
         ])->layout('layouts.guest-livewire', [

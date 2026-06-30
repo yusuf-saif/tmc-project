@@ -30,7 +30,6 @@ class FortifyLoginResponse implements LoginResponseContract
             return '/admin';
         }
 
-        // Refresh to get latest state from DB (in case approval happened this session)
         $user->refresh();
 
         if ($user->status === 'suspended') {
@@ -38,26 +37,17 @@ class FortifyLoginResponse implements LoginResponseContract
         }
 
         $memberProfile = $user->memberProfile;
-        $legacyProfile = $user->profile;
-        $status = $memberProfile?->onboarding_status ?? $legacyProfile?->membership_status ?? $user->status;
+        $status = $memberProfile?->onboarding_status ?? $user->status;
 
-        if (! $status || in_array($status, ['draft', 'onboarding', 'in_progress'], true)) {
+        if (! $status || $status === 'registered') {
             return route('membership.signup');
         }
 
-        if (in_array($status, ['pending_review', 'submitted', 'under_review'], true)) {
-            return route('membership.pending');
-        }
-
-        if (in_array($status, ['rejected', 'needs_correction'], true)) {
+        if ($status === 'onboarding') {
             return route('membership.signup');
         }
 
-        if (in_array($status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
-            return route('membership.payment');
-        }
-
-        if (in_array($status, ['approved', 'active'], true)) {
+        if ($status === 'active') {
             return '/home';
         }
 

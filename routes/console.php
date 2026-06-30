@@ -75,8 +75,13 @@ Schedule::call(function () {
         });
 })->dailyAt('00:05')->name('expire-business-billing');
 
-// ─── Recover stale Paystack payments ────────────────────────────
-Schedule::command('membership:recover-stale-payments')
-    ->everyFiveMinutes()
-    ->withoutOverlapping()
-    ->name('recover-stale-payments');
+// ─── Check membership grace periods ───────────────────────────────
+Schedule::command('membership:check-grace-periods')
+    ->dailyAt('00:10')
+    ->name('check-membership-grace-periods');
+
+// ─── Send membership renewal reminders ────────────────────────────
+Schedule::command('membership:send-renewal-reminders')
+    ->dailyAt('08:00')
+    ->name('send-membership-renewal-reminders');
+

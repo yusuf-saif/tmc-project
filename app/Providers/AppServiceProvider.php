@@ -23,7 +23,6 @@ use App\Listeners\SendBillingNotifications;
 use App\Listeners\SendMembershipNotifications;
 use App\Services\HijriDateService;
 use Carbon\Carbon;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -57,8 +56,6 @@ class AppServiceProvider extends ServiceProvider
         Carbon::macro('hijri', function (string $format = 'd M Y'): string {
             return app(HijriDateService::class)->formatHijriDate($this, $format);
         });
-
-        Event::listen(Verified::class, AwardReferralCoins::class);
 
         $events = [
             MembershipSubmitted::class,
@@ -97,6 +94,7 @@ class AppServiceProvider extends ServiceProvider
             Event::listen($event, SendBillingNotifications::class);
         }
 
+        Event::listen(MembershipActivated::class, AwardReferralCoins::class);
         Event::listen(MembershipActivated::class, LogBillingEvent::class);
         Event::listen(MembershipActivated::class, SendMembershipNotifications::class);
 

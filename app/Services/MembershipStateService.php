@@ -16,15 +16,11 @@ use RuntimeException;
 class MembershipStateService
 {
     private const ALLOWED_TRANSITIONS = [
-        'draft' => ['in_progress', 'pending_review'],
-        'in_progress' => ['pending_review'],
-        'pending_review' => ['approved_pending_payment', 'rejected', 'needs_correction'],
-        'approved_pending_payment' => ['payment_processing'],
-        'payment_processing' => ['active', 'payment_failed'],
-        'payment_failed' => ['approved_pending_payment'],
-        'needs_correction' => ['pending_review'],
-        'rejected' => ['pending_review'],
-        'active' => [],
+        'registered' => ['onboarding'],
+        'onboarding' => ['active'],          // Legacy fallback only
+        'active'     => ['member', 'suspended'],
+        'member'     => ['suspended'],
+        'suspended'  => ['member', 'active'],
     ];
 
     public function allowedTransitions(?string $fromStatus): array
@@ -78,18 +74,6 @@ class MembershipStateService
             if (isset($metadata['approved_at'])) {
                 $profile->approved_at = $metadata['approved_at'];
             }
-            if (isset($metadata['reviewed_by'])) {
-                $profile->reviewed_by = $metadata['reviewed_by'];
-            }
-            if (isset($metadata['reviewed_at'])) {
-                $profile->reviewed_at = $metadata['reviewed_at'];
-            }
-            if (isset($metadata['rejection_reason'])) {
-                $profile->rejection_reason = $metadata['rejection_reason'];
-            }
-            if (isset($metadata['needs_correction_notes'])) {
-                $profile->needs_correction_notes = $metadata['needs_correction_notes'];
-            }
             if (isset($metadata['membership_type'])) {
                 $profile->membership_type = $metadata['membership_type'];
             }
@@ -99,10 +83,13 @@ class MembershipStateService
             if (isset($metadata['hijri_year'])) {
                 $profile->hijri_year = $metadata['hijri_year'];
             }
+            if (isset($metadata['membership_serial'])) {
+                $profile->membership_serial = $metadata['membership_serial'];
+            }
 
             $profile->save();
 
-            $this->syncUserStatus($profile, $oldStatus, $newStatus);
+            $this->syncUserStatus($profile, $newStatus);
         });
 
         Log::info("Membership state transition: {$oldStatus} → {$newStatus}", [
@@ -114,86 +101,129 @@ class MembershipStateService
         return $profile->fresh();
     }
 
-    public function approve(MemberProfile $profile, string $membershipType, User $admin): MemberProfile
+    public function startOnboarding(MemberProfile $profile): MemberProfile
     {
-        if ($profile->membership_id !== null) {
-            Log::warning('Membership ID is immutable — approval skipped', [
-                'profile_id' => $profile->id,
-                'existing_id' => $profile->membership_id,
-            ]);
-
-            return $profile;
+        $result = $this->transition($profile, 'onboarding');
+        $user = $profile->user;
+        if ($user) {
+            $user->forceFill(['status' => 'onboarding'])->saveQuietly();
         }
 
+        return $result;
+    }
+
+    public function recordPayment(MemberProfile $profile, User $user, ?string $planLabel = null): void
+    {
+        DB::transaction(function () use ($profile, $user, $planLabel): void {
+            $profile->onboarding_status = 'member';
+            $profile->payment_status = 'paid';
+            $profile->payment_verified_at ??= now();
+            $profile->first_paid_at ??= now();
+            $profile->current_period_ends_at = now()->addDays(30);
+            $profile->reminder_sent_at = null;
+            $profile->save();
+
+            $user->forceFill(['status' => 'active'])->saveQuietly();
+        });
+
+        Log::info('MembershipStateService: payment recorded', [
+            'profile_id' => $profile->id,
+            'user_id' => $user->id,
+            'plan_label' => $planLabel ?? 'default',
+            'current_period_ends_at' => $profile->fresh()->current_period_ends_at?->toIso8601String(),
+        ]);
+
+        MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
+    }
+
+    public function checkGracePeriod(MemberProfile $profile): void
+    {
+        if ($profile->onboarding_status !== 'member') {
+            return;
+        }
+
+        $periodEnd = $profile->current_period_ends_at;
+
+        if (! $periodEnd) {
+            return;
+        }
+
+        if (now()->greaterThan($periodEnd) && $profile->grace_period_ends_at === null) {
+            $profile->grace_period_ends_at = $periodEnd->copy()->addDays(7);
+            $profile->save();
+        }
+
+        if ($profile->grace_period_ends_at && now()->greaterThan($profile->grace_period_ends_at)) {
+            $this->transition($profile, 'suspended');
+
+            $user = $profile->user;
+            if ($user) {
+                $user->forceFill(['status' => 'suspended'])->saveQuietly();
+            }
+
+            Log::info('Membership suspended due to grace period expiry', [
+                'profile_id' => $profile->id,
+                'user_id' => $profile->user_id,
+            ]);
+        }
+    }
+
+    public function suspend(MemberProfile $profile): MemberProfile
+    {
+        return $this->transition($profile, 'suspended');
+    }
+
+    public function reactivate(MemberProfile $profile): MemberProfile
+    {
+        $result = $this->transition($profile, 'active');
+
+        $user = $profile->user;
+        if ($user) {
+            $user->forceFill(['status' => 'active'])->saveQuietly();
+        }
+
+        $profile->payment_verified_at = now();
+        $profile->activated_at = now();
+        $profile->save();
+
+        return $result;
+    }
+
+    public function approve(MemberProfile $profile, string $membershipType, User $admin): MemberProfile
+    {
         $generated = MembershipIdService::generate($membershipType);
         $coinReward = (int) Setting::getValue('membership_approval_coins', '100');
-        $skipVerification = config('paystack.skipVerification', false);
 
-        DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward, $admin, $skipVerification): void {
+        DB::transaction(function () use ($profile, $membershipType, $generated, $coinReward, $admin): void {
             $profile->membership_type = $membershipType;
             $profile->membership_id = $generated['membership_id'];
             $profile->hijri_year = $generated['membership_hijri_year'];
+            $profile->reviewed_at = now();
+            $profile->reviewed_by = $admin->id;
 
-            $this->transition($profile, 'approved_pending_payment', $admin, [
-                'reviewed_by' => $admin->id,
-                'reviewed_at' => now(),
+            $this->transition($profile, 'active', $admin, [
                 'approved_by' => $admin->id,
                 'approved_at' => now(),
-                'rejection_reason' => null,
                 'membership_id' => $generated['membership_id'],
                 'membership_type' => $membershipType,
                 'hijri_year' => $generated['membership_hijri_year'],
                 'membership_serial' => $generated['membership_serial'],
-                'coins_awarded' => $coinReward,
             ]);
 
-            if ($skipVerification) {
-                $profile->forceFill([
-                    'onboarding_status' => 'active',
-                    'payment_verified_at' => now(),
-                    'activated_at' => now(),
-                    'payment_source' => 'paystack',
-                    'next_due_at' => now()->addMonth(),
-                ])->save();
+            $profile->activated_at = now();
+            $profile->save();
 
-                $user = $profile->user;
-                if ($user) {
-                    $user->forceFill(['status' => 'active'])->saveQuietly();
-                }
-
-                $legacy = $profile->user?->profile;
-                if ($legacy) {
-                    $legacy->forceFill([
-                        'membership_status' => 'active',
-                        'payment_status' => 'paid',
-                        'membership_fee_paid_at' => now(),
-                        'membership_type' => $membershipType,
-                        'membership_id' => $generated['membership_id'],
-                        'membership_serial' => $generated['membership_serial'],
-                        'membership_hijri_year' => $generated['membership_hijri_year'],
-                        'approved_at' => now(),
-                        'approved_by' => $admin->id,
-                    ])->saveQuietly();
-                }
-            } else {
-                $this->syncLegacyProfileApproval($profile, $generated, $membershipType, $admin->id);
+            $user = $profile->user;
+            if ($user) {
+                $user->forceFill(['status' => 'active'])->saveQuietly();
             }
 
             if ($coinReward > 0 && $profile->user) {
                 CoinsService::award($profile->user, $coinReward, 'manual', null, "Membership approval ({$membershipType})");
-                Log::info('Membership approval coins awarded', [
-                    'user_id' => $profile->user_id,
-                    'amount' => $coinReward,
-                    'membership_type' => $membershipType,
-                ]);
             }
         });
 
         MembershipApproved::dispatch($profile->fresh(), $admin, $membershipType, $generated['membership_id'], $coinReward);
-
-        if ($skipVerification) {
-            MembershipActivated::dispatch($profile->user, $profile->membership_id ?? 'N/A', $profile->user);
-        }
 
         return $profile->fresh();
     }
@@ -201,13 +231,13 @@ class MembershipStateService
     public function reject(MemberProfile $profile, string $reason, User $admin): MemberProfile
     {
         DB::transaction(function () use ($profile, $reason, $admin): void {
-            $this->transition($profile, 'rejected', $admin, [
-                'reviewed_by' => $admin->id,
-                'reviewed_at' => now(),
-                'rejection_reason' => $reason,
-            ]);
+            $profile->rejection_reason = $reason;
+            $profile->save();
 
-            $this->syncLegacyProfileRejection($profile);
+            $user = $profile->user;
+            if ($user) {
+                $user->forceFill(['status' => 'rejected'])->saveQuietly();
+            }
         });
 
         MembershipRejected::dispatch($profile->fresh(), $admin, $reason);
@@ -218,13 +248,14 @@ class MembershipStateService
     public function needsCorrection(MemberProfile $profile, string $notes, User $admin): MemberProfile
     {
         DB::transaction(function () use ($profile, $notes, $admin): void {
-            $this->transition($profile, 'needs_correction', $admin, [
-                'reviewed_by' => $admin->id,
-                'reviewed_at' => now(),
-                'needs_correction_notes' => $notes,
-            ]);
+            $profile->needs_correction_notes = $notes;
+            $profile->reviewed_by = $admin->id;
+            $profile->save();
 
-            $this->syncLegacyProfileStatus($profile, 'needs_correction');
+            $user = $profile->user;
+            if ($user) {
+                $user->forceFill(['status' => 'needs_correction'])->saveQuietly();
+            }
         });
 
         MembershipNeedsCorrection::dispatch($profile->fresh(), $admin, $notes);
@@ -232,25 +263,7 @@ class MembershipStateService
         return $profile->fresh();
     }
 
-    public function resubmit(MemberProfile $profile, User $user): MemberProfile
-    {
-        return DB::transaction(function () use ($profile, $user): MemberProfile {
-            $this->transition($profile, 'pending_review', $user, [
-                'needs_correction_notes' => null,
-                'rejection_reason' => null,
-                'reviewed_by' => null,
-                'reviewed_at' => null,
-                'approved_by' => null,
-                'approved_at' => null,
-            ]);
-
-            $this->syncLegacyProfileStatus($profile, 'pending_review');
-
-            return $profile->fresh();
-        });
-    }
-
-    protected function syncUserStatus(MemberProfile $profile, string $oldStatus, string $newStatus): void
+    protected function syncUserStatus(MemberProfile $profile, string $newStatus): void
     {
         $user = $profile->user;
         if (! $user) {
@@ -258,14 +271,10 @@ class MembershipStateService
         }
 
         $statusMap = [
-            'in_progress' => 'onboarding',
-            'pending_review' => 'pending_review',
-            'approved_pending_payment' => 'pending_review',
-            'payment_processing' => 'pending_review',
-            'payment_failed' => 'pending_review',
-            'rejected' => 'rejected',
-            'needs_correction' => 'needs_correction',
+            'registered' => 'registered',
+            'onboarding' => 'onboarding',
             'active' => 'active',
+            'suspended' => 'suspended',
         ];
 
         $newUserStatus = $statusMap[$newStatus] ?? null;
@@ -273,51 +282,8 @@ class MembershipStateService
             $user->forceFill(['status' => $newUserStatus])->saveQuietly();
             Log::info("User status synced: {$user->id} → {$newUserStatus}", [
                 'profile_id' => $profile->id,
-                'old_status' => $oldStatus,
                 'new_status' => $newStatus,
             ]);
         }
-    }
-
-    protected function syncLegacyProfileApproval(MemberProfile $profile, array $generated, string $membershipType, int $adminId): void
-    {
-        $legacy = $profile->user?->profile;
-        if (! $legacy) {
-            return;
-        }
-
-        $legacy->forceFill([
-            'membership_status' => 'approved_pending_payment',
-            'membership_type' => $membershipType,
-            'membership_id' => $generated['membership_id'],
-            'membership_serial' => $generated['membership_serial'],
-            'membership_hijri_year' => $generated['membership_hijri_year'],
-            'approved_at' => now(),
-            'approved_by' => $adminId,
-        ])->saveQuietly();
-    }
-
-    protected function syncLegacyProfileRejection(MemberProfile $profile): void
-    {
-        $legacy = $profile->user?->profile;
-        if (! $legacy) {
-            return;
-        }
-
-        $legacy->forceFill([
-            'membership_status' => 'rejected',
-        ])->saveQuietly();
-    }
-
-    protected function syncLegacyProfileStatus(MemberProfile $profile, string $status): void
-    {
-        $legacy = $profile->user?->profile;
-        if (! $legacy) {
-            return;
-        }
-
-        $legacy->forceFill([
-            'membership_status' => $status,
-        ])->saveQuietly();
     }
 }

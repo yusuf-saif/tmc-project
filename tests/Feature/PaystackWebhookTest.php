@@ -24,20 +24,20 @@ class PaystackWebhookTest extends TestCase
         Config::set('paystack.webhookSecret', 'whsec_test_fake');
     }
 
-    protected function createApprovedUser(string $reference = 'TMC-TEST123'): User
+    protected function createOnboardingUser(string $reference = 'TMC-TEST123'): User
     {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'pending_review']);
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'approved_pending_payment',
-            'membership_id' => 'TMC-M-1447-001',
-            'preferred_billing_cycle' => 'monthly',
-            'approved_at' => now(),
-            'paystack_reference' => $reference,
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'monthly',
+                'paystack_reference' => $reference,
+            ],
+        );
 
         return $user;
     }
@@ -49,7 +49,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_verified_payment_activates_membership(): void
     {
-        $user = $this->createApprovedUser('TMC-TEST123');
+        $user = $this->createOnboardingUser('TMC-TEST123');
 
         $payload = [
             'event' => 'charge.success',
@@ -89,14 +89,13 @@ class PaystackWebhookTest extends TestCase
         $this->assertEquals('active', $user->status);
 
         $profile = $user->memberProfile;
-        $this->assertEquals('active', $profile->onboarding_status);
-        $this->assertNotNull($profile->activated_at);
-        $this->assertNotNull($profile->next_due_at);
+        $this->assertEquals('member', $profile->onboarding_status);
+        $this->assertNotNull($profile->current_period_ends_at);
     }
 
     public function test_failed_payment_does_not_activate(): void
     {
-        $user = $this->createApprovedUser('TMC-TEST123');
+        $user = $this->createOnboardingUser('TMC-TEST123');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -156,7 +155,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_payment_amount_mismatch_is_rejected(): void
     {
-        $user = $this->createApprovedUser('TMC-TEST-UNDERPAID');
+        $user = $this->createOnboardingUser('TMC-TEST-UNDERPAID');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -198,7 +197,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_webhook_is_idempotent(): void
     {
-        $user = $this->createApprovedUser('TMC-TEST123');
+        $user = $this->createOnboardingUser('TMC-TEST123');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -254,7 +253,7 @@ class PaystackWebhookTest extends TestCase
 
     public function test_different_references_for_same_user_are_independent(): void
     {
-        $user = $this->createApprovedUser('TMC-DIFF-REF');
+        $user = $this->createOnboardingUser('TMC-DIFF-REF');
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -288,14 +287,13 @@ class PaystackWebhookTest extends TestCase
 
         $user->refresh();
         $profile = $user->memberProfile;
-        $this->assertEquals('active', $profile->onboarding_status);
+        $this->assertEquals('member', $profile->onboarding_status);
         $this->assertEquals('TMC-DIFF-REF', $profile->paystack_reference);
     }
 
     public function test_unmatched_reference_returns_no_profile(): void
     {
-        // Profile has paystack_reference = 'TMC-TEST123', webhook sends different reference
-        $this->createApprovedUser('TMC-TEST123');
+        $this->createOnboardingUser('TMC-TEST123');
 
         $payload = [
             'event' => 'charge.success',
@@ -318,19 +316,20 @@ class PaystackWebhookTest extends TestCase
         $response->assertJson(['status' => 'no_profile']);
     }
 
-    public function test_wrong_status_does_not_activate(): void
+    public function test_non_payable_status_rejects_webhook(): void
     {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'pending_review']);
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'registered']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
 
-        // Profile is in pending_review, not approved_pending_payment
-        MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'pending_review',
-            'preferred_billing_cycle' => 'monthly',
-            'paystack_reference' => 'WRONG-STATUS-REF',
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'registered',
+                'preferred_billing_cycle' => 'monthly',
+                'paystack_reference' => 'WRONG-STATUS-REF',
+            ],
+        );
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
@@ -361,31 +360,32 @@ class PaystackWebhookTest extends TestCase
         $response->assertStatus(400);
         $response->assertJson(['error' => 'Profile not in approvable state']);
 
-        $user->refresh();
-        $this->assertNotEquals('active', $user->status);
+        $profile = $user->fresh()->memberProfile;
+        $this->assertEquals('registered', $profile->onboarding_status);
     }
 
-    public function test_webhook_accepts_payment_processing_status(): void
+    public function test_webhook_accepts_onboarding_status(): void
     {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'pending_review']);
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
 
-        MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'payment_processing',
-            'membership_id' => 'TMC-M-1447-001',
-            'preferred_billing_cycle' => 'monthly',
-            'approved_at' => now(),
-            'paystack_reference' => 'PROCESSING-REF',
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'monthly',
+                'paystack_reference' => 'ONBOARDING-REF',
+            ],
+        );
 
         Http::fake([
             config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
                 'status' => true,
                 'data' => [
                     'status' => 'success',
-                    'reference' => 'PROCESSING-REF',
+                    'reference' => 'ONBOARDING-REF',
                     'amount' => 500000,
                 ],
             ]),
@@ -394,7 +394,7 @@ class PaystackWebhookTest extends TestCase
         $payload = [
             'event' => 'charge.success',
             'data' => [
-                'reference' => 'PROCESSING-REF',
+                'reference' => 'ONBOARDING-REF',
                 'status' => 'success',
                 'amount' => 500000,
             ],
@@ -410,6 +410,6 @@ class PaystackWebhookTest extends TestCase
         $response->assertJson(['status' => 'activated']);
 
         $profile = $user->fresh()->memberProfile;
-        $this->assertEquals('active', $profile->onboarding_status);
+        $this->assertEquals('member', $profile->onboarding_status);
     }
 }

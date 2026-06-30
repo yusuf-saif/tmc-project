@@ -54,7 +54,6 @@ Route::middleware(['auth', 'ensure.user.state'])->group(function () {
     Route::get('/events/{slug}', EventDetail::class)->name('events.show');
     Route::get('/resources', ResourcesLibrary::class)->name('resources');
     Route::get('/resources/{slug}', ResourceDetail::class)->name('resources.show');
-    Route::get('/journal', JournalScreen::class)->name('journal');
     Route::get('/community', CommunityHome::class)->name('community');
     Route::get('/community/spaces/{slug}', SpaceDetail::class)->name('community.spaces.show');
     Route::get('/community/support/{type}', SupportForm::class)->name('community.support');
@@ -64,13 +63,18 @@ Route::middleware(['auth', 'ensure.user.state'])->group(function () {
 
         return view('community.donate', compact('bankDetails', 'donateMessage'));
     })->name('community.donate');
-    Route::get('/souq', SouqDirectory::class)->name('souq');
-    Route::get('/souq/apply', ApplyForm::class)->name('souq.apply');
-    Route::get('/souq/{slug}', ListingDetail::class)->name('souq.show');
     Route::get('/profile', ProfileScreen::class)->name('profile');
     Route::get('/profile/edit', EditProfile::class)->name('profile.edit');
     Route::get('/profile/legacy-card', LegacyCard::class)->name('profile.legacy-card');
     Route::get('/profile/notifications', NotificationPreferences::class)->name('profile.notifications');
+
+    // Restricted areas — require active membership
+    Route::middleware(['not-suspended'])->group(function () {
+        Route::get('/journal', JournalScreen::class)->name('journal');
+        Route::get('/souq', SouqDirectory::class)->name('souq');
+        Route::get('/souq/apply', ApplyForm::class)->name('souq.apply');
+        Route::get('/souq/{slug}', ListingDetail::class)->name('souq.show');
+    });
 });
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {

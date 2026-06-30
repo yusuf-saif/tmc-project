@@ -226,11 +226,14 @@ class SouqWalletTest extends TestCase
         ]);
 
         $user->assignRole($role);
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'active',
-            'onboarding_completed_at' => now(),
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'active',
+                'onboarding_completed_at' => now(),
+            ],
+        );
 
         return $user;
     }

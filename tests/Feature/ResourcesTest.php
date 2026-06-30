@@ -36,11 +36,14 @@ class ResourcesTest extends TestCase
             'referral_code' => 'MEMB2001',
         ]);
         $this->member->assignRole('member');
-        $this->member->profile()->create([
-            'display_name' => $this->member->name,
-            'membership_status' => 'active',
-            'onboarding_completed_at' => now(),
-        ]);
+        $this->member->memberProfile()->updateOrCreate(
+            ['user_id' => $this->member->id],
+            [
+                'display_name' => $this->member->name,
+                'onboarding_status' => 'active',
+                'onboarding_completed_at' => now(),
+            ],
+        );
     }
 
     public function test_member_can_browse_resources(): void

@@ -186,7 +186,47 @@
 
   {{-- ═══════════ TAB: MEMBERSHIP ═══════════ --}}
   @elseif($tab === 'membership')
-  <div class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;">
+  <div id="membership" class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;">
+
+    {{-- Membership Status --}}
+    <div style="margin-bottom:20px;text-align:center;">
+      <p class="section-label profile-section-label">Membership Status</p>
+      @php($ms = $this->profile?->onboarding_status)
+      @if($ms === 'active')
+        <div style="background:var(--teal);color:white;border-radius:8px;padding:16px;margin-top:8px;">
+          <p style="font-size:14px;font-weight:600;">Free Access</p>
+          <p style="font-size:12px;opacity:0.85;margin-top:4px;">
+            You're currently on the free plan
+          </p>
+          <a href="{{ route('membership.payment') }}"
+             style="display:inline-block;margin-top:10px;background:white;color:var(--teal);padding:6px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">
+            Choose Your Plan →
+          </a>
+        </div>
+      @elseif($ms === 'member')
+        <div style="background:var(--gold);color:var(--teal-dk);border-radius:8px;padding:16px;margin-top:8px;">
+          <p style="font-size:14px;font-weight:600;">Active Member</p>
+          @if($this->profile?->current_period_ends_at)
+          <p style="font-size:12px;opacity:0.85;margin-top:4px;">
+            Valid until {{ $this->profile->current_period_ends_at->hijri('d M Y') }}
+          </p>
+          @endif
+        </div>
+      @elseif($ms === 'suspended')
+        <div style="background:#3D1A47;color:white;border-radius:8px;padding:16px;margin-top:8px;">
+          <p style="font-size:14px;font-weight:600;">Membership Lapsed</p>
+          <p style="font-size:12px;opacity:0.85;margin-top:4px;">
+            Your membership has ended — renew to regain access
+          </p>
+          <a href="{{ route('membership.payment') }}"
+             style="display:inline-block;margin-top:10px;background:white;color:#3D1A47;padding:6px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">
+            Renew Now →
+          </a>
+        </div>
+      @else
+        <p class="membership-empty" style="margin-top:8px;">No membership data available</p>
+      @endif
+    </div>
 
     {{-- Badges --}}
     <div style="margin-bottom:20px;">

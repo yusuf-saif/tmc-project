@@ -10,8 +10,13 @@ class MemberProfile extends Model
 {
     use HasFactory;
 
+    protected $attributes = [
+        'onboarding_status' => 'registered',
+    ];
+
     protected $fillable = [
         'user_id',
+        'display_name',
         'first_name',
         'last_name',
         'nickname',
@@ -25,9 +30,13 @@ class MemberProfile extends Model
         'fb_username',
         'x_username',
         'tiktok_username',
+        'avatar_path',
+        'notification_preferences',
+        'goals',
         'onboarding_status',
         'membership_type',
         'membership_id',
+        'membership_serial',
         'hijri_year',
         'reviewed_by',
         'reviewed_at',
@@ -47,12 +56,17 @@ class MemberProfile extends Model
         'paystack_customer_code',
         'payment_failed_reason',
         'payment_source',
+        'payment_status',
+        'current_period_ends_at',
+        'reminder_sent_at',
+        'onboarding_completed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'hijri_year' => 'integer',
+            'membership_serial' => 'integer',
             'reviewed_at' => 'datetime',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
@@ -60,6 +74,13 @@ class MemberProfile extends Model
             'payment_verified_at' => 'datetime',
             'activated_at' => 'datetime',
             'next_due_at' => 'datetime',
+            'first_paid_at' => 'datetime',
+            'grace_period_ends_at' => 'datetime',
+            'current_period_ends_at' => 'datetime',
+            'reminder_sent_at' => 'datetime',
+            'onboarding_completed_at' => 'datetime',
+            'notification_preferences' => 'array',
+            'goals' => 'array',
             'under_review_email_sent_at' => 'datetime',
             'approval_email_sent_at' => 'datetime',
             'payment_confirmed_email_sent_at' => 'datetime',

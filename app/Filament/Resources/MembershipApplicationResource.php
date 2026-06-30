@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MembershipApplicationResource\Pages;
 use App\Models\MemberProfile;
-use App\Models\UserProfile;
 use App\Services\MembershipApprovalService;
 use App\Services\MembershipIdService;
 use Carbon\Carbon;
@@ -126,44 +125,18 @@ class MembershipApplicationResource extends Resource
         return false;
     }
 
-    public static function approve(MemberProfile|UserProfile $profile, ?string $membershipType = 'M'): void
+    public static function approve(MemberProfile $profile, ?string $membershipType = 'M'): void
     {
-        if ($profile instanceof UserProfile) {
-            $generated = MembershipIdService::generate($membershipType ?? 'M');
-
-            $profile->update([
-                'membership_status' => 'approved_pending_payment',
-                'membership_type' => $generated['membership_type'],
-                'membership_id' => $generated['membership_id'],
-                'membership_serial' => $generated['membership_serial'],
-                'membership_hijri_year' => $generated['membership_hijri_year'],
-                'approved_at' => now(),
-                'approved_by' => auth()->id(),
-            ]);
-
-            return;
-        }
-
         app(MembershipApprovalService::class)->approve($profile, $membershipType ?? 'M');
     }
 
-    public static function reject(MemberProfile|UserProfile $profile, string $reason): void
+    public static function reject(MemberProfile $profile, string $reason): void
     {
-        if ($profile instanceof UserProfile) {
-            $profile->update(['membership_status' => 'rejected']);
-
-            return;
-        }
-
         app(MembershipApprovalService::class)->reject($profile, $reason);
     }
 
-    public static function needsCorrection(MemberProfile|UserProfile $profile, string $notes): void
+    public static function needsCorrection(MemberProfile $profile, string $notes): void
     {
-        if ($profile instanceof UserProfile) {
-            return;
-        }
-
         app(MembershipApprovalService::class)->needsCorrection($profile, $notes);
     }
 }

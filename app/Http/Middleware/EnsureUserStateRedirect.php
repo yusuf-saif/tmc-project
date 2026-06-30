@@ -16,11 +16,8 @@ class EnsureUserStateRedirect
         }
 
         $user = auth()->user();
-
-        // Refresh user from DB to catch real-time state changes (e.g. admin approval)
         $user->refresh();
 
-        // Admin-capable roles bypass membership state checks
         if ($user->hasAnyRole([
             'super_admin',
             'admin',
@@ -30,7 +27,6 @@ class EnsureUserStateRedirect
             return $next($request);
         }
 
-        // Explicit suspension check — must come before status resolution
         if ($user->status === 'suspended') {
             auth()->guard('web')->logout();
             $request->session()->invalidate();
@@ -41,35 +37,20 @@ class EnsureUserStateRedirect
             ]);
         }
 
-        // Resolve status via 3-tier fallback: member_profiles → user_profiles → users
         $status = $this->resolveStatus($user);
 
-        // ── Draft / Onboarding states ───────────────────────────────
-        if (! $status || in_array($status, ['draft', 'onboarding', 'in_progress'], true)) {
+        if (! $status || $status === 'registered') {
             return redirect()->route('membership.signup');
         }
 
-        // ── Pending review states ───────────────────────────────────
-        if (in_array($status, ['pending_review', 'submitted', 'under_review'], true)) {
-            return redirect()->route('membership.pending');
-        }
-
-        // ── Rejected states ─────────────────────────────────────────
-        if (in_array($status, ['rejected', 'needs_correction'], true)) {
+        if ($status === 'onboarding') {
             return redirect()->route('membership.signup');
         }
 
-        // ── Approved — awaiting payment ─────────────────────────────
-        if (in_array($status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
-            return redirect()->route('membership.payment');
-        }
-
-        // ── Active / Approved — full access ─────────────────────────
-        if (in_array($status, ['approved', 'active'], true)) {
+        if ($status === 'active') {
             return $next($request);
         }
 
-        // ── Unknown status — send to onboarding as safe fallback ────
         Log::warning('EnsureUserStateRedirect: unknown status resolved', [
             'user_id' => $user->id,
             'resolved_status' => $status,
@@ -80,11 +61,7 @@ class EnsureUserStateRedirect
 
     protected function resolveStatus(object $user): ?string
     {
-        $memberProfile = $user->memberProfile;
-        $legacyProfile = $user->profile;
-
-        return $memberProfile?->onboarding_status
-            ?? $legacyProfile?->membership_status
+        return $user->memberProfile?->onboarding_status
             ?? $user->status;
     }
 }

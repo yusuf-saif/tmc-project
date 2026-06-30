@@ -40,8 +40,8 @@
             </div>
         @endif
 
-        {{-- STATE: approved_pending_payment — show Paystack payment button --}}
-        @if ($status === 'approved_pending_payment')
+        {{-- STATE: onboarding — show Paystack payment button --}}
+        @if ($status === 'onboarding')
             <h1 class="font-display text-4xl leading-none text-teal-dk">Membership Payment</h1>
 
             <div class="mt-6 space-y-4">

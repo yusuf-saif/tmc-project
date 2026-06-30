@@ -8,7 +8,6 @@ use App\Livewire\Membership\MembershipSignupWizard;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
-use App\Models\MembershipOnboardingDraft;
 use App\Models\User;
 use App\Notifications\MembershipApplicationSubmitted;
 use App\Notifications\MembershipNeedsCorrection;
@@ -70,7 +69,7 @@ class MembershipApplicationTest extends TestCase
             ->call('toggleInterest', Interest::query()->limit(1)->first()->slug)
             ->call('toggleGoal', Goal::query()->limit(1)->first()->slug)
             ->call('submit')
-            ->assertRedirect(route('membership.pending'));
+            ->assertRedirect(route('home'));
     }
 
     protected function getCompletedDraftData(): array
@@ -98,22 +97,24 @@ class MembershipApplicationTest extends TestCase
         $interestSlugs = $data['selected_interests'] ?? [];
         $goalSlugs = $data['selected_goals'] ?? [];
 
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'location_country' => $data['location_country'],
-            'location_state' => $data['location_state'],
-            'age_group' => $data['age_group'],
-            'marital_status' => $data['marital_status'],
-            'phone' => $data['phone'],
-            'ig_username' => $data['ig_username'],
-            'fb_username' => $data['fb_username'],
-            'x_username' => $data['x_username'],
-            'tiktok_username' => $data['tiktok_username'],
-            'onboarding_status' => 'pending_review',
-            'submitted_at' => now(),
-        ]);
+        $profile = MemberProfile::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'location_country' => $data['location_country'],
+                'location_state' => $data['location_state'],
+                'age_group' => $data['age_group'],
+                'marital_status' => $data['marital_status'],
+                'phone' => $data['phone'],
+                'ig_username' => $data['ig_username'],
+                'fb_username' => $data['fb_username'],
+                'x_username' => $data['x_username'],
+                'tiktok_username' => $data['tiktok_username'],
+                'onboarding_status' => 'onboarding',
+                'submitted_at' => now(),
+            ],
+        );
 
         if ($interestSlugs !== []) {
             $interestIds = Interest::whereIn('slug', $interestSlugs)->pluck('id')->all();
@@ -134,7 +135,7 @@ class MembershipApplicationTest extends TestCase
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $this->actingAs($user)
             ->get('/home')
@@ -147,11 +148,11 @@ class MembershipApplicationTest extends TestCase
 
         $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
 
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -167,24 +168,24 @@ class MembershipApplicationTest extends TestCase
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
 
         $profile = $user->fresh()->memberProfile;
-        $this->assertEquals('pending_review', $profile->onboarding_status);
+        $this->assertEquals('onboarding', $profile->onboarding_status);
         $this->assertNull($profile->membership_id);
 
         $this->actingAs($admin);
         MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
+        $this->assertEquals('active', $profile->onboarding_status);
         $this->assertEquals('M', $profile->membership_type);
         $this->assertNotNull($profile->membership_id);
         $this->assertStringStartsWith('TMC-M-', $profile->membership_id);
@@ -209,124 +210,71 @@ class MembershipApplicationTest extends TestCase
         $this->assertEquals("TMC-SM-{$hijriYear}-001", $idData3['membership_id']);
     }
 
-    public function test_approved_user_cannot_access_home_until_payment_confirmed(): void
+    public function test_onboarding_user_is_redirected_to_signup(): void
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'approved_pending_payment',
-            'membership_id' => 'TMC-M-1447-001',
-            'approved_at' => now(),
-        ]);
-
-        $this->actingAs($user)
-            ->get('/home')
-            ->assertRedirect(route('membership.payment'));
-    }
-
-    public function test_active_paid_member_can_access_home(): void
-    {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'active',
-            'membership_id' => 'TMC-M-1447-001',
-            'payment_status' => 'paid',
-            'membership_fee_paid_at' => now(),
-        ]);
-
-        $this->actingAs($user)
-            ->get('/home')
-            ->assertOk();
-    }
-
-    public function test_user_is_redirected_to_pending_after_submission(): void
-    {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $data = $this->getCompletedDraftData();
-        $this->createSubmittedProfile($user, $data);
-
-        $this->assertDatabaseHas('member_profiles', [
-            'user_id' => $user->id,
-            'onboarding_status' => 'pending_review',
-        ]);
-
-        $freshUser = $user->fresh();
-        $this->actingAs($freshUser)
-            ->get('/home')
-            ->assertRedirect(route('membership.pending'));
-    }
-
-    public function test_user_can_register_and_is_redirected_to_membership_signup(): void
-    {
-        $draft = MembershipOnboardingDraft::create([
-            'payload' => [],
-            'step' => 1,
-            'status' => 'draft',
-        ]);
-
-        Livewire::test(MembershipSignupWizard::class, ['draft' => $draft->id])
-            ->assertSet('step', 1);
-    }
-
-    public function test_admin_bypasses_membership_check(): void
-    {
-        $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
-
-        $this->actingAs($admin)
-            ->get('/home')
-            ->assertOk();
-    }
-
-    public function test_submitted_user_sees_pending_redirect_from_middleware(): void
-    {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'submitted',
-            'application_submitted_at' => now(),
-        ]);
-
-        $this->actingAs($user)
-            ->get('/home')
-            ->assertRedirect(route('membership.pending'));
-    }
-
-    public function test_rejected_user_is_redirected_back_to_onboarding(): void
-    {
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'rejected',
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+            ],
+        );
 
         $this->actingAs($user)
             ->get('/home')
             ->assertRedirect(route('membership.signup'));
     }
 
-    public function test_payment_submitted_user_is_redirected_to_payment_page(): void
+    public function test_active_paid_member_can_access_home(): void
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'payment_processing',
-            'membership_id' => 'TMC-M-1447-001',
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'active',
+                'membership_id' => 'TMC-M-1447-001',
+                'payment_status' => 'paid',
+                'activated_at' => now(),
+            ],
+        );
 
         $this->actingAs($user)
             ->get('/home')
-            ->assertRedirect(route('membership.payment'));
+            ->assertOk();
+    }
+
+    public function test_active_user_can_access_home(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'active',
+                'membership_id' => 'TMC-M-1447-001',
+                'activated_at' => now(),
+            ],
+        );
+
+        $this->actingAs($user)
+            ->get('/home')
+            ->assertOk();
+    }
+
+    public function test_admin_bypasses_membership_check(): void
+    {
+        $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $admin->assignRole('admin');
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
+
+        $this->actingAs($admin)
+            ->get('/home')
+            ->assertOk();
     }
 
     // ─── State Machine Tests ────────────────────────────────────────
@@ -335,12 +283,10 @@ class MembershipApplicationTest extends TestCase
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'draft',
-        ]);
+        $profile = $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['display_name' => $user->name, 'onboarding_status' => 'registered'],
+        );
 
         $stateService = app(MembershipStateService::class);
 
@@ -354,56 +300,50 @@ class MembershipApplicationTest extends TestCase
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'pending_review',
-        ]);
+        $profile = $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['display_name' => $user->name, 'onboarding_status' => 'onboarding'],
+        );
 
         $stateService = app(MembershipStateService::class);
 
-        $result = $stateService->transition($profile, 'pending_review');
-        $this->assertEquals('pending_review', $result->onboarding_status);
+        $result = $stateService->transition($profile, 'onboarding');
+        $this->assertEquals('onboarding', $result->onboarding_status);
     }
 
-    public function test_cannot_skip_payment_step(): void
+    public function test_can_transition_from_onboarding_to_active(): void
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
 
-        $this->actingAs($user);
-
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'pending_review',
-        ]);
+        $profile = $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['display_name' => $user->name, 'onboarding_status' => 'onboarding'],
+        );
 
         $stateService = app(MembershipStateService::class);
+        $result = $stateService->transition($profile, 'active');
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('Invalid membership state transition');
-
-        $stateService->transition($profile, 'active');
+        $this->assertEquals('active', $result->onboarding_status);
     }
 
-    public function test_cannot_reject_or_correct_after_approval(): void
+    public function test_cannot_revert_from_active_to_onboarding(): void
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
 
-        $profile = MemberProfile::create([
-            'user_id' => $user->id,
-            'onboarding_status' => 'approved_pending_payment',
-        ]);
+        $profile = $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['display_name' => $user->name, 'onboarding_status' => 'active'],
+        );
 
         $stateService = app(MembershipStateService::class);
 
         $this->expectException(RuntimeException::class);
-        $stateService->transition($profile, 'rejected');
+        $stateService->transition($profile, 'onboarding');
     }
 
-    // ─── Needs Correction Flow ──────────────────────────────────────
+    // ─── Needs Correction Flow (admin role upgrades) ────────────────
 
     public function test_needs_correction_flow(): void
     {
@@ -411,11 +351,11 @@ class MembershipApplicationTest extends TestCase
 
         $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
 
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -425,7 +365,6 @@ class MembershipApplicationTest extends TestCase
         $approvalService = app(MembershipApprovalService::class);
         $profile = $approvalService->needsCorrection($profile, 'Please update your profile photo.');
 
-        $this->assertEquals('needs_correction', $profile->onboarding_status);
         $this->assertEquals('Please update your profile photo.', $profile->needs_correction_notes);
         $this->assertEquals($admin->id, $profile->reviewed_by);
 
@@ -435,44 +374,17 @@ class MembershipApplicationTest extends TestCase
         );
     }
 
-    public function test_user_can_resubmit_after_correction(): void
-    {
-        $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
-
-        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
-        $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
-
-        $data = $this->getCompletedDraftData();
-        $this->createSubmittedProfile($user, $data);
-        $profile = $user->fresh()->memberProfile;
-
-        $this->actingAs($admin);
-        $approvalService = app(MembershipApprovalService::class);
-        $approvalService->needsCorrection($profile, 'Please update your nickname.');
-
-        $this->assertEquals('needs_correction', $user->fresh()->status);
-
-        $profile->refresh();
-        $stateService = app(MembershipStateService::class);
-        $stateService->resubmit($profile, $user);
-
-        $this->assertEquals('pending_review', $profile->fresh()->onboarding_status);
-    }
-
     // ─── Audit Logging Tests ────────────────────────────────────────
 
     public function test_approval_creates_audit_log(): void
     {
         $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
 
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -492,7 +404,7 @@ class MembershipApplicationTest extends TestCase
     {
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -514,11 +426,11 @@ class MembershipApplicationTest extends TestCase
 
         $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
 
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -540,11 +452,11 @@ class MembershipApplicationTest extends TestCase
     {
         $moderator = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $moderator->assignRole('moderator');
-        $moderator->profile()->create(['display_name' => $moderator->name]);
+        $moderator->memberProfile()->updateOrCreate(['display_name' => $moderator->name]);
 
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -559,11 +471,11 @@ class MembershipApplicationTest extends TestCase
     {
         $admin = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $admin->assignRole('admin');
-        $admin->profile()->create(['display_name' => $admin->name]);
+        $admin->memberProfile()->updateOrCreate(['display_name' => $admin->name]);
 
         $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
         $user->assignRole('member');
-        $user->profile()->create(['display_name' => $user->name]);
+        $user->memberProfile()->updateOrCreate(['display_name' => $user->name]);
 
         $data = $this->getCompletedDraftData();
         $this->createSubmittedProfile($user, $data);
@@ -573,11 +485,11 @@ class MembershipApplicationTest extends TestCase
         MembershipApplicationResource::approve($profile, 'M');
 
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
+        $this->assertEquals('active', $profile->onboarding_status);
 
         MembershipApplicationResource::approve($profile->fresh(), 'M');
         $profile->refresh();
-        $this->assertEquals('approved_pending_payment', $profile->onboarding_status);
+        $this->assertEquals('active', $profile->onboarding_status);
     }
 
     // ─── Serial Number Integrity ────────────────────────────────────

@@ -22,9 +22,9 @@ class EditProfile extends Component
 
     public function mount(): void
     {
-        $user = auth()->user()->loadMissing(['profile', 'interests:id', 'goals:id']);
+        $user = auth()->user()->loadMissing(['memberProfile', 'interests:id', 'goals:id']);
 
-        $this->displayName = (string) ($user->profile?->display_name ?: $user->name);
+        $this->displayName = (string) ($user->memberProfile?->display_name ?: $user->name);
         $this->selectedInterests = $user->interests->pluck('id')->all();
         $this->selectedGoals = $user->goals->pluck('id')->all();
     }
@@ -58,14 +58,14 @@ class EditProfile extends Component
             'avatar' => ['nullable', 'image', 'max:2048'],
         ]);
 
-        $user = auth()->user()->loadMissing('profile');
+        $user = auth()->user();
         $profileData = ['display_name' => $this->displayName];
 
         if ($this->avatar) {
             $profileData['avatar_path'] = $this->avatar->store('avatars', 'public');
         }
 
-        $user->profile()->update($profileData);
+        $user->memberProfile()->update($profileData);
         $user->interests()->sync($this->selectedInterests);
         $user->goals()->sync($this->selectedGoals);
 

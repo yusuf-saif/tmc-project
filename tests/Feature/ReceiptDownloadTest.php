@@ -35,7 +35,7 @@ class ReceiptDownloadTest extends TestCase
     {
         return MemberProfile::create([
             'user_id' => $this->member->id,
-            'onboarding_status' => 'payment_processing',
+            'onboarding_status' => 'onboarding',
             'payment_proof_path' => $path,
             'preferred_billing_cycle' => 'monthly',
         ]);

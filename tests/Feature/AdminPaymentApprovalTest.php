@@ -59,22 +59,19 @@ class AdminPaymentApprovalTest extends TestCase
 
     public function test_payment_page_shows_payment_statuses(): void
     {
-        $this->createProfileWithStatus('pending_review');
-        $approved = $this->createProfileWithStatus('approved_pending_payment');
-        $processing = $this->createProfileWithStatus('payment_processing');
-        $failed = $this->createProfileWithStatus('payment_failed');
-        $this->createProfileWithStatus('active');
+        $onboarding = $this->createProfileWithStatus('onboarding');
+        $active = $this->createProfileWithStatus('active');
 
         $this->actingAs($this->admin);
 
         Livewire::test(ManagePayments::class)
-            ->assertCanSeeTableRecords([$approved, $processing, $failed])
-            ->assertCountTableRecords(3);
+            ->assertCanSeeTableRecords([$onboarding])
+            ->assertCountTableRecords(1);
     }
 
     public function test_payment_page_has_view_action_linking_to_application(): void
     {
-        $profile = $this->createProfileWithStatus('payment_processing');
+        $this->createProfileWithStatus('onboarding');
 
         $this->actingAs($this->admin);
 

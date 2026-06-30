@@ -51,10 +51,12 @@ class MembershipSignupServiceTest extends TestCase
         $user = $profile->user;
         $this->assertEquals('Aisha Member', $user->name);
         $this->assertEquals('aisha@example.com', $user->email);
-        $this->assertEquals('pending_review', $user->status);
+        $this->assertEquals('active', $user->status);
+        $this->assertNotNull($profile->membership_id);
+        $this->assertStringStartsWith('TMC-M-', $profile->membership_id);
         $this->assertNotNull($user->referral_code);
         $this->assertTrue($user->hasRole('member'));
-        $this->assertNotNull($user->profile);
+        $this->assertNotNull($user->memberProfile);
     }
 
     public function test_register_hashes_password(): void
@@ -99,7 +101,7 @@ class MembershipSignupServiceTest extends TestCase
         $this->assertCount(2, $user->goals);
     }
 
-    public function test_register_sets_pending_review_status(): void
+    public function test_register_sets_active_status(): void
     {
         $service = app(MembershipSignupService::class);
 
@@ -112,9 +114,9 @@ class MembershipSignupServiceTest extends TestCase
             data: [],
         );
 
-        $this->assertEquals('pending_review', $profile->onboarding_status);
-        $this->assertEquals('pending_review', $profile->user->status);
-        $this->assertNotNull($profile->submitted_at);
+        $this->assertEquals('active', $profile->onboarding_status);
+        $this->assertEquals('active', $profile->user->status);
+        $this->assertNotNull($profile->activated_at);
     }
 
     public function test_register_assigns_member_role(): void
@@ -191,7 +193,7 @@ class MembershipSignupServiceTest extends TestCase
             'user_id' => $profile->user_id,
             'first_name' => 'Aisha',
             'last_name' => 'Member',
-            'onboarding_status' => 'pending_review',
+            'onboarding_status' => 'active',
         ]);
     }
 }

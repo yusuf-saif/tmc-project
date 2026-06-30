@@ -3,7 +3,7 @@
 // Suppress Laravel 11 vendor deprecations on PHP 8.5 until the framework line is upgraded.
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
-use App\Http\Middleware\EnsureMembershipComplete;
+use App\Http\Middleware\EnsureNotSuspendedFromRestrictedAreas;
 use App\Http\Middleware\EnsureUserStateRedirect;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
@@ -21,8 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->alias([
-            'onboarded' => EnsureMembershipComplete::class,
             'ensure.user.state' => EnsureUserStateRedirect::class,
+            'not-suspended' => EnsureNotSuspendedFromRestrictedAreas::class,
         ]);
     })
     ->withProviders([

@@ -2,17 +2,17 @@
 
 namespace App\Listeners;
 
+use App\Events\MembershipActivated;
 use App\Models\JannahCoinsLedger;
 use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserReferral;
 use App\Services\AuditLogService;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\DB;
 
 class AwardReferralCoins
 {
-    public function handle(Verified $event): void
+    public function handle(MembershipActivated $event): void
     {
         $user = $event->user;
 

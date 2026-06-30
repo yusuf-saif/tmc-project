@@ -26,15 +26,15 @@ class PlaywrightSeeder extends Seeder
 
         $user->syncRoles(['member']);
 
-        $user->profile()->updateOrCreate(
+        $user->memberProfile()->updateOrCreate(
             ['user_id' => $user->id],
             [
                 'display_name' => 'Test Member',
                 'first_name' => 'Test',
                 'last_name' => 'Member',
-                'country' => 'Nigeria',
-                'state' => 'Lagos',
-                'membership_status' => 'active',
+                'location_country' => 'Nigeria',
+                'location_state' => 'Lagos',
+                'onboarding_status' => 'active',
                 'membership_id' => 'TMC-M-1447-001',
                 'onboarding_completed_at' => now(),
             ],

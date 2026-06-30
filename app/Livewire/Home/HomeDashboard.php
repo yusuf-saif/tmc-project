@@ -61,6 +61,7 @@ class HomeDashboard extends Component
             'dailyPhrase' => $this->getDailyPhrase(),
             'balance' => $user ? CoinsService::getBalance($user) : 0,
             'events' => $this->upcomingEvents(),
+            'onboardingStatus' => $user->profile?->onboarding_status,
         ])->layout('layouts.app', [
             'title' => 'Home',
         ]);

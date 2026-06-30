@@ -88,7 +88,7 @@ class AdminDashboardTest extends TestCase
             'email_verified_at' => now(),
         ]);
         $member->assignRole('member');
-        $member->profile()->create(['display_name' => $member->name, 'onboarding_completed_at' => now()]);
+        $member->memberProfile()->updateOrCreate(['display_name' => $member->name, 'onboarding_completed_at' => now()]);
 
         $this->withoutMiddleware(ValidateCsrfToken::class);
 
@@ -181,7 +181,7 @@ class AdminDashboardTest extends TestCase
         ]);
 
         $user->assignRole($role);
-        $user->profile()->create([
+        $user->memberProfile()->updateOrCreate([
             'display_name' => $user->name,
             'onboarding_completed_at' => now(),
         ]);

@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use App\Events\MembershipSubmitted;
+use App\Events\MembershipActivated;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
 use App\Models\User;
-use App\Models\UserProfile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -37,7 +36,7 @@ class MembershipSignupService
                 'name' => trim("{$firstName} {$lastName}"),
                 'email' => $email,
                 'password' => $passwordIsHashed ? $password : Hash::make($password),
-                'status' => 'pending_review',
+                'status' => 'active',
                 'referral_code' => $this->generateReferralCode(),
                 'referred_by' => $referredBy,
             ]);
@@ -50,13 +49,11 @@ class MembershipSignupService
             }
             $user->assignRole('member');
 
-            UserProfile::create([
-                'user_id' => $user->id,
-                'display_name' => trim("{$firstName} {$lastName}"),
-            ]);
+            $idData = MembershipIdService::generate('member');
 
             $profile = MemberProfile::create([
                 'user_id' => $user->id,
+                'display_name' => trim("{$firstName} {$lastName}"),
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'nickname' => $data['nickname'] ?? null,
@@ -70,9 +67,15 @@ class MembershipSignupService
                 'fb_username' => $data['fb_username'] ?? null,
                 'x_username' => $data['x_username'] ?? null,
                 'tiktok_username' => $data['tiktok_username'] ?? null,
-                'onboarding_status' => 'pending_review',
+                'onboarding_status' => 'active',
+                'membership_id' => $idData['membership_id'],
+                'membership_type' => 'M',
+                'hijri_year' => $idData['membership_hijri_year'],
+                'membership_serial' => $idData['membership_serial'],
+                'activated_at' => now(),
                 'submitted_at' => now(),
                 'preferred_billing_cycle' => $data['preferred_billing_cycle'] ?? 'monthly',
+                'payment_status' => 'free',
             ]);
 
             $interestSlugs = $data['selected_interests'] ?? [];
@@ -95,15 +98,16 @@ class MembershipSignupService
 
         Auth::login($user);
 
-        Log::info('MembershipSignupService: user created and pending review', [
+        Log::info('MembershipSignupService: user created and activated', [
             'user_id' => $user->id,
             'profile_id' => $profile->id,
+            'membership_id' => $profile->membership_id,
         ]);
 
         try {
-            MembershipSubmitted::dispatch($profile, $user);
+            MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
         } catch (\Throwable $e) {
-            Log::error('MembershipSignupService: failed to dispatch submitted event', [
+            Log::error('MembershipSignupService: failed to dispatch activated event', [
                 'profile_id' => $profile->id,
                 'error' => $e->getMessage(),
             ]);

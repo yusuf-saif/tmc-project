@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Events\MembershipSubmitted;
 use App\Models\Goal;
 use App\Models\Interest;
-use App\Models\MemberProfile;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -47,10 +46,7 @@ class MembershipProcessingJob implements ShouldQueue
         Log::debug('MembershipProcessingJob: step 1 — syncing interests', ['user_id' => $user->id]);
         $this->syncInterestsAndGoals($user);
 
-        Log::debug('MembershipProcessingJob: step 2 — syncing legacy profile', ['user_id' => $user->id]);
-        $this->syncLegacyProfile($user, $profile);
-
-        Log::debug('MembershipProcessingJob: step 3 — dispatching event', ['user_id' => $user->id]);
+        Log::debug('MembershipProcessingJob: step 2 — dispatching event', ['user_id' => $user->id]);
         $this->dispatchSubmittedEvent($profile, $user);
 
         Log::debug('MembershipProcessingJob: complete', ['user_id' => $user->id]);
@@ -78,8 +74,6 @@ class MembershipProcessingJob implements ShouldQueue
             ]);
         }
     }
-
-    protected function syncLegacyProfile(User $user, MemberProfile $profile): void
     {
         try {
             $legacy = $user->profile;

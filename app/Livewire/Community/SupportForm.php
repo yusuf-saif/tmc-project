@@ -29,7 +29,7 @@ class SupportForm extends Component
         abort_unless(in_array($type, ['volunteer', 'mentorship'], true), 404);
 
         $this->type = $type;
-        $user = auth()->user()->loadMissing('profile');
+        $user = auth()->user();
 
         $this->existing = SupportApplication::query()
             ->where('user_id', auth()->id())
@@ -37,7 +37,7 @@ class SupportForm extends Component
             ->where('status', 'pending')
             ->first();
 
-        $this->name = (string) ($user->profile?->display_name ?: $user->name);
+        $this->name = (string) ($user->memberProfile?->display_name ?: $user->name);
         $this->email = (string) $user->email;
     }
 

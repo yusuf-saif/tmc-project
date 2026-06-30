@@ -119,7 +119,7 @@ class CommunityProfileTest extends TestCase
 
     public function test_legacy_card_contains_member_name(): void
     {
-        $this->member->profile()->update(['display_name' => 'Legacy Aisha']);
+        $this->member->memberProfile()->update(['display_name' => 'Legacy Aisha']);
 
         $this->actingAs($this->member)
             ->get('/profile/legacy-card')
@@ -143,7 +143,7 @@ class CommunityProfileTest extends TestCase
             'announcements' => true,
             'coins' => false,
             'community' => true,
-        ], $this->member->profile->notification_preferences);
+        ], $this->member->memberProfile->notification_preferences);
     }
 
     public function test_admin_can_load_phase_six_filament_resources(): void
@@ -163,9 +163,9 @@ class CommunityProfileTest extends TestCase
         ]);
 
         $user->assignRole($role);
-        $user->profile()->create([
+        $user->memberProfile()->updateOrCreate([
             'display_name' => $user->name,
-            'membership_status' => 'active',
+            'onboarding_status' => 'active',
             'onboarding_completed_at' => now(),
             'notification_preferences' => [
                 'events' => true,

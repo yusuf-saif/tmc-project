@@ -107,11 +107,14 @@ class EventRsvpTest extends TestCase
             'referral_code' => 'MEMB'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
         ]);
         $user->assignRole('member');
-        $user->profile()->create([
-            'display_name' => $user->name,
-            'membership_status' => 'active',
-            'onboarding_completed_at' => now(),
-        ]);
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'active',
+                'onboarding_completed_at' => now(),
+            ],
+        );
 
         return $user;
     }

@@ -30,7 +30,7 @@ class ManagePayments extends Page implements HasTable
         return $table
             ->query(
                 MemberProfile::query()
-                    ->whereIn('onboarding_status', ['approved_pending_payment', 'payment_processing', 'payment_failed'])
+                    ->where('onboarding_status', 'onboarding')
                     ->with('user')
             )
             ->defaultSort('updated_at', 'desc')
@@ -49,15 +49,11 @@ class ManagePayments extends Page implements HasTable
                     ->label('Status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'approved_pending_payment' => 'info',
-                        'payment_processing' => 'warning',
-                        'payment_failed' => 'danger',
+                        'onboarding' => 'warning',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'approved_pending_payment' => 'Awaiting Payment',
-                        'payment_processing' => 'Processing',
-                        'payment_failed' => 'Failed',
+                        'onboarding' => 'Awaiting Payment',
                         default => str($state)->replace('_', ' ')->title(),
                     }),
                 Tables\Columns\TextColumn::make('paystack_reference')
@@ -78,9 +74,7 @@ class ManagePayments extends Page implements HasTable
                 Tables\Filters\SelectFilter::make('onboarding_status')
                     ->label('Status')
                     ->options([
-                        'approved_pending_payment' => 'Awaiting Payment',
-                        'payment_processing' => 'Processing',
-                        'payment_failed' => 'Failed',
+                        'onboarding' => 'Awaiting Payment',
                     ]),
             ])
             ->actions([

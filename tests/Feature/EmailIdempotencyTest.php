@@ -33,7 +33,7 @@ class EmailIdempotencyTest extends TestCase
 
         $this->profile = MemberProfile::create([
             'user_id' => $this->user->id,
-            'onboarding_status' => 'payment_processing',
+            'onboarding_status' => 'onboarding',
             'membership_id' => 'TMC-M-1447-001',
             'preferred_billing_cycle' => 'monthly',
         ]);

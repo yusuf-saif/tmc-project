@@ -10,6 +10,24 @@
     </div>
   </div>
 
+  {{-- Free-plan banner --}}
+  @if($onboardingStatus === 'active')
+  <div x-data="{ dismissed: false }" x-show="!dismissed"
+       x-transition.opacity.duration.300ms
+       style="margin-bottom:12px;background:var(--gold);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:16px;">✦</span>
+    <p style="flex:1;font-size:13px;font-weight:500;color:var(--teal-dk);line-height:1.4;">
+      You're on a free plan —
+      <a href="{{ route('membership.payment') }}" style="color:var(--teal-dk);font-weight:700;text-decoration:underline;">
+        upgrade to unlock full access →</a>
+    </p>
+    <button @click="dismissed = true"
+            style="background:none;border:none;color:var(--teal-dk);font-size:18px;cursor:pointer;padding:0;line-height:1;">
+      ×
+    </button>
+  </div>
+  @endif
+
   {{-- Coins card --}}
   <a href="{{ url('/profile?tab=wallet') }}" class="coins-card anim-fade-up delay-1">
     <div style="display:flex;align-items:center;gap:10px;">

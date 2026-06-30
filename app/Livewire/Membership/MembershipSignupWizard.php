@@ -5,10 +5,8 @@ namespace App\Livewire\Membership;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
-use App\Models\MembershipOnboardingDraft;
 use App\Models\Setting;
 use App\Services\MembershipSignupService;
-use App\Services\MembershipStateService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -16,8 +14,6 @@ use Livewire\Component;
 
 class MembershipSignupWizard extends Component
 {
-    public string $draftUuid = '';
-
     public int $step = 1;
 
     public string $firstName = '';
@@ -60,8 +56,6 @@ class MembershipSignupWizard extends Component
 
     public bool $submitting = false;
 
-    public bool $isCorrection = false;
-
     public array $nigerianStates = [
         'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
         'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
@@ -88,7 +82,7 @@ class MembershipSignupWizard extends Component
 
     public array $billingOptions = [];
 
-    public function mount(?string $ref = null, ?string $draft = null)
+    public function mount(?string $ref = null): void
     {
         $this->referralCode = $ref ?? request()->query('ref', '');
 
@@ -96,100 +90,14 @@ class MembershipSignupWizard extends Component
             $user = auth()->user();
             $profile = $user->memberProfile;
 
-            if ($profile) {
-                // Correction mode: user was asked to fix their application
-                if ($profile->onboarding_status === 'needs_correction') {
-                    $this->loadFromExistingProfile($profile);
-                    $this->loadBillingOptions();
-                    $this->isCorrection = true;
+            if ($profile && $profile->onboarding_status === 'active') {
+                $this->redirect(route('home'));
 
-                    return;
-                }
-
-                // Already submitted or in payment flow — redirect
-                if (in_array($profile->onboarding_status, [
-                    'pending_review', 'submitted', 'under_review',
-                    'approved_pending_payment', 'payment_processing', 'payment_failed',
-                    'active',
-                ], true)) {
-                    if (in_array($profile->onboarding_status, ['approved_pending_payment', 'payment_processing', 'payment_failed'], true)) {
-                        $this->redirect(route('membership.payment'));
-                    } else {
-                        $this->redirect(route('membership.pending'));
-                    }
-
-                    return;
-                }
+                return;
             }
         }
 
-        $draftParam = $draft ?? request()->query('draft');
-
-        if ($draftParam) {
-            $draftModel = MembershipOnboardingDraft::findOrFail($draftParam);
-            $this->loadFromDraft($draftModel);
-            $this->loadBillingOptions();
-
-            return;
-        }
-
-        $draftModel = MembershipOnboardingDraft::create([
-            'payload' => [],
-            'step' => 1,
-            'status' => 'draft',
-            'referral_code' => $this->referralCode ?: null,
-        ]);
-
-        $this->redirect(route('membership.signup', array_filter([
-            'draft' => $draftModel->id,
-            'ref' => $this->referralCode ?: null,
-        ])));
-    }
-
-    protected function loadFromExistingProfile(MemberProfile $profile): void
-    {
-        $this->step = 6;
-        $this->firstName = $profile->first_name ?? '';
-        $this->lastName = $profile->last_name ?? '';
-        $this->email = $profile->user?->email ?? '';
-        $this->locationCountry = $profile->location_country ?? 'Nigeria';
-        $this->locationState = $profile->location_state ?? '';
-        $this->locationInternational = $profile->location_international ?? '';
-        $this->ageGroup = $profile->age_group ?? '';
-        $this->maritalStatus = $profile->marital_status ?? '';
-        $this->phone = $profile->phone ?? '';
-        $this->igUsername = $profile->ig_username ?? '';
-        $this->fbUsername = $profile->fb_username ?? '';
-        $this->xUsername = $profile->x_username ?? '';
-        $this->tiktokUsername = $profile->tiktok_username ?? '';
-        $this->preferredBillingCycle = $profile->preferred_billing_cycle ?? 'monthly';
-        $this->selectedInterests = $profile->user?->interests?->pluck('slug')?->toArray() ?? [];
-        $this->selectedGoals = $profile->user?->goals?->pluck('slug')?->toArray() ?? [];
-    }
-
-    protected function loadFromDraft(MembershipOnboardingDraft $draft): void
-    {
-        $this->draftUuid = $draft->id;
-        $this->step = $draft->step;
-        $this->referralCode = $draft->referral_code ?? $this->referralCode;
-
-        $payload = $draft->payload;
-        $this->firstName = $payload['first_name'] ?? '';
-        $this->lastName = $payload['last_name'] ?? '';
-        $this->email = $payload['email'] ?? '';
-        $this->locationCountry = $payload['location_country'] ?? 'Nigeria';
-        $this->locationState = $payload['location_state'] ?? '';
-        $this->locationInternational = $payload['location_international'] ?? '';
-        $this->ageGroup = $payload['age_group'] ?? '';
-        $this->maritalStatus = $payload['marital_status'] ?? '';
-        $this->phone = $payload['phone'] ?? '';
-        $this->igUsername = $payload['ig_username'] ?? '';
-        $this->fbUsername = $payload['fb_username'] ?? '';
-        $this->xUsername = $payload['x_username'] ?? '';
-        $this->tiktokUsername = $payload['tiktok_username'] ?? '';
-        $this->preferredBillingCycle = $payload['preferred_billing_cycle'] ?? 'monthly';
-        $this->selectedInterests = $payload['selected_interests'] ?? [];
-        $this->selectedGoals = $payload['selected_goals'] ?? [];
+        $this->loadBillingOptions();
     }
 
     protected function loadBillingOptions(): void
@@ -235,53 +143,9 @@ class MembershipSignupWizard extends Component
     {
         $this->validateCurrentStep();
 
-        if ($this->step === 1) {
-            $this->saveStepToDraft(['password' => Hash::make($this->password)]);
-            $this->password = '';
-            $this->passwordConfirmation = '';
-        } else {
-            $this->saveStepToDraft();
-        }
-
         if ($this->step < 6) {
             $this->step++;
         }
-    }
-
-    protected function saveStepToDraft(array $extra = []): void
-    {
-        $draft = MembershipOnboardingDraft::find($this->draftUuid);
-
-        if (! $draft) {
-            return;
-        }
-
-        $draft->update([
-            'step' => $this->step,
-            'payload' => array_merge($draft->payload, $this->draftPayload(), $extra),
-        ]);
-    }
-
-    protected function draftPayload(): array
-    {
-        return [
-            'first_name' => $this->firstName,
-            'last_name' => $this->lastName,
-            'email' => $this->email,
-            'location_country' => $this->locationCountry,
-            'location_state' => $this->locationState,
-            'location_international' => $this->locationInternational,
-            'age_group' => $this->ageGroup,
-            'marital_status' => $this->maritalStatus,
-            'phone' => $this->phone,
-            'ig_username' => $this->igUsername,
-            'fb_username' => $this->fbUsername,
-            'x_username' => $this->xUsername,
-            'tiktok_username' => $this->tiktokUsername,
-            'preferred_billing_cycle' => $this->preferredBillingCycle,
-            'selected_interests' => $this->selectedInterests,
-            'selected_goals' => $this->selectedGoals,
-        ];
     }
 
     public function previousStep(): void
@@ -295,45 +159,18 @@ class MembershipSignupWizard extends Component
             return;
         }
 
-        if ($this->isCorrection) {
-            $this->submitCorrection();
-
-            return;
-        }
-
-        $draft = MembershipOnboardingDraft::find($this->draftUuid);
-
-        if (! $draft || $draft->status === 'submitted') {
-            $this->redirect(route('membership.pending'));
-
-            return;
-        }
-
         $this->submitting = true;
 
         $this->validate($this->fullValidationRules());
-
-        $passwordHash = $draft->payload['password'] ?? '';
-
-        if (empty($passwordHash)) {
-            if (! empty($this->password)) {
-                $passwordHash = Hash::make($this->password);
-            } else {
-                $this->submitting = false;
-                $this->addError('password', 'Session expired. Please start over from step 1.');
-
-                return;
-            }
-        }
 
         try {
             $service->register(
                 firstName: $this->firstName,
                 lastName: $this->lastName,
                 email: $this->email,
-                password: $passwordHash,
+                password: Hash::make($this->password),
                 referralCode: $this->referralCode ?: null,
-                data: $this->payload(),
+                data: $this->dataPayload(),
                 passwordIsHashed: true,
             );
         } catch (\Throwable $e) {
@@ -346,81 +183,9 @@ class MembershipSignupWizard extends Component
             return;
         }
 
-        $payload = $draft->payload;
-        unset($payload['password']);
-        $draft->update([
-            'status' => 'submitted',
-            'submitted_at' => now(),
-            'payload' => $payload,
-        ]);
-
         $this->submitting = false;
 
-        $this->redirect(route('membership.pending'));
-    }
-
-    public function submitCorrection(): void
-    {
-        if ($this->submitting) {
-            return;
-        }
-
-        $user = auth()->user();
-        $profile = $user->memberProfile;
-
-        if (! $profile || $profile->onboarding_status !== 'needs_correction') {
-            $this->redirect(route('membership.pending'));
-
-            return;
-        }
-
-        $this->submitting = true;
-
-        try {
-            $this->validate($this->fullValidationRules());
-
-            $profile->forceFill([
-                'first_name' => $this->firstName,
-                'last_name' => $this->lastName,
-                'location_country' => $this->locationCountry,
-                'location_state' => $this->locationState === '' ? null : $this->locationState,
-                'location_international' => $this->locationInternational === '' ? null : $this->locationInternational,
-                'age_group' => $this->ageGroup,
-                'marital_status' => $this->maritalStatus,
-                'phone' => $this->phone,
-                'ig_username' => $this->igUsername === '' ? null : $this->igUsername,
-                'fb_username' => $this->fbUsername === '' ? null : $this->fbUsername,
-                'x_username' => $this->xUsername === '' ? null : $this->xUsername,
-                'tiktok_username' => $this->tiktokUsername === '' ? null : $this->tiktokUsername,
-                'preferred_billing_cycle' => $this->preferredBillingCycle,
-            ])->save();
-
-            $interestIds = Interest::whereIn('slug', $this->selectedInterests)->pluck('id')->all();
-            $user->interests()->sync($interestIds);
-
-            $goalIds = Goal::whereIn('slug', $this->selectedGoals)->pluck('id')->all();
-            $user->goals()->sync($goalIds);
-
-            app(MembershipStateService::class)->resubmit($profile, $user);
-
-            Log::info('MembershipSignupWizard: correction submitted', [
-                'user_id' => $user->id,
-                'profile_id' => $profile->id,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('MembershipSignupWizard: correction failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-            $this->submitting = false;
-            $this->addError('submit', 'Could not resubmit. Please try again.');
-
-            return;
-        }
-
-        $this->submitting = false;
-
-        $this->redirect(route('membership.pending'));
+        $this->redirect(route('home'));
     }
 
     public function getProgressPercentageProperty(): int
@@ -428,7 +193,7 @@ class MembershipSignupWizard extends Component
         return (int) round(($this->step / 6) * 100);
     }
 
-    protected function payload(): array
+    protected function dataPayload(): array
     {
         return [
             'nickname' => '',
@@ -452,17 +217,11 @@ class MembershipSignupWizard extends Component
 
     protected function fullValidationRules(): array
     {
-        $hasPassword = false;
-        if ($this->draftUuid) {
-            $draft = MembershipOnboardingDraft::find($this->draftUuid);
-            $hasPassword = $draft && ! empty($draft->payload['password'] ?? '');
-        }
-
         return [
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-            'password' => $hasPassword || $this->isCorrection ? ['nullable'] : ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
+            'password' => ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
             'locationCountry' => ['required', 'string', 'max:255'],
             'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
             'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
@@ -482,7 +241,7 @@ class MembershipSignupWizard extends Component
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-                'password' => $this->isCorrection ? ['nullable'] : ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
+                'password' => ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],
@@ -519,7 +278,7 @@ class MembershipSignupWizard extends Component
             'interests' => $interests,
             'goals' => $goals,
         ])->layout('layouts.guest-livewire', [
-            'title' => $this->isCorrection ? 'Update Application' : 'Signup',
+            'title' => 'Signup',
         ]);
     }
 }

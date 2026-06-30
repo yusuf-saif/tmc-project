@@ -26,7 +26,7 @@ class MembershipIdService
 
     public static function determineMembershipType(User $user): string
     {
-        $profile = $user->memberProfile ?? $user->profile;
+        $profile = $user->memberProfile;
 
         if ($profile?->age_group === 'under_18') {
             return 'SM';

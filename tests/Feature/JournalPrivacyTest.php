@@ -98,7 +98,7 @@ class JournalPrivacyTest extends TestCase
 
     public function test_admin_cannot_access_journal_via_http(): void
     {
-        $this->admin->profile()->create([
+        $this->admin->memberProfile()->updateOrCreate([
             'display_name' => $this->admin->name,
             'onboarding_completed_at' => now(),
         ]);
@@ -136,7 +136,7 @@ class JournalPrivacyTest extends TestCase
             'referral_code' => $referralCode,
         ]);
         $user->assignRole('member');
-        $user->profile()->create([
+        $user->memberProfile()->updateOrCreate([
             'display_name' => $user->name,
             'onboarding_completed_at' => now(),
         ]);

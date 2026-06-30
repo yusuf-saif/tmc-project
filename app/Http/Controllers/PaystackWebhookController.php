@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\MembershipActivated;
 use App\Models\MemberProfile;
 use App\Services\AuditLogService;
+use App\Services\MembershipStateService;
 use App\Services\PaystackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PaystackWebhookController extends Controller
@@ -94,12 +93,14 @@ class PaystackWebhookController extends Controller
             return response()->json(['status' => 'already_verified']);
         }
 
-        // Step 3: Validate status — must be in a pre-activation state
-        if (! in_array($profile->onboarding_status, ['approved_pending_payment', 'payment_processing'], true)) {
+        // Step 3: Validate status — must be in a state where payment is accepted
+        $allowedForWebhook = ['onboarding', 'active', 'suspended'];
+
+        if (! in_array($profile->onboarding_status, $allowedForWebhook, true)) {
             Log::warning('PaystackWebhook: profile not in approvable state', [
                 'profile_id' => $profile->id,
                 'status' => $profile->onboarding_status,
-                'expected' => 'approved_pending_payment or payment_processing',
+                'expected' => implode(', ', $allowedForWebhook),
             ]);
 
             return response()->json(['error' => 'Profile not in approvable state'], 400);
@@ -127,84 +128,35 @@ class PaystackWebhookController extends Controller
                     'paid' => $paidAmount,
                 ]);
 
-                $profile->forceFill(['onboarding_status' => 'payment_failed'])->saveQuietly();
-
                 AuditLogService::log(
                     action: 'paystack_amount_mismatch',
                     model: $profile,
                     old: ['onboarding_status' => $profile->onboarding_status],
-                    new: ['onboarding_status' => 'payment_failed', 'reason' => "Paid {$paidAmount} instead of {$expectedAmount}"],
+                    new: ['onboarding_status' => $profile->onboarding_status, 'reason' => "Paid {$paidAmount} instead of {$expectedAmount}"],
                     targetUserId: $profile->user_id,
                 );
 
                 return response()->json(['error' => 'Payment amount does not match billing cycle'], 400);
             }
 
-            $nextDue = match ($billingCycle) {
-                'quarterly' => now()->addMonths(3),
-                'yearly' => now()->addYear(),
-                default => now()->addMonth(),
-            };
-
-            // Step 5: Activate with row-level locking for safety
-            DB::transaction(function () use ($profile, $reference, $nextDue): void {
-                $locked = MemberProfile::where('id', $profile->id)->lockForUpdate()->first();
-
-                // Double-check idempotency under lock
-                if ($locked->payment_verified_at !== null) {
-                    Log::info('PaystackWebhook: row-lock idempotency check passed, already verified');
-
-                    return;
-                }
-
-                $locked->update([
-                    'onboarding_status' => 'active',
-                    'paystack_reference' => $reference,
-                    'payment_verified_at' => now(),
-                    'activated_at' => now(),
-                    'next_due_at' => $nextDue,
-                    'payment_source' => 'paystack',
-                ]);
-
-                $user = $locked->user;
-                if ($user) {
-                    $user->forceFill(['status' => 'active'])->saveQuietly();
-                }
-
-                $legacy = $user?->profile;
-                if ($legacy) {
-                    $legacy->forceFill([
-                        'membership_status' => 'active',
-                        'payment_status' => 'paid',
-                        'membership_fee_paid_at' => now(),
-                    ])->saveQuietly();
-                }
-
-                Log::info('PaystackWebhook: DB transaction complete - profile activated', [
-                    'profile_id' => $locked->id,
-                    'user_id' => $locked->user_id,
-                    'membership_id' => $locked->membership_id,
-                ]);
-            });
+            // Step 5: Record payment via shared service
+            app(MembershipStateService::class)->recordPayment($profile, $profile->user, $billingCycle);
 
             $profile->refresh();
 
             AuditLogService::log(
                 action: 'paystack_webhook_activated',
                 model: $profile,
-                old: ['onboarding_status' => 'approved_pending_payment'],
-                new: ['onboarding_status' => 'active', 'membership_id' => $profile->membership_id],
+                old: ['onboarding_status' => 'onboarding'],
+                new: ['onboarding_status' => $profile->onboarding_status, 'membership_id' => $profile->membership_id],
                 targetUserId: $profile->user_id,
             );
-
-            // Step 6: Dispatch event — listener sends email (not in webhook directly)
-            MembershipActivated::dispatch($profile->user, $profile->membership_id ?? 'N/A', $profile->user);
 
             Log::info('PaystackWebhook: membership activated successfully', [
                 'user_id' => $profile->user_id,
                 'reference' => $reference,
-                'billing_cycle' => $billingCycle,
-                'next_due_at' => $nextDue->toIso8601String(),
+                'plan_label' => $billingCycle,
+                'current_period_ends_at' => $profile->current_period_ends_at?->toIso8601String(),
             ]);
 
             return response()->json(['status' => 'activated']);
@@ -215,9 +167,9 @@ class PaystackWebhookController extends Controller
             ]);
 
             try {
-                $profile->forceFill(['onboarding_status' => 'payment_failed'])->saveQuietly();
+                $profile->saveQuietly();
             } catch (\Throwable $inner) {
-                Log::warning('PaystackWebhook: could not set payment_failed', ['error' => $inner->getMessage()]);
+                Log::warning('PaystackWebhook: could not save profile after error', ['error' => $inner->getMessage()]);
             }
 
             return response()->json(['error' => 'Activation failed'], 500);
