@@ -33,7 +33,7 @@ class PaymentPage extends Component
         $status = $memberProfile?->onboarding_status;
 
         if (! $status) {
-            redirect()->route('membership.signup');
+            $this->redirect(route('membership.signup'));
 
             return;
         }
@@ -41,7 +41,7 @@ class PaymentPage extends Component
         $allowedStatuses = ['onboarding', 'active', 'suspended'];
 
         if (! in_array($status, $allowedStatuses, true)) {
-            redirect()->route('home');
+            $this->redirect(route('home'));
 
             return;
         }
@@ -60,7 +60,7 @@ class PaymentPage extends Component
         $allowedForVerification = ['onboarding', 'active', 'suspended'];
 
         if ($status === 'member') {
-            $this->redirect(route('home'));
+            $this->dispatch('redirect-home');
 
             return;
         }
@@ -77,7 +77,7 @@ class PaymentPage extends Component
         $updatedStatus = $profile->onboarding_status;
 
         if ($updatedStatus === 'member') {
-            $this->redirect(route('home'));
+            $this->dispatch('redirect-home');
 
             return;
         }
