@@ -5,7 +5,6 @@ namespace App\Livewire\Membership;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
-use App\Models\Setting;
 use App\Services\MembershipSignupService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -48,8 +47,6 @@ class MembershipSignupWizard extends Component
 
     public string $tiktokUsername = '';
 
-    public string $preferredBillingCycle = 'monthly';
-
     public array $selectedInterests = [];
 
     public array $selectedGoals = [];
@@ -80,7 +77,12 @@ class MembershipSignupWizard extends Component
         'widowed' => 'Widowed',
     ];
 
-    public array $billingOptions = [];
+    public function boot(): void
+    {
+        if ($this->step > 5) {
+            $this->step = 1;
+        }
+    }
 
     public function mount(?string $ref = null): void
     {
@@ -90,35 +92,12 @@ class MembershipSignupWizard extends Component
             $user = auth()->user();
             $profile = $user->memberProfile;
 
-            if ($profile && $profile->onboarding_status === 'active') {
+            if ($profile && in_array($profile->onboarding_status, ['active', 'member'], true)) {
                 $this->redirect(route('home'));
 
                 return;
             }
         }
-
-        $this->loadBillingOptions();
-    }
-
-    protected function loadBillingOptions(): void
-    {
-        $this->billingOptions = [
-            'monthly' => [
-                'label' => 'Monthly',
-                'price' => (int) Setting::get('membership_fee_monthly'),
-                'interval' => 'per month',
-            ],
-            'quarterly' => [
-                'label' => 'Quarterly',
-                'price' => (int) Setting::get('membership_fee_quarterly'),
-                'interval' => 'per quarter',
-            ],
-            'yearly' => [
-                'label' => 'Yearly',
-                'price' => (int) Setting::get('membership_fee_yearly'),
-                'interval' => 'per year',
-            ],
-        ];
     }
 
     public function toggleInterest(string $slug): void
@@ -143,7 +122,7 @@ class MembershipSignupWizard extends Component
     {
         $this->validateCurrentStep();
 
-        if ($this->step < 6) {
+        if ($this->step < 5) {
             $this->step++;
         }
     }
@@ -190,7 +169,7 @@ class MembershipSignupWizard extends Component
 
     public function getProgressPercentageProperty(): int
     {
-        return (int) round(($this->step / 6) * 100);
+        return (int) round(($this->step / 5) * 100);
     }
 
     protected function dataPayload(): array
@@ -209,7 +188,6 @@ class MembershipSignupWizard extends Component
             'fb_username' => $this->fbUsername,
             'x_username' => $this->xUsername,
             'tiktok_username' => $this->tiktokUsername,
-            'preferred_billing_cycle' => $this->preferredBillingCycle,
             'selected_interests' => $this->selectedInterests,
             'selected_goals' => $this->selectedGoals,
         ];
@@ -228,7 +206,6 @@ class MembershipSignupWizard extends Component
             'ageGroup' => ['required', 'string', 'max:50'],
             'maritalStatus' => ['required', 'string', 'max:50'],
             'phone' => ['required', 'string', 'max:30'],
-            'preferredBillingCycle' => ['required', 'string', Rule::in(['monthly', 'quarterly', 'yearly'])],
             'selectedInterests' => ['required', 'array', 'min:1', 'max:5'],
             'selectedGoals' => ['required', 'array', 'min:1'],
         ];
@@ -255,9 +232,6 @@ class MembershipSignupWizard extends Component
             ],
             4 => [],
             5 => [
-                'preferredBillingCycle' => ['required', 'string', Rule::in(['monthly', 'quarterly', 'yearly'])],
-            ],
-            6 => [
                 'selectedInterests' => ['required', 'array', 'min:1', 'max:5'],
                 'selectedGoals' => ['required', 'array', 'min:1'],
             ],

@@ -9,7 +9,7 @@ class Subscription extends Model
 {
     protected $fillable = [
         'user_id',
-        'subscription_plan_id',
+        'type',
         'status',
         'start_date',
         'end_date',
@@ -34,9 +34,24 @@ class Subscription extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function plan(): BelongsTo
+    public function planName(): string
     {
-        return $this->belongsTo(SubscriptionPlan::class, 'subscription_plan_id');
+        return match ($this->type) {
+            'monthly' => 'Monthly',
+            'quarterly' => 'Quarterly',
+            'annual' => 'Annual',
+            default => 'Subscription',
+        };
+    }
+
+    public function durationMonths(): int
+    {
+        return match ($this->type) {
+            'monthly' => 1,
+            'quarterly' => 3,
+            'annual' => 12,
+            default => 1,
+        };
     }
 
     public function isActive(): bool

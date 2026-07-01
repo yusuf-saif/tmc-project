@@ -415,6 +415,107 @@ class PaystackWebhookTest extends TestCase
         $this->assertEquals('member', $profile->onboarding_status);
     }
 
+    public function test_selected_billing_cycle_determines_payment_amount(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'yearly',
+                'paystack_reference' => 'YEARLY-REF',
+            ],
+        );
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'YEARLY-REF',
+                    'amount' => 4000000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'YEARLY-REF',
+                'status' => 'success',
+                'amount' => 4000000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $profile = $user->fresh()->memberProfile;
+        $this->assertEquals('member', $profile->onboarding_status);
+        $this->assertNotNull($profile->current_period_ends_at);
+    }
+
+    public function test_selected_billing_cycle_rejects_lower_amount(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'yearly',
+                'paystack_reference' => 'UNDERPAID-YEARLY',
+            ],
+        );
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'UNDERPAID-YEARLY',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'UNDERPAID-YEARLY',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertStatus(400);
+        $response->assertJson(['error' => 'Payment amount does not match billing cycle']);
+
+        $user->refresh();
+        $this->assertNotEquals('active', $user->status);
+    }
+
     public function test_souq_webhook_activates_approved_unpaid_listing(): void
     {
         $user = User::factory()->create(['email' => 'souq@test.com']);

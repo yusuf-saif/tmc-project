@@ -12,7 +12,6 @@ use App\Events\SubscriptionSuspended;
 use App\Models\AuditLog;
 use App\Models\SouqListing;
 use App\Models\Subscription;
-use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Notifications\BusinessActivated as BusinessActivatedNotification;
 use App\Notifications\BusinessApproved as BusinessApprovedNotification;
@@ -24,8 +23,6 @@ use App\Notifications\SubscriptionSuspended as SubscriptionSuspendedNotification
 use App\Services\BusinessStateService;
 use App\Services\SubscriptionStateService;
 use Database\Seeders\RoleSeeder;
-use Database\Seeders\SubscriptionPlanSeeder;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -35,12 +32,6 @@ use Tests\TestCase;
 class SubscriptionBillingTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected SubscriptionPlan $monthlyPlan;
-
-    protected SubscriptionPlan $quarterlyPlan;
-
-    protected SubscriptionPlan $annualPlan;
 
     protected User $member;
 
@@ -52,12 +43,7 @@ class SubscriptionBillingTest extends TestCase
 
         $this->seed([
             RoleSeeder::class,
-            SubscriptionPlanSeeder::class,
         ]);
-
-        $this->monthlyPlan = SubscriptionPlan::where('slug', 'monthly')->firstOrFail();
-        $this->quarterlyPlan = SubscriptionPlan::where('slug', 'quarterly')->firstOrFail();
-        $this->annualPlan = SubscriptionPlan::where('slug', 'annual')->firstOrFail();
 
         $this->member = User::factory()->create(['email' => 'member@test.com']);
         $this->member->assignRole('member');
@@ -66,13 +52,11 @@ class SubscriptionBillingTest extends TestCase
         $this->admin->assignRole('super_admin');
     }
 
-    protected function createSubscription(?SubscriptionPlan $plan = null, string $status = 'active'): Subscription
+    protected function createSubscription(string $type = 'monthly', string $status = 'active'): Subscription
     {
-        $plan ??= $this->monthlyPlan;
-
         return Subscription::create([
             'user_id' => $this->member->id,
-            'subscription_plan_id' => $plan->id,
+            'type' => $type,
             'status' => $status,
         ]);
     }
@@ -95,29 +79,24 @@ class SubscriptionBillingTest extends TestCase
 
     public function test_subscription_plan_duration_months(): void
     {
-        $this->assertSame(1, $this->monthlyPlan->durationMonths());
-        $this->assertSame(3, $this->quarterlyPlan->durationMonths());
-        $this->assertSame(12, $this->annualPlan->durationMonths());
+        $monthly = $this->createSubscription(type: 'monthly');
+        $quarterly = $this->createSubscription(type: 'quarterly');
+        $annual = $this->createSubscription(type: 'annual');
+
+        $this->assertSame(1, $monthly->durationMonths());
+        $this->assertSame(3, $quarterly->durationMonths());
+        $this->assertSame(12, $annual->durationMonths());
     }
 
-    public function test_subscription_plan_active_scope(): void
+    public function test_subscription_plan_name_labels(): void
     {
-        $this->monthlyPlan->update(['is_active' => false]);
+        $monthly = $this->createSubscription(type: 'monthly');
+        $quarterly = $this->createSubscription(type: 'quarterly');
+        $annual = $this->createSubscription(type: 'annual');
 
-        $plans = SubscriptionPlan::active()->get();
-        $this->assertCount(2, $plans);
-        $this->assertFalse($plans->contains('slug', 'monthly'));
-    }
-
-    public function test_subscription_plan_slug_is_unique(): void
-    {
-        $this->expectException(QueryException::class);
-        SubscriptionPlan::create([
-            'name' => 'Duplicate',
-            'slug' => 'monthly',
-            'type' => 'monthly',
-            'price' => 5.00,
-        ]);
+        $this->assertSame('Monthly', $monthly->planName());
+        $this->assertSame('Quarterly', $quarterly->planName());
+        $this->assertSame('Annual', $annual->planName());
     }
 
     // ─── Subscription model ───────────────────────────────────────
@@ -127,7 +106,7 @@ class SubscriptionBillingTest extends TestCase
         $subscription = $this->createSubscription();
 
         $this->assertTrue($subscription->user->is($this->member));
-        $this->assertTrue($subscription->plan->is($this->monthlyPlan));
+        $this->assertSame('Monthly', $subscription->planName());
     }
 
     public function test_subscription_is_active_checks(): void
@@ -216,15 +195,11 @@ class SubscriptionBillingTest extends TestCase
 
     public function test_activate_sets_correct_hijri_duration(): void
     {
-        $monthly = $this->createSubscription($this->monthlyPlan);
+        $monthly = $this->createSubscription(type: 'monthly');
         $result = app(SubscriptionStateService::class)->activate($monthly, $this->admin);
         $this->assertTrue($result->end_date->diffInDays($result->start_date, true) >= 28);
 
-        $annual = Subscription::create([
-            'user_id' => $this->member->id,
-            'subscription_plan_id' => $this->annualPlan->id,
-            'status' => 'active',
-        ]);
+        $annual = $this->createSubscription(type: 'annual', status: 'active');
         $result2 = app(SubscriptionStateService::class)->activate($annual, $this->admin);
         $this->assertTrue($result2->end_date->diffInDays($result2->start_date, true) >= 340);
     }

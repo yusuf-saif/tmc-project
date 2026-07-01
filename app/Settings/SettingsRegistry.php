@@ -12,6 +12,8 @@ class SettingsRegistry
         'donations' => 'Donations',
         'content' => 'Content',
         'events' => 'Events',
+        'branding' => 'Brand & Appearance',
+        'dashboard' => 'Dashboard',
     ];
 
     const KEYS = [
@@ -175,6 +177,27 @@ class SettingsRegistry
             'default' => 24,
             'label' => 'Event Reminder Hours Before',
             'description' => 'Hours before the event to send the reminder notification.',
+        ],
+        'brand_name' => [
+            'group' => 'branding',
+            'type' => 'string',
+            'default' => 'The Muhsinat Club',
+            'label' => 'Brand Name',
+            'description' => 'Displayed in the admin panel header and login screen.',
+        ],
+        'brand_primary_color' => [
+            'group' => 'branding',
+            'type' => 'string',
+            'default' => '#1A6B72',
+            'label' => 'Primary Color',
+            'description' => 'Hex color code used for the admin panel theme (e.g. #1A6B72).',
+        ],
+        'dashboard_active_window_days' => [
+            'group' => 'dashboard',
+            'type' => 'int',
+            'default' => 30,
+            'label' => 'Active Members Window (Days)',
+            'description' => 'Number of days back to count a member as "active" on the dashboard.',
         ],
     ];
 

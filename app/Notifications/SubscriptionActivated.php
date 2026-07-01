@@ -27,7 +27,7 @@ class SubscriptionActivated extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Subscription Activated – The Muhsinat Club')
             ->greeting('Assalamu Alaikum!')
-            ->line("Your {$this->subscription->plan?->name} subscription is now active.")
+            ->line("Your {$this->subscription->planName()} subscription is now active.")
             ->line("Your subscription is valid until {$this->hijriEndDate} (Hijri).")
             ->line('Thank you for being part of The Muhsinat Club.');
     }
@@ -36,7 +36,7 @@ class SubscriptionActivated extends Notification implements ShouldQueue
     {
         return [
             'title' => 'Subscription Activated',
-            'body' => "Your {$this->subscription->plan?->name} subscription is now active.",
+            'body' => "Your {$this->subscription->planName()} subscription is now active.",
             'action_url' => '/',
         ];
     }

@@ -69,14 +69,14 @@ class SendBillingNotifications implements ShouldQueue
         app(PushNotificationService::class)->send(
             $user,
             'Subscription Activated',
-            "Your {$event->subscription->plan?->name} subscription is now active.",
+            "Your {$event->subscription->planName()} subscription is now active.",
         );
     }
 
     protected function subscriptionExpired(SubscriptionExpired $event): void
     {
         $user = $event->subscription->user;
-        $planName = $event->subscription->plan?->name ?? 'Membership';
+        $planName = $event->subscription->planName();
         $user->notify(new SubscriptionExpiredNotification($planName));
 
         app(PushNotificationService::class)->send(
@@ -119,7 +119,7 @@ class SendBillingNotifications implements ShouldQueue
     protected function paymentReceived(SubscriptionPaymentReceived $event): void
     {
         $user = $event->subscription->user;
-        $planName = $event->subscription->plan?->name ?? 'Subscription';
+        $planName = $event->subscription->planName();
         $user->notify(new SubscriptionPaymentReceivedNotification(
             $event->amount,
             $planName,

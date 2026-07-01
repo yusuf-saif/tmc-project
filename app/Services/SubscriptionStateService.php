@@ -24,8 +24,7 @@ class SubscriptionStateService
     public function activate(Subscription $subscription, User $actor): Subscription
     {
         return DB::transaction(function () use ($subscription, $actor): Subscription {
-            $plan = $subscription->plan;
-            $durationMonths = $plan ? $plan->durationMonths() : 1;
+            $durationMonths = $subscription->durationMonths();
 
             $startDate = now();
             $endDate = app(HijriDateService::class)->addMonthsHijri($startDate, $durationMonths);
@@ -44,7 +43,7 @@ class SubscriptionStateService
 
             Log::info("Subscription activated: {$subscription->id}", [
                 'user_id' => $subscription->user_id,
-                'plan' => $plan?->slug,
+                'type' => $subscription->type,
                 'end_date' => $endDate,
                 'actor_id' => $actor->id,
             ]);
@@ -116,8 +115,7 @@ class SubscriptionStateService
     public function renew(Subscription $subscription, User $actor): Subscription
     {
         return DB::transaction(function () use ($subscription, $actor): Subscription {
-            $plan = $subscription->plan;
-            $durationMonths = $plan ? $plan->durationMonths() : 1;
+            $durationMonths = $subscription->durationMonths();
 
             $newStart = now();
             $newEnd = app(HijriDateService::class)->addMonthsHijri($newStart, $durationMonths);

@@ -8,6 +8,7 @@ use App\Models\InAppAnnouncement;
 use App\Models\JannahCoinsLedger;
 use App\Models\MemberProfile;
 use App\Models\Newsletter;
+use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -18,16 +19,20 @@ class StatsOverviewWidget extends BaseWidget
 {
     protected static ?int $sort = 0;
 
+    private static int $activeWindowDays = 30;
+
     public static function statsData(): array
     {
         $memberIds = User::role('member')->pluck('id');
         $volunteerIds = User::role('volunteer')->pluck('id');
 
+        self::$activeWindowDays = (int) Setting::get('dashboard_active_window_days', 30);
+
         $data = [
             'total_users' => User::query()->count(),
             'total_members' => User::query()->whereIn('id', $memberIds->merge($volunteerIds)->unique())->count(),
             'active_last_30_days' => User::query()
-                ->where('updated_at', '>=', now()->subDays(30))
+                ->where('updated_at', '>=', now()->subDays(self::$activeWindowDays))
                 ->whereHas('profile', fn ($query) => $query->whereNotNull('onboarding_completed_at'))
                 ->count(),
             'new_registrations_count' => MemberProfile::query()->where('onboarding_status', 'registered')->count(),
@@ -67,7 +72,7 @@ class StatsOverviewWidget extends BaseWidget
                 ->descriptionIcon('heroicon-o-users')
                 ->color('primary'),
             Stat::make('Active Members', $stats['active_last_30_days'])
-                ->description('Active in last 30 days')
+                ->description('Active in last '.self::$activeWindowDays.' days')
                 ->descriptionIcon('heroicon-o-arrow-trending-up')
                 ->color('success'),
             Stat::make('New Registrations', $stats['new_registrations_count'])

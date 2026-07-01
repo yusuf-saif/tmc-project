@@ -67,6 +67,12 @@ class EventResource extends Resource
                     ->maxSize(2048),
                 Forms\Components\TextInput::make('external_link')
                     ->url(),
+                Forms\Components\TextInput::make('coin_reward')
+                    ->label('Coins for attending')
+                    ->helperText('Coins awarded to members who RSVP. Leave 0 for none.')
+                    ->numeric()
+                    ->minValue(0)
+                    ->default(0),
                 Forms\Components\Select::make('status')
                     ->options([
                         'draft' => 'Draft',

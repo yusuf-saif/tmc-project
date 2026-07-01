@@ -174,6 +174,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(PushSubscription::class);
     }
 
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new \App\Notifications\SetPasswordNotification($token));
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasAnyRole([

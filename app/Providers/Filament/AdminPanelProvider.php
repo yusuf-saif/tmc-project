@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Models\Setting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -15,6 +16,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -25,13 +27,13 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('The Muhsinat Club')
+            ->brandName(Schema::hasTable('settings') ? Setting::get('brand_name', 'The Muhsinat Club') : 'The Muhsinat Club')
             ->brandLogo(asset('images/img2.png'))
             ->favicon(asset('images/img1.png'))
             ->homeUrl('/admin')
             ->login()
             ->colors([
-                'primary' => Color::hex('#1A6B72'),
+                'primary' => Color::hex(Schema::hasTable('settings') ? Setting::get('brand_primary_color', '#1A6B72') : '#1A6B72'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

@@ -10,7 +10,7 @@
             <a href="{{ route('souq.show', $approvedListing->slug) }}" class="tmc-button-gold max-w-[220px] no-underline">View Listing</a>
         </section>
     @elseif ($hasApprovedUnpaid && $approvedUnpaidListing)
-        <section class="space-y-4 rounded-[8px] bg-white p-6" style="border: 1px solid var(--border);">
+        <section class="space-y-4 rounded-[8px] bg-white p-6" style="border: 1px solid var(--border);" wire:poll.5s="checkPaymentStatus">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>
             <p class="text-sm font-light leading-7 text-ink-soft">Your listing has been approved!</p>
             <div class="rounded-[8px] p-4" style="background: var(--gold-pale); border: 1px solid rgba(200, 168, 75, 0.25);">

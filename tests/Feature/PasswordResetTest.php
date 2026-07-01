@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\SetPasswordNotification;
 use Database\Seeders\RoleSeeder;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +48,7 @@ class PasswordResetTest extends TestCase
 
         Notification::assertSentTo(
             $user,
-            ResetPassword::class,
+            SetPasswordNotification::class,
             function (object $notification, array $channels) {
                 return ! empty($notification->token);
             }

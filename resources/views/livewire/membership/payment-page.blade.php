@@ -52,6 +52,23 @@
                     </div>
                 @endif
 
+                {{-- Billing cycle selector --}}
+                <div class="space-y-3">
+                    <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Billing Cycle</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        @foreach ($billingOptions as $key => $option)
+                            @php($selected = $billingCycle === $key)
+                            <div wire:click="selectBillingCycle('{{ $key }}')"
+                                 class="cursor-pointer rounded-lg p-3 text-center transition"
+                                 style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#D6EDEF' : '#FFFFFF' }};">
+                                <p class="font-display text-lg font-semibold text-teal-dk">{{ $option['label'] }}</p>
+                                <p class="text-xs font-medium text-teal-dk">₦{{ number_format($option['price']) }}</p>
+                                <p class="text-[10px] text-ink-soft">{{ $option['interval'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 <div class="rounded-sm bg-ivory p-5 text-center">
                     <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Amount Due</p>
                     <p class="mt-1 font-display text-4xl text-teal-dk">₦{{ number_format($finalAmountDue) }}</p>
@@ -187,6 +204,23 @@
                         <p class="mt-1 font-display text-3xl text-teal-dk">{{ $membershipId }}</p>
                     </div>
                 @endif
+
+                {{-- Billing cycle selector --}}
+                <div class="space-y-3">
+                    <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Billing Cycle</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        @foreach ($billingOptions as $key => $option)
+                            @php($selected = $billingCycle === $key)
+                            <div wire:click="selectBillingCycle('{{ $key }}')"
+                                 class="cursor-pointer rounded-lg p-3 text-center transition"
+                                 style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#D6EDEF' : '#FFFFFF' }};">
+                                <p class="font-display text-lg font-semibold text-teal-dk">{{ $option['label'] }}</p>
+                                <p class="text-xs font-medium text-teal-dk">₦{{ number_format($option['price']) }}</p>
+                                <p class="text-[10px] text-ink-soft">{{ $option['interval'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
 
                 <div class="rounded-sm bg-ivory p-5 text-center">
                     <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Amount Due</p>

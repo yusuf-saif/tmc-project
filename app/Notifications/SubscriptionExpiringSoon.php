@@ -27,7 +27,7 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject("Subscription Expiring in {$this->daysRemaining} Days – The Muhsinat Club")
             ->greeting('Assalamu Alaikum!')
-            ->line("Your {$this->subscription->plan?->name} subscription will expire in {$this->daysRemaining} day(s).")
+            ->line("Your {$this->subscription->planName()} subscription will expire in {$this->daysRemaining} day(s).")
             ->line('Please renew your subscription to avoid any interruption of services.')
             ->action('Renew Now', url('/subscription/plans'));
     }
@@ -36,7 +36,7 @@ class SubscriptionExpiringSoon extends Notification implements ShouldQueue
     {
         return [
             'title' => 'Subscription Expiring Soon',
-            'body' => "Your {$this->subscription->plan?->name} subscription will expire in {$this->daysRemaining} day(s).",
+            'body' => "Your {$this->subscription->planName()} subscription will expire in {$this->daysRemaining} day(s).",
             'action_url' => '/subscription/plans',
         ];
     }

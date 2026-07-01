@@ -2,14 +2,14 @@
     <section class="w-full max-w-xl rounded bg-white p-10 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
         <div class="mb-8">
             <div class="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[2px] text-gold">
-                <span>Step {{ $step }} of 6</span>
+                <span>Step {{ $step }} of 5</span>
             </div>
             <div class="h-2 overflow-hidden rounded-sm bg-ivory">
                 <div class="h-full bg-gold transition-all duration-200" style="width: {{ $this->progressPercentage }}%"></div>
             </div>
         </div>
 
-        @if ($errors->any() && $step === 6)
+        @if ($errors->any() && $step === 5)
             <div class="mb-6 rounded-sm bg-red-50 p-4 text-sm text-red-700">
                 @foreach ($errors->all() as $error)
                     <p>{{ $error }}</p>
@@ -168,33 +168,6 @@
         @elseif ($step === 5)
         <div class="space-y-6">
             <div>
-                <h1 class="font-display text-4xl leading-none text-teal-dk">Membership Plan</h1>
-                <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Choose your preferred billing cycle.</p>
-            </div>
-
-            <div class="space-y-4">
-                @foreach ($billingOptions as $key => $option)
-                    @php($selected = $preferredBillingCycle === $key)
-                    <div wire:click="$set('preferredBillingCycle', '{{ $key }}')" class="cursor-pointer rounded-lg p-5 transition" style="border: 2px solid {{ $selected ? '#1A6B72' : '#E2E8F0' }}; background: {{ $selected ? '#D6EDEF' : '#FFFFFF' }}; border-radius: 8px;">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="font-display text-2xl text-teal-dk">{{ $option['label'] }}</h3>
-                                <p class="text-sm text-ink-soft">{{ $option['interval'] }}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-display text-2xl text-teal-dk">₦{{ number_format($option['price']) }}</p>
-                                <p class="text-xs text-ink-soft">{{ $option['interval'] }}</p>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-            @error('preferredBillingCycle') <p class="tmc-error">{{ $message }}</p> @enderror
-        </div>
-
-        @elseif ($step === 6)
-        <div class="space-y-6">
-            <div>
                 <h1 class="font-display text-4xl leading-none text-teal-dk">Review & Submit</h1>
                 <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Please review your information before submitting.</p>
             </div>
@@ -236,11 +209,6 @@
                     </p>
                 </div>
 
-                <div class="border-b border-ivory pb-3">
-                    <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Billing</h4>
-                    <p class="text-ink-md">{{ ucfirst($preferredBillingCycle) }} — ₦{{ number_format($billingOptions[$preferredBillingCycle]['price'] ?? 0) }}</p>
-                </div>
-
                 <div>
                     <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Interests (up to 5)</h4>
                     <div class="flex flex-wrap gap-2 mt-2">
@@ -273,7 +241,7 @@
             </div>
 
             <div class="mt-4 rounded-sm bg-ivory p-4 text-sm text-ink-soft">
-                <p>By submitting, you agree to our membership terms. Your account will be reviewed by our team before activation.</p>
+                <p>By submitting, you agree to our membership terms.</p>
             </div>
         </div>
         @endif
@@ -283,7 +251,7 @@
                 Back
             </button>
 
-            @if ($step < 6)
+            @if ($step < 5)
                 <button type="button" wire:click="nextStep" class="tmc-button-gold max-w-[180px]" wire:loading.attr="disabled" wire:target="nextStep">
                     <span wire:loading.remove wire:target="nextStep">Continue</span>
                     <span wire:loading wire:target="nextStep">Loading...</span>

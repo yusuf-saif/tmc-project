@@ -17,7 +17,7 @@ class NotificationPreferences extends Component
 
     public function mount(): void
     {
-        $prefs = auth()->user()->memberProfile->notification_preferences ?? [];
+        $prefs = auth()->user()->memberProfile?->notification_preferences ?? [];
 
         $this->events = $prefs['events'] ?? $prefs['events_halaqahs'] ?? true;
         $this->announcements = $prefs['announcements'] ?? true;

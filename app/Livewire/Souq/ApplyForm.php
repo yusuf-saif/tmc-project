@@ -88,7 +88,26 @@ class ApplyForm extends Component
         $this->syncListingState();
     }
 
-    public function payListing(PaystackService $paystack): void
+    public function checkPaymentStatus(): void
+    {
+        if (! $this->approvedUnpaidListing || ! $this->approvedUnpaidListing->paystack_reference) {
+            return;
+        }
+
+        try {
+            $verifiedData = app(PaystackService::class)->verifyPayment(
+                $this->approvedUnpaidListing->paystack_reference
+            );
+
+            app(\App\Services\BusinessStateService::class)->activate($this->approvedUnpaidListing);
+
+            $this->syncListingState();
+        } catch (\Throwable $e) {
+            // Payment not yet confirmed — retry on next poll
+        }
+    }
+
+    public function payListing(PaystackService $paystack)
     {
         if (! $this->approvedUnpaidListing) {
             return;
@@ -113,7 +132,7 @@ class ApplyForm extends Component
 
         $url = $paystack->initializeSouqListingPayment($this->approvedUnpaidListing, $finalAmountKobo, $extraMetadata);
 
-        $this->redirect($url);
+        return redirect()->away($url);
     }
 
     protected function syncListingState(): void

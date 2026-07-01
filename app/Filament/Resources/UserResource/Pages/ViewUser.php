@@ -50,6 +50,28 @@ class ViewUser extends ViewRecord
                     UserResource::awardBadge($this->record, (int) $data['badge_id']);
                     Notification::make()->title('Badge awarded')->success()->send();
                 }),
+            Actions\Action::make('changeMembershipType')
+                ->label('Change Member Type')
+                ->icon('heroicon-o-identification')
+                ->requiresConfirmation()
+                ->form([
+                    Select::make('new_type')
+                        ->label('Membership Type')
+                        ->options([
+                            'M' => 'Member (M)',
+                            'SM' => 'SixtenMember (SM)',
+                            'E' => 'Executive (E)',
+                        ])
+                        ->default(fn () => $this->record->memberProfile?->membership_type ?? 'M')
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    UserResource::changeMembershipType($this->record, $data['new_type']);
+                    Notification::make()
+                        ->title('Membership type updated')
+                        ->success()
+                        ->send();
+                }),
             Actions\Action::make('changeRole')
                 ->label('Change Role')
                 ->visible(fn (): bool => UserResource::canChangeRole(auth()->user()))

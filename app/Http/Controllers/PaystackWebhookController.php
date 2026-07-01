@@ -39,7 +39,7 @@ class PaystackWebhookController extends Controller
             return response()->json(['error' => 'Missing signature'], 400);
         }
 
-        $expected = hash_hmac('sha512', json_encode($payload), $webhookSecret);
+        $expected = hash_hmac('sha512', $request->getContent(), $webhookSecret);
         if (! hash_equals($expected, $signature)) {
             Log::warning('PaystackWebhook: invalid signature');
 

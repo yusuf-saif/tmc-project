@@ -33,6 +33,9 @@
     <span class="text-[11px] font-medium text-teal-dk/70" style="font-feature-settings:'tnum';">
       {{ now()->hijri('j M Y') }}
     </span>
+    @if(auth()->check() && auth()->user()->hasAnyRole(['super_admin', 'admin', 'moderator', 'content_editor']))
+      <a href="/admin" class="text-[10px] font-semibold uppercase tracking-wider text-gold no-underline hover:text-teal transition-colors">Admin</a>
+    @endif
     <livewire:notifications.bell />
   </header>
 

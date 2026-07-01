@@ -9,6 +9,7 @@ use App\Models\UserBadge;
 use App\Models\UserRoleHistory;
 use App\Services\AuditLogService;
 use App\Services\CoinsService;
+use App\Services\MembershipIdService;
 use Carbon\Carbon;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
@@ -204,7 +205,7 @@ class UserResource extends Resource
     {
         $oldRole = $record->getRoleNames()->first() ?? 'none';
 
-        $record->syncRoles([$newRole]);
+        $record->syncRoles(['member', $newRole]);
 
         UserRoleHistory::query()->create([
             'user_id' => $record->id,
@@ -227,6 +228,40 @@ class UserResource extends Resource
     {
         CoinsService::deduct($record, $amount, 'manual', $reason);
         AuditLogService::log('coins_deducted', $record, [], ['amount' => $amount, 'reason' => $reason]);
+    }
+
+    public static function changeMembershipType(User $record, string $newType): void
+    {
+        $profile = $record->memberProfile;
+
+        if (! $profile) {
+            return;
+        }
+
+        $newType = MembershipIdService::normalizeType($newType);
+        $oldType = $profile->membership_type ?? 'M';
+        $oldMembershipId = $profile->membership_id;
+
+        $idData = MembershipIdService::generate($newType);
+
+        $profile->forceFill([
+            'membership_type' => $newType,
+            'membership_id' => $idData['membership_id'],
+        ])->save();
+
+        AuditLogService::log(
+            'membership_type_changed',
+            $record,
+            [
+                'membership_type' => $oldType,
+                'membership_id' => $oldMembershipId,
+            ],
+            [
+                'membership_type' => $newType,
+                'membership_id' => $idData['membership_id'],
+            ],
+            targetUserId: $record->id,
+        );
     }
 
     public static function badgeOptions(): array

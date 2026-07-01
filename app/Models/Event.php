@@ -22,6 +22,7 @@ class Event extends Model
         'end_date',
         'cover_image_path',
         'external_link',
+        'coin_reward',
         'status',
         'created_by',
         'updated_by',
@@ -32,6 +33,7 @@ class Event extends Model
         return [
             'event_date' => 'datetime',
             'end_date' => 'datetime',
+            'coin_reward' => 'integer',
         ];
     }
 

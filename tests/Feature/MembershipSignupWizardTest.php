@@ -45,7 +45,6 @@ class MembershipSignupWizardTest extends TestCase
             'phone' => '+2348000000000',
             'igUsername' => 'aisha_m',
             'xUsername' => 'aisha_x',
-            'preferredBillingCycle' => 'monthly',
             'selectedInterests' => Interest::query()->limit(2)->pluck('slug')->all(),
             'selectedGoals' => Goal::query()->limit(2)->pluck('slug')->all(),
         ];
@@ -73,13 +72,8 @@ class MembershipSignupWizardTest extends TestCase
             ->set('phone', $data['phone'])
             ->call('nextStep')
             ->assertSet('step', 4)
-            ->set('igUsername', $data['igUsername'])
-            ->set('xUsername', $data['xUsername'])
             ->call('nextStep')
-            ->assertSet('step', 5)
-            ->set('preferredBillingCycle', $data['preferredBillingCycle'])
-            ->call('nextStep')
-            ->assertSet('step', 6);
+            ->assertSet('step', 5);
 
         $this->assertDatabaseMissing('users', ['email' => $data['email']]);
     }
@@ -104,8 +98,6 @@ class MembershipSignupWizardTest extends TestCase
             ->call('nextStep')
             ->set('igUsername', $data['igUsername'])
             ->set('xUsername', $data['xUsername'])
-            ->call('nextStep')
-            ->set('preferredBillingCycle', $data['preferredBillingCycle'])
             ->call('nextStep')
             ->set('selectedInterests', $data['selectedInterests'])
             ->set('selectedGoals', $data['selectedGoals'])
@@ -144,8 +136,6 @@ class MembershipSignupWizardTest extends TestCase
             ->set('phone', $data['phone'])
             ->call('nextStep')
             ->set('igUsername', $data['igUsername'])
-            ->call('nextStep')
-            ->set('preferredBillingCycle', $data['preferredBillingCycle'])
             ->call('nextStep')
             ->set('selectedInterests', $data['selectedInterests'])
             ->set('selectedGoals', $data['selectedGoals'])
@@ -198,9 +188,6 @@ class MembershipSignupWizardTest extends TestCase
             ->call('nextStep')
             ->set('phone', '+2348000000000')
             ->call('nextStep')
-            ->call('nextStep')
-            ->set('preferredBillingCycle', 'monthly')
-            ->call('nextStep')
             ->set('selectedInterests', Interest::query()->limit(1)->pluck('slug')->all())
             ->set('selectedGoals', Goal::query()->limit(1)->pluck('slug')->all())
             ->call('submit')
@@ -234,32 +221,34 @@ class MembershipSignupWizardTest extends TestCase
             ->assertSet('step', 1);
     }
 
-    public function test_billing_cycle_is_saved_to_profile(): void
+    public function test_wizard_sets_default_billing_cycle(): void
     {
+        $data = $this->getSignupData();
+
         Livewire::test(MembershipSignupWizard::class)
-            ->set('firstName', 'Aisha')
-            ->set('lastName', 'Member')
-            ->set('email', 'aisha@example.com')
-            ->set('password', 'Password123!')
-            ->set('passwordConfirmation', 'Password123!')
+            ->set('firstName', $data['firstName'])
+            ->set('lastName', $data['lastName'])
+            ->set('email', $data['email'])
+            ->set('password', $data['password'])
+            ->set('passwordConfirmation', $data['passwordConfirmation'])
             ->call('nextStep')
-            ->set('locationCountry', 'Nigeria')
-            ->set('locationState', 'Lagos')
-            ->set('ageGroup', '25_34')
-            ->set('maritalStatus', 'married')
+            ->set('locationCountry', $data['locationCountry'])
+            ->set('locationState', $data['locationState'])
+            ->set('ageGroup', $data['ageGroup'])
+            ->set('maritalStatus', $data['maritalStatus'])
             ->call('nextStep')
-            ->set('phone', '+2348000000000')
+            ->set('phone', $data['phone'])
             ->call('nextStep')
+            ->set('igUsername', $data['igUsername'])
+            ->set('xUsername', $data['xUsername'])
             ->call('nextStep')
-            ->set('preferredBillingCycle', 'quarterly')
-            ->call('nextStep')
-            ->set('selectedInterests', Interest::query()->limit(2)->pluck('slug')->all())
-            ->set('selectedGoals', Goal::query()->limit(2)->pluck('slug')->all())
+            ->set('selectedInterests', $data['selectedInterests'])
+            ->set('selectedGoals', $data['selectedGoals'])
             ->call('submit')
             ->assertRedirect(route('home'));
 
-        $user = User::where('email', 'aisha@example.com')->first();
+        $user = User::where('email', $data['email'])->first();
         $this->assertNotNull($user);
-        $this->assertEquals('quarterly', $user->memberProfile->preferred_billing_cycle);
+        $this->assertEquals('monthly', $user->memberProfile->preferred_billing_cycle);
     }
 }

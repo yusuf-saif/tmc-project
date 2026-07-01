@@ -24,8 +24,6 @@ class FortifyLoginResponse implements LoginResponseContract
         if ($user->hasAnyRole([
             'super_admin',
             'admin',
-            'moderator',
-            'content_editor',
         ])) {
             return '/admin';
         }
@@ -47,7 +45,7 @@ class FortifyLoginResponse implements LoginResponseContract
             return route('membership.signup');
         }
 
-        if ($status === 'active') {
+        if (in_array($status, ['active', 'member'], true)) {
             return '/home';
         }
 

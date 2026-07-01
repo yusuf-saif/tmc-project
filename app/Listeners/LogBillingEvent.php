@@ -62,7 +62,7 @@ class LogBillingEvent implements ShouldQueue
         AuditLogService::log(
             action: 'subscription_activated',
             old: ['status' => 'inactive'],
-            new: ['status' => 'active', 'plan_id' => $event->subscription->subscription_plan_id],
+            new: ['status' => 'active', 'type' => $event->subscription->type],
             actor: $event->actor,
             targetUserId: $event->subscription->user_id,
         );

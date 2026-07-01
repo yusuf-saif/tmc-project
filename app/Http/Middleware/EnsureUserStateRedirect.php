@@ -47,7 +47,7 @@ class EnsureUserStateRedirect
             return redirect()->route('membership.signup');
         }
 
-        if ($status === 'active') {
+        if (in_array($status, ['active', 'member'], true)) {
             return $next($request);
         }
 

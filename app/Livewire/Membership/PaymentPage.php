@@ -3,6 +3,7 @@
 namespace App\Livewire\Membership;
 
 use App\Models\MemberProfile;
+use App\Models\Setting;
 use App\Services\AuditLogService;
 use App\Services\CoinsService;
 use App\Services\MembershipStateService;
@@ -16,11 +17,52 @@ class PaymentPage extends Component
 
     public string $paymentStatus = '';
 
+    public string $billingCycle = 'monthly';
+
+    public array $billingOptions = [];
+
     public bool $applyCoins = false;
 
     public function mount()
     {
+        $this->loadBillingOptions();
+
         $this->refreshStatus();
+    }
+
+    protected function loadBillingOptions(): void
+    {
+        $this->billingOptions = [
+            'monthly' => [
+                'label' => 'Monthly',
+                'price' => (int) Setting::get('membership_fee_monthly'),
+                'interval' => 'per month',
+            ],
+            'quarterly' => [
+                'label' => 'Quarterly',
+                'price' => (int) Setting::get('membership_fee_quarterly'),
+                'interval' => 'per quarter',
+            ],
+            'yearly' => [
+                'label' => 'Yearly',
+                'price' => (int) Setting::get('membership_fee_yearly'),
+                'interval' => 'per year',
+            ],
+        ];
+    }
+
+    public function selectBillingCycle(string $cycle): void
+    {
+        if (! in_array($cycle, ['monthly', 'quarterly', 'yearly'], true)) {
+            return;
+        }
+
+        $this->billingCycle = $cycle;
+
+        $profile = auth()->user()->memberProfile;
+        if ($profile) {
+            $profile->forceFill(['preferred_billing_cycle' => $cycle])->saveQuietly();
+        }
     }
 
     public function refreshStatus(): void
@@ -189,7 +231,9 @@ class PaymentPage extends Component
 
         $this->submitting = true;
 
-        $billingCycle = $memberProfile->preferred_billing_cycle ?? 'monthly';
+        $billingCycle = $this->billingCycle;
+
+        $memberProfile->forceFill(['preferred_billing_cycle' => $billingCycle])->saveQuietly();
 
         try {
             $this->paymentStatus = 'onboarding';
@@ -241,7 +285,7 @@ class PaymentPage extends Component
         $profile = $memberProfile;
         $status = $this->paymentStatus ?: ($memberProfile?->onboarding_status);
 
-        $billingCycle = $memberProfile?->preferred_billing_cycle ?? 'monthly';
+        $billingCycle = $this->billingCycle;
         $amountDue = app(PaystackService::class)->getAmountForBillingCycle($billingCycle);
 
         $tierAmountKobo = $amountDue * 100;

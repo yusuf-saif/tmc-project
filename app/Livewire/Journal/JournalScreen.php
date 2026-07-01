@@ -31,7 +31,7 @@ class JournalScreen extends Component
 
     public function mount(): void
     {
-        abort_unless(Auth::user()?->hasRole('member'), 403);
+        abort_unless(Auth::user()?->hasAnyRole(['member', 'moderator', 'content_editor']), 403);
 
         $this->entryDate = now()->format('Y-m-d');
     }

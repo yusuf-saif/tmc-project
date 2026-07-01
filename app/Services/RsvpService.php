@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\SendEventReminderNotification;
 use App\Models\Event;
 use App\Models\EventRsvp;
+use App\Models\JannahCoinsLedger;
 use App\Models\User;
 use App\Models\Setting;
 use DomainException;
@@ -30,6 +31,10 @@ class RsvpService
             'rsvp_at' => now(),
             'cancelled_at' => null,
         ])->save();
+
+        if ($event->coin_reward > 0) {
+            $this->awardEventCoins($user, $event);
+        }
 
         $reminderHours = (int) Setting::get('event_reminder_hours_before');
 
@@ -60,5 +65,20 @@ class RsvpService
             ->where('user_id', $user->id)
             ->active()
             ->exists();
+    }
+
+    protected function awardEventCoins(User $user, Event $event): void
+    {
+        $alreadyAwarded = JannahCoinsLedger::query()
+            ->where('user_id', $user->id)
+            ->where('reference_id', $event->id)
+            ->where('reason', 'event_attendance')
+            ->exists();
+
+        if ($alreadyAwarded) {
+            return;
+        }
+
+        CoinsService::award($user, $event->coin_reward, 'event_attendance', $event->id);
     }
 }
