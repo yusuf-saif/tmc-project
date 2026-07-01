@@ -82,13 +82,20 @@
 
 @livewireScripts
 
-<div id="install-banner" class="hidden" style="
+<style>
+#install-banner:not(.hidden),
+#ios-install-banner:not(.hidden) {
+  display: flex;
+}
+</style>
+
+<div id="install-banner" x-data="{ show: false }" :class="{ 'hidden': !show }" style="
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
   max-width: 440px; width: calc(100% - 32px);
   background: var(--glass-bg); backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border); border-radius: 16px;
   padding: 14px 16px; z-index: 90;
-  display: flex; align-items: center; justify-content: space-between;
+  align-items: center; justify-content: space-between;
   box-shadow: var(--shadow-md);">
   <div>
     <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
@@ -101,19 +108,19 @@
     </p>
   </div>
   <div style="display: flex; gap: 8px;">
-    <button onclick="installPWA()" class="btn btn-gold btn-sm">Install</button>
-    <button onclick="dismissInstallBanner()" style="background:none;
+    <button @click="installPWA(); show = false" class="btn btn-gold btn-sm">Install</button>
+    <button @click="show = false; localStorage.setItem('tmc_install_dismissed', '1')" style="background:none;
       border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer;">&times;</button>
   </div>
 </div>
 
-<div id="ios-install-banner" class="hidden" style="
+<div id="ios-install-banner" x-data="{ show: false }" :class="{ 'hidden': !show }" style="
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
   max-width: 440px; width: calc(100% - 32px);
   background: var(--glass-bg); backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border); border-radius: 16px;
   padding: 14px 16px; z-index: 90;
-  display: flex; align-items: center; justify-content: space-between;
+  align-items: center; justify-content: space-between;
   box-shadow: var(--shadow-md);">
   <div>
     <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
@@ -125,7 +132,7 @@
       Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong>
     </p>
   </div>
-  <button onclick="dismissIOSBanner()" style="background:none;
+  <button @click="show = false; localStorage.setItem('tmc_ios_install_dismissed', '1')" style="background:none;
     border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer; flex-shrink: 0;">&times;</button>
 </div>
 
@@ -187,7 +194,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
   localStorage.setItem('tmc_install_visits', installVisits);
 
   if (installVisits >= 3 && !localStorage.getItem('tmc_install_dismissed')) {
-    document.getElementById('install-banner')?.classList.remove('hidden');
+    const el = document.getElementById('install-banner');
+    if (el && typeof Alpine !== 'undefined') {
+      Alpine.$data(el).show = true;
+    }
   }
 });
 
@@ -196,12 +206,10 @@ function installPWA() {
     deferredPrompt.prompt();
     deferredPrompt = null;
   }
-  document.getElementById('install-banner')?.classList.add('hidden');
-}
-
-function dismissInstallBanner() {
-  localStorage.setItem('tmc_install_dismissed', '1');
-  document.getElementById('install-banner')?.classList.add('hidden');
+  const el = document.getElementById('install-banner');
+  if (el && typeof Alpine !== 'undefined') {
+    Alpine.$data(el).show = false;
+  }
 }
 
 function isIOS() {
@@ -217,14 +225,13 @@ if (isIOS() && !isInStandaloneMode() &&
   let iosVisits = parseInt(localStorage.getItem('tmc_ios_visits') || '0') + 1;
   localStorage.setItem('tmc_ios_visits', iosVisits);
   if (iosVisits >= 2) {
-    document.getElementById('ios-install-banner')?.classList.remove('hidden');
+    const el = document.getElementById('ios-install-banner');
+    if (el && typeof Alpine !== 'undefined') {
+      Alpine.$data(el).show = true;
+    }
   }
 }
 
-function dismissIOSBanner() {
-  localStorage.setItem('tmc_ios_install_dismissed', '1');
-  document.getElementById('ios-install-banner')?.classList.add('hidden');
-}
 </script>
 </body>
 </html>
