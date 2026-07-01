@@ -1,4 +1,4 @@
-@php($displayName = auth()->user()->profile->display_name ?? auth()->user()->name)
+@php($displayName = auth()->user()->profile?->display_name ?? auth()->user()->name)
 @php($goldGradient = 'linear-gradient(135deg, #C8A84B 35%, #DCC182 100%)')
 
 <div class="flex min-h-[calc(100vh-3.5rem-1rem)] flex-col items-center justify-center py-8">
