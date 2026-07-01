@@ -60,7 +60,7 @@ class PaymentPage extends Component
         $allowedForVerification = ['onboarding', 'active', 'suspended'];
 
         if ($status === 'member') {
-            $this->dispatch('redirect-home');
+            $this->redirect(route('home'));
 
             return;
         }
@@ -77,7 +77,7 @@ class PaymentPage extends Component
         $updatedStatus = $profile->onboarding_status;
 
         if ($updatedStatus === 'member') {
-            $this->dispatch('redirect-home');
+            $this->redirect(route('home'));
 
             return;
         }
