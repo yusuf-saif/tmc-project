@@ -42,7 +42,7 @@
                     @foreach ($resources as $resource)
                         <a href="{{ route('resources.show', $resource->slug) }}" class="flex items-center justify-between rounded-[8px] bg-white p-4 no-underline" style="border: 1px solid var(--border);">
                             <p class="text-sm font-semibold text-ink">{{ $resource->title }}</p>
-                            <span class="inline-flex rounded-full bg-teal-lt px-2.5 py-1 text-[11px] font-medium text-teal">{{ str_replace('_', ' ', $resource->category) }}</span>
+                            <span class="inline-flex rounded-full bg-teal-lt px-2.5 py-1 text-[11px] font-medium text-teal">{{ $resource->category?->name ?? 'Resource' }}</span>
                         </a>
                     @endforeach
                 </div>

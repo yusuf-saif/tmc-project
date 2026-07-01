@@ -24,7 +24,7 @@ class SpaceDetail extends Component
     {
         return view('livewire.community.space-detail', [
             'events' => Event::query()->published()->upcoming()->limit(3)->get(),
-            'resources' => Resource::query()->published()->limit(3)->get(),
+            'resources' => Resource::query()->published()->with('category')->limit(3)->get(),
         ])->layout('layouts.app', ['title' => $this->space->name]);
     }
 }
