@@ -18,7 +18,7 @@
     <span style="font-size:16px;">✦</span>
     <p style="flex:1;font-size:13px;font-weight:500;color:var(--teal-dk);line-height:1.4;">
       You're on a free plan —
-      <a href="{{ route('membership.payment') }}" style="color:var(--teal-dk);font-weight:700;text-decoration:underline;">
+      <a href="{{ route('membership.payment') }}" wire:navigate style="color:var(--teal-dk);font-weight:700;text-decoration:underline;">
         upgrade to unlock full access →</a>
     </p>
     <button @click="dismissed = true"

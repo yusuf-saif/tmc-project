@@ -198,7 +198,7 @@
           <p style="font-size:12px;opacity:0.85;margin-top:4px;">
             You're currently on the free plan
           </p>
-          <a href="{{ route('membership.payment') }}"
+          <a href="{{ route('membership.payment') }}" wire:navigate
              style="display:inline-block;margin-top:10px;background:white;color:var(--teal);padding:6px 16px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">
             Choose Your Plan →
           </a>
