@@ -3,12 +3,15 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
+use App\Notifications\SetPasswordNotification;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 
 class ViewUser extends ViewRecord
 {
@@ -105,6 +108,21 @@ class ViewUser extends ViewRecord
                 ->action(function (array $data): void {
                     UserResource::deductCoins($this->record, (int) $data['amount'], $data['reason']);
                     Notification::make()->title('Coins deducted')->success()->send();
+                }),
+            Actions\Action::make('resendPasswordSetup')
+                ->label('Resend Password Setup Link')
+                ->icon('heroicon-o-envelope')
+                ->requiresConfirmation()
+                ->modalHeading('Resend Password Setup Link')
+                ->modalDescription('This will send a new password setup email to '.($this->record->email ?? 'this user').'. The link expires in 60 minutes.')
+                ->modalSubmitActionLabel('Send')
+                ->action(function (): void {
+                    $token = Password::broker()->createToken($this->record);
+                    Notification::sendNow($this->record, new SetPasswordNotification($token));
+                    Filament\Notifications\Notification::make()
+                        ->title('Password setup link sent')
+                        ->success()
+                        ->send();
                 }),
         ];
     }

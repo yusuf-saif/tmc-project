@@ -6,7 +6,7 @@
   {{-- Profile Header --}}
   <div class="profile-banner"></div>
   <div class="profile-avatar-wrap anim-scale-in">
-    @if ($this->profile?->avatar_path)
+    @if ($this->profile?->avatar_path && Storage::disk('public')->exists($this->profile->avatar_path))
       <img src="{{ Storage::url($this->profile->avatar_path) }}"
            alt="{{ $displayName }}"
            class="profile-avatar">

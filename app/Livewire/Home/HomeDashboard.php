@@ -25,7 +25,10 @@ class HomeDashboard extends Component
     public function getGreeting(): string
     {
         $user = Auth::user();
-        $first = trim(Str::of($user?->name ?? 'Sister')->before(' '));
+        $displayName = $user->memberProfile?->display_name
+            ?: $user->name
+            ?: 'Sister';
+        $first = trim(Str::of($displayName)->before(' '));
 
         return "Assalamu Alaykum, {$first}";
     }
