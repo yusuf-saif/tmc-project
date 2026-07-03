@@ -1807,6 +1807,34 @@ textarea.input { resize: vertical; min-height: 120px; }
   text-align: left;
 }
 
+/* ── PASSWORD STRENGTH CHECKLIST ───────────────────── */
+.pw-checklist {
+  margin-top: 8px;
+}
+
+.pw-checklist-item {
+  font-size: 12px;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pw-icon {
+  display: inline-flex;
+  width: 14px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pw-met {
+  color: var(--success);
+}
+
+.pw-unmet {
+  color: var(--ink-soft);
+}
+
 /* ── SOUQ DIRECTORY ─────────────────────────────────── */
 .souq-page-header {
   margin-bottom: 4px;

@@ -50,14 +50,30 @@
 
             <div>
                 <label class="tmc-label" for="password">Password *</label>
-                <input id="password" type="password" wire:model="password" class="tmc-input" autocomplete="new-password">
+                <input id="password" type="password" wire:model="password" class="tmc-input" autocomplete="new-password"
+                       x-data x-init x-model="password">
                 @error('password') <p class="tmc-error">{{ $message }}</p> @enderror
+
+                <div x-show="$wire.password && $wire.password.length > 0" x-cloak class="pw-checklist">
+                    <p class="pw-checklist-item" :class="$wire.password.length >= 8                   ? 'pw-met' : 'pw-unmet'"><span class="pw-icon" x-text="$wire.password.length >= 8                   ? '✓' : '✗'"></span> At least 8 characters</p>
+                    <p class="pw-checklist-item" :class="/[a-z]/.test($wire.password)                    ? 'pw-met' : 'pw-unmet'"><span class="pw-icon" x-text="/[a-z]/.test($wire.password)                    ? '✓' : '✗'"></span> One lowercase letter</p>
+                    <p class="pw-checklist-item" :class="/[A-Z]/.test($wire.password)                    ? 'pw-met' : 'pw-unmet'"><span class="pw-icon" x-text="/[A-Z]/.test($wire.password)                    ? '✓' : '✗'"></span> One uppercase letter</p>
+                    <p class="pw-checklist-item" :class="/[0-9]/.test($wire.password)                    ? 'pw-met' : 'pw-unmet'"><span class="pw-icon" x-text="/[0-9]/.test($wire.password)                    ? '✓' : '✗'"></span> One number</p>
+                    <p class="pw-checklist-item" :class="/[^a-zA-Z0-9]/.test($wire.password)             ? 'pw-met' : 'pw-unmet'"><span class="pw-icon" x-text="/[^a-zA-Z0-9]/.test($wire.password)             ? '✓' : '✗'"></span> One symbol</p>
+                </div>
             </div>
 
             <div>
                 <label class="tmc-label" for="passwordConfirmation">Confirm Password *</label>
                 <input id="passwordConfirmation" type="password" wire:model="passwordConfirmation" class="tmc-input" autocomplete="new-password">
                 @error('passwordConfirmation') <p class="tmc-error">{{ $message }}</p> @enderror
+
+                <p x-show="$wire.passwordConfirmation && $wire.passwordConfirmation.length > 0" x-cloak
+                   class="pw-checklist-item" style="margin-top:8px;"
+                   :class="$wire.password === $wire.passwordConfirmation ? 'pw-met' : 'pw-unmet'">
+                    <span class="pw-icon" x-text="$wire.password === $wire.passwordConfirmation ? '✓' : '✗'"></span>
+                    <span x-text="$wire.password === $wire.passwordConfirmation ? 'Passwords match' : 'Passwords do not match'"></span>
+                </p>
             </div>
         </div>
 

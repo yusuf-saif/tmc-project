@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Component;
 
 class MembershipSignupWizard extends Component
@@ -210,8 +211,7 @@ class MembershipSignupWizard extends Component
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-            'password' => ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
-            'locationCountry' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed:passwordConfirmation'],
             'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
             'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
             'ageGroup' => ['required', 'string', 'max:50'],
@@ -229,7 +229,7 @@ class MembershipSignupWizard extends Component
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-                'password' => ['required', 'string', 'min:8', 'confirmed:passwordConfirmation'],
+                'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed:passwordConfirmation'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],
