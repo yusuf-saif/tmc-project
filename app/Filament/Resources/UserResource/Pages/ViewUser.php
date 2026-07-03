@@ -10,7 +10,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Illuminate\Support\Facades\Password;
 
 class ViewUser extends ViewRecord
@@ -118,8 +118,8 @@ class ViewUser extends ViewRecord
                 ->modalSubmitActionLabel('Send')
                 ->action(function (): void {
                     $token = Password::broker()->createToken($this->record);
-                    Notification::sendNow($this->record, new SetPasswordNotification($token));
-                    Filament\Notifications\Notification::make()
+                    NotificationFacade::sendNow($this->record, new SetPasswordNotification($token));
+                    Notification::make()
                         ->title('Password setup link sent')
                         ->success()
                         ->send();

@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Notifications\SetPasswordNotification;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 
 class ResendInvitations extends Command
@@ -38,7 +40,8 @@ class ResendInvitations extends Command
         $sent = 0;
 
         foreach ($users as $user) {
-            Password::sendResetLink(['email' => $user->email]);
+            $token = Password::broker()->createToken($user);
+            Notification::sendNow($user, new SetPasswordNotification($token));
             $sent++;
             $this->line("  Sent to: {$user->name} <{$user->email}>");
         }
