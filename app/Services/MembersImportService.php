@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\MembershipActivated;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
@@ -104,7 +105,10 @@ class MembersImportService
         $submittedAt = $hijriDate ? $this->parseHijriDate($hijriDate) : now();
 
         try {
-            DB::transaction(function () use ($email, $name, $membershipId, $submittedAt, $data) {
+            $userId = null;
+            $membershipIdForEvent = $membershipId ?: null;
+
+            DB::transaction(function () use ($email, $name, $membershipId, $submittedAt, $data, &$userId, &$membershipIdForEvent) {
                 $user = User::create([
                     'name' => $name,
                     'email' => $email,
@@ -117,7 +121,7 @@ class MembersImportService
                 Role::firstOrCreate(['name' => 'member', 'guard_name' => 'web']);
                 $user->assignRole('member');
 
-                MemberProfile::create([
+                $profile = MemberProfile::create([
                     'user_id' => $user->id,
                     'display_name' => $name,
                     'nickname' => $this->valueOrNull($data, 'Nickname', 'nickname'),
@@ -132,10 +136,26 @@ class MembersImportService
                     'payment_status' => 'free',
                 ]);
 
+                $membershipIdForEvent = $profile->membership_id ?? 'N/A';
+
                 $this->syncInterestsGoals($user, $data);
+
+                $userId = $user->id;
             });
 
             Password::sendResetLink(['email' => $email]);
+
+            $user = User::find($userId);
+            if ($user) {
+                try {
+                    MembershipActivated::dispatch($user, $membershipIdForEvent, $user);
+                } catch (\Throwable $e) {
+                    Log::error('MembersImportService: failed to dispatch activated event', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $this->imported++;
         } catch (\Throwable $e) {
