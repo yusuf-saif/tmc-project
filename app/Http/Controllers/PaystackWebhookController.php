@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\JannahCoinsLedger;
 use App\Models\MemberProfile;
 use App\Models\Setting;
 use App\Models\SouqListing;
@@ -101,6 +102,23 @@ class PaystackWebhookController extends Controller
                 'reference' => $reference,
             ]);
 
+            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
+                $alreadyRedeemed = JannahCoinsLedger::query()
+                    ->where('user_id', $profile->user_id)
+                    ->where('reason', 'redemption_membership')
+                    ->where('reference_id', $profile->id)
+                    ->exists();
+
+                if (! $alreadyRedeemed) {
+                    app(CoinsService::class)->applyRedemption(
+                        $profile->user,
+                        (int) $metadata['coins_used'],
+                        'membership',
+                        $profile->id,
+                    );
+                }
+            }
+
             return response()->json(['status' => 'already_verified']);
         }
 
@@ -121,6 +139,11 @@ class PaystackWebhookController extends Controller
 
             $billingCycle = $profile->preferred_billing_cycle ?? 'monthly';
             $expectedAmount = $paystackService->getAmountForBillingCycle($billingCycle) * 100;
+
+            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
+                $expectedAmount -= (int) $metadata['coins_used'] * CoinsService::coinValueKobo();
+            }
+
             $paidAmount = (int) ($verifiedData['amount'] ?? 0);
 
             Log::info('PaystackWebhook: amount check', [
@@ -221,6 +244,23 @@ class PaystackWebhookController extends Controller
                 'reference' => $reference,
             ]);
 
+            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
+                $alreadyRedeemed = JannahCoinsLedger::query()
+                    ->where('user_id', $listing->user_id)
+                    ->where('reason', 'redemption_souq')
+                    ->where('reference_id', $listing->id)
+                    ->exists();
+
+                if (! $alreadyRedeemed) {
+                    app(CoinsService::class)->applyRedemption(
+                        $listing->owner,
+                        (int) $metadata['coins_used'],
+                        'souq',
+                        $listing->id,
+                    );
+                }
+            }
+
             return response()->json(['status' => 'already_active']);
         }
 
@@ -238,6 +278,11 @@ class PaystackWebhookController extends Controller
             $verifiedData = $paystackService->verifyPayment($reference);
 
             $expectedAmount = (int) Setting::get('souq_listing_fee_kobo');
+
+            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
+                $expectedAmount -= (int) $metadata['coins_used'] * CoinsService::coinValueKobo();
+            }
+
             $paidAmount = (int) ($verifiedData['amount'] ?? 0);
 
             Log::info('PaystackWebhook: Souq amount check', [

@@ -100,7 +100,28 @@ class ApplyForm extends Component
                 $this->approvedUnpaidListing->paystack_reference
             );
 
+            $expectedAmount = (int) Setting::get('souq_listing_fee_kobo');
+            $paidAmount = (int) ($verifiedData['amount'] ?? 0);
+
+            $verifiedMetadata = $verifiedData['metadata'] ?? [];
+            if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
+                $expectedAmount -= (int) $verifiedMetadata['coins_used'] * CoinsService::coinValueKobo();
+            }
+
+            if ($paidAmount < $expectedAmount) {
+                return;
+            }
+
             app(BusinessStateService::class)->activate($this->approvedUnpaidListing);
+
+            if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
+                app(CoinsService::class)->applyRedemption(
+                    $this->approvedUnpaidListing->owner,
+                    (int) $verifiedMetadata['coins_used'],
+                    'souq',
+                    $this->approvedUnpaidListing->id,
+                );
+            }
 
             $this->syncListingState();
         } catch (\Throwable $e) {

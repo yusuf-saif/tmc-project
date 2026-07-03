@@ -136,6 +136,12 @@ class PaymentPage extends Component
 
             $planLabel = $profile->preferred_billing_cycle ?? 'monthly';
             $expectedAmount = $paystackService->getAmountForBillingCycle($planLabel) * 100;
+
+            $verifiedMetadata = $verifiedData['metadata'] ?? [];
+            if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
+                $expectedAmount -= (int) $verifiedMetadata['coins_used'] * CoinsService::coinValueKobo();
+            }
+
             $paidAmount = (int) ($verifiedData['amount'] ?? 0);
 
             if ($paidAmount < $expectedAmount) {
@@ -151,6 +157,15 @@ class PaymentPage extends Component
                 ])->saveQuietly();
 
                 return;
+            }
+
+            if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
+                app(CoinsService::class)->applyRedemption(
+                    $user,
+                    (int) $verifiedMetadata['coins_used'],
+                    'membership',
+                    $profile->id,
+                );
             }
 
             app(MembershipStateService::class)->recordPayment($profile, $user, $planLabel);
