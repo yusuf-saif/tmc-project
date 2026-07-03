@@ -22,10 +22,18 @@
 
   {{-- Search + List My Business --}}
   <div class="page-pad anim-fade-up delay-1 souq-search-wrap">
-    <input type="text"
-           wire:model.live.debounce.300ms="search"
-           placeholder="Search businesses..."
-           class="input souq-search-input">
+    <div class="flex gap-3">
+      <input type="text"
+             wire:model.live.debounce.300ms="search"
+             placeholder="Search businesses..."
+             class="input souq-search-input" style="flex:1;">
+      <select wire:model.live="sort" class="input" style="max-width:130px;">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="title_asc">A → Z</option>
+        <option value="title_desc">Z → A</option>
+      </select>
+    </div>
     <div class="souq-apply-wrap">
       <a href="{{ route('souq.apply') }}" class="souq-apply-btn">List My Business</a>
     </div>

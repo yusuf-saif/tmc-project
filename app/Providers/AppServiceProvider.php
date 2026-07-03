@@ -134,16 +134,7 @@ class AppServiceProvider extends ServiceProvider
                     return;
                 }
 
-                try {
-                    $pdo = $connection->getPdo();
-                    $pdo->exec('PRAGMA journal_mode=WAL');
-                    $pdo->exec('PRAGMA busy_timeout=5000');
-                    $pdo->exec('PRAGMA synchronous=NORMAL');
-                } catch (\Throwable $e) {
-                    Log::warning('Could not set SQLite PRAGMAs: '.$e->getMessage());
-                }
-
-                Log::info('SQLite database connected with WAL mode', ['path' => $path]);
+                Log::info('SQLite database connected', ['path' => $path]);
             }
         } catch (\Throwable $e) {
             Log::error('Database connection validation failed', [

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\MemberProfile;
 use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;

@@ -17,7 +17,7 @@ class HijriDateService
 
     public function __construct()
     {
-        $this->hijri = new Hijri();
+        $this->hijri = new Hijri;
         $this->hijri->setLang('en');
     }
 

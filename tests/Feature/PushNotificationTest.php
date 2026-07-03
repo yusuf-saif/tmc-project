@@ -180,7 +180,7 @@ class PushNotificationTest extends TestCase
 
         $event = Event::create([
             'title' => 'Test Event',
-            'slug' => 'test-event-' . str()->random(6),
+            'slug' => 'test-event-'.str()->random(6),
             'description' => 'Description',
             'location_type' => 'online',
             'event_date' => now()->addDay(),
@@ -200,7 +200,7 @@ class PushNotificationTest extends TestCase
     {
         $event = Event::create([
             'title' => 'Reminder Test Event',
-            'slug' => 'reminder-test-' . str()->random(6),
+            'slug' => 'reminder-test-'.str()->random(6),
             'description' => 'Test description',
             'location_type' => 'online',
             'event_date' => now()->addDay(),

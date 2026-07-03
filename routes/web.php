@@ -94,15 +94,8 @@ Route::post('/logout', function () {
     return redirect('/login');
 })->middleware(['auth'])->name('logout');
 
-Route::get('/logout', function () {
-    Auth::guard('web')->logout();
+// GET logout removed for security — use POST only
 
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-
-    return redirect('/login');
-})->middleware(['auth']);
-
-Route::get('/password/change', fn () => view('auth.change-password'))
+Route::get('/password/change', fn () => redirect()->route('password.request'))
     ->middleware(['auth'])
     ->name('password.change');

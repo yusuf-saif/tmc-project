@@ -28,13 +28,13 @@ class BadgeResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('name')->required()->maxLength(255),
             Forms\Components\Textarea::make('description')->required()->columnSpanFull(),
-            Forms\Components\FileUpload::make("icon_path")
+            Forms\Components\FileUpload::make('icon_path')
                 ->image()
-                ->imageResizeMode("cover")
+                ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(200)
                 ->imageResizeUpscale(false)
-                ->disk("public")
-                ->directory("badges/icons")
+                ->disk('public')
+                ->directory('badges/icons')
                 ->image(),
             Forms\Components\Textarea::make('criteria')->required()->columnSpanFull(),
             Forms\Components\TextInput::make('coin_reward')

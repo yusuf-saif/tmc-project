@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\JpegEncoder;
 use Intervention\Image\ImageManager;
 
 class ImageProcessingService
@@ -12,7 +14,7 @@ class ImageProcessingService
 
     public function __construct()
     {
-        $this->manager = new ImageManager(\Intervention\Image\Drivers\Gd\Driver::class);
+        $this->manager = new ImageManager(Driver::class);
     }
 
     public function resizeAndStore(
@@ -27,11 +29,11 @@ class ImageProcessingService
             $image->scale(width: $maxWidth);
         }
 
-        $filename = $directory . '/' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $filename = $directory.'/'.bin2hex(random_bytes(16)).'.jpeg';
 
         Storage::disk($disk)->put(
             $filename,
-            (string) $image->encode()
+            (string) $image->encode(new JpegEncoder(quality: 80))
         );
 
         return $filename;

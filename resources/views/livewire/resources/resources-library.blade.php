@@ -20,8 +20,16 @@
         </div>
     </section>
 
-    <div>
-        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search resources..." class="input">
+    <div class="flex gap-3">
+        <div class="flex-1">
+            <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search resources..." class="input">
+        </div>
+        <select wire:model.live="sort" class="input" style="max-width:130px;">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="title_asc">A → Z</option>
+            <option value="title_desc">Z → A</option>
+        </select>
     </div>
 
     @if ($this->resources->count())

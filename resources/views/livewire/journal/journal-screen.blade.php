@@ -9,13 +9,23 @@
         <p class="text-sm font-light leading-7 text-ink-soft">Keep a private space for your reflections and the du'as you return to most.</p>
     </section>
 
-    <section class="journal-tabs">
-        @foreach (['entries' => 'Entries', 'dua_list' => "Du'a List"] as $value => $label)
-            <button type="button" wire:click="$set('tab', '{{ $value }}')"
-                    class="journal-tab {{ $tab === $value ? 'journal-tab-active' : 'journal-tab-inactive' }}">
-                {{ $label }}
-            </button>
-        @endforeach
+    <section class="grid grid-cols-2 gap-3">
+        <button type="button" wire:click="$set('tab', 'entries')"
+                class="journal-type-card {{ $tab === 'entries' ? 'journal-type-card-active' : '' }}">
+            <span class="journal-type-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V18a2.25 2.25 0 0 1-2.25 2.25H7.5A2.25 2.25 0 0 1 5.25 18V5.25A1.5 1.5 0 0 1 6.75 3.75h9.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25h4.5M9 12h3"/></svg>
+            </span>
+            <span class="journal-type-card-title">Entries</span>
+            <span class="journal-type-card-sub">Your reflections</span>
+        </button>
+        <button type="button" wire:click="$set('tab', 'dua_list')"
+                class="journal-type-card {{ $tab === 'dua_list' ? 'journal-type-card-active' : '' }}">
+            <span class="journal-type-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-7 w-7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75c-1.5-1.125-3.75-1.125-6 0v10.5c2.25-1.125 4.5-1.125 6 0m0-10.5c1.5-1.125 3.75-1.125 6 0v10.5c-2.25-1.125-4.5-1.125-6 0" stroke="currentColor"/></svg>
+            </span>
+            <span class="journal-type-card-title">Du'a List</span>
+            <span class="journal-type-card-sub">Saved supplications</span>
+        </button>
     </section>
 
     @if ($tab === 'entries')

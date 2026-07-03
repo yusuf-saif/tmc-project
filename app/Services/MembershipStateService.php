@@ -18,9 +18,9 @@ class MembershipStateService
     private const ALLOWED_TRANSITIONS = [
         'registered' => ['onboarding'],
         'onboarding' => ['active'],          // Legacy fallback only
-        'active'     => ['member', 'suspended'],
-        'member'     => ['suspended'],
-        'suspended'  => ['member', 'active'],
+        'active' => ['member', 'suspended'],
+        'member' => ['suspended'],
+        'suspended' => ['member', 'active'],
     ];
 
     public function allowedTransitions(?string $fromStatus): array
@@ -65,7 +65,7 @@ class MembershipStateService
             );
         }
 
-        DB::transaction(function () use ($profile, $newStatus, $oldStatus, $metadata): void {
+        DB::transaction(function () use ($profile, $newStatus, $metadata): void {
             $profile->onboarding_status = $newStatus;
 
             if (isset($metadata['approved_by'])) {
@@ -114,7 +114,7 @@ class MembershipStateService
 
     public function recordPayment(MemberProfile $profile, User $user, ?string $planLabel = null): void
     {
-        DB::transaction(function () use ($profile, $user, $planLabel): void {
+        DB::transaction(function () use ($profile, $user): void {
             $profile->onboarding_status = 'member';
             $profile->payment_status = 'paid';
             $profile->payment_verified_at ??= now();
@@ -230,7 +230,7 @@ class MembershipStateService
 
     public function reject(MemberProfile $profile, string $reason, User $admin): MemberProfile
     {
-        DB::transaction(function () use ($profile, $reason, $admin): void {
+        DB::transaction(function () use ($profile, $reason): void {
             $profile->rejection_reason = $reason;
             $profile->save();
 

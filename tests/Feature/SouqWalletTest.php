@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Filament\Resources\SouqListingResource;
 use App\Livewire\Souq\ApplyForm;
 use App\Livewire\Wallet\WalletScreen;
-use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;
 use App\Services\CoinsService;

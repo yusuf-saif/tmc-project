@@ -22,10 +22,10 @@ class SetPasswordNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $resetUrl = url(route('password.reset', [
+        $resetUrl = route('password.reset', [
             'token' => $this->token,
             'email' => $notifiable->getEmailForPasswordReset(),
-        ], false));
+        ]);
 
         return (new MailMessage)
             ->subject('Welcome to The Muhsinat Club — Set Your Password')

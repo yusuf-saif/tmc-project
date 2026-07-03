@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Events\MembershipSubmitted;
 use App\Models\Goal;
 use App\Models\Interest;
+use App\Models\MemberProfile;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -74,6 +75,8 @@ class MembershipProcessingJob implements ShouldQueue
             ]);
         }
     }
+
+    protected function syncLegacyProfile(User $user): void
     {
         try {
             $legacy = $user->profile;

@@ -18,6 +18,9 @@ class ResourcesLibrary extends Component
     #[Url]
     public string $search = '';
 
+    #[Url]
+    public string $sort = 'newest';
+
     public function getResourcesProperty()
     {
         $query = Resource::query()->published()->with('category');
@@ -30,7 +33,14 @@ class ResourcesLibrary extends Component
             $query->where('title', 'like', "%{$this->search}%");
         }
 
-        return $query->orderByDesc('created_at')->paginate(12);
+        $query = match ($this->sort) {
+            'oldest' => $query->orderBy('created_at'),
+            'title_asc' => $query->orderBy('title'),
+            'title_desc' => $query->orderByDesc('title'),
+            default => $query->orderByDesc('created_at'),
+        };
+
+        return $query->paginate(12);
     }
 
     public function getCategoriesProperty()
@@ -41,6 +51,12 @@ class ResourcesLibrary extends Component
     public function setCategory(string $category): void
     {
         $this->category = $category;
+        $this->resetPage();
+    }
+
+    public function setSort(string $sort): void
+    {
+        $this->sort = $sort;
         $this->resetPage();
     }
 

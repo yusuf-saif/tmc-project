@@ -217,6 +217,7 @@ class SettingsRegistry
         foreach (self::KEYS as $key => $config) {
             $grouped[$config['group']][] = $key;
         }
+
         return $grouped;
     }
 

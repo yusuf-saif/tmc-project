@@ -4,10 +4,10 @@ namespace App\Livewire\Membership;
 
 use App\Models\Goal;
 use App\Models\Interest;
-use App\Models\MemberProfile;
 use App\Services\MembershipSignupService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -137,6 +137,17 @@ class MembershipSignupWizard extends Component
         if ($this->submitting) {
             return;
         }
+
+        $key = 'signup:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            $this->addError('submit', "Too many signup attempts. Please try again in {$seconds} seconds.");
+
+            return;
+        }
+
+        RateLimiter::hit($key, 3600);
 
         $this->submitting = true;
 

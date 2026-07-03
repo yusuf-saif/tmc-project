@@ -124,7 +124,6 @@ class ViewMembershipApplication extends ViewRecord
                     ])->columns(3)
                     ->visible(fn ($record): bool => in_array($record->onboarding_status, ['active', 'member', 'onboarding'], true)),
 
-
             ]);
     }
 

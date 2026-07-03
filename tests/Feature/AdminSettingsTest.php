@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Events\MembershipActivated;
 use App\Filament\Pages\SettingsPage;
 use App\Listeners\AwardWelcomeCoins;
-use App\Models\JannahCoinsLedger;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\CoinsService;
@@ -95,7 +94,7 @@ class AdminSettingsTest extends TestCase
         Setting::set('nonexistent_key', 'value');
     }
 
-    public function test_setting_getValue_still_works_for_backward_compat(): void
+    public function test_setting_get_value_still_works_for_backward_compat(): void
     {
         Setting::set('bank_details', 'Bank XYZ');
 

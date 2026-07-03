@@ -26,7 +26,7 @@ class MembershipNeedsCorrection extends Notification implements ShouldQueue
             ->subject('Membership Application Needs Correction')
             ->line('Your membership application needs some corrections.')
             ->line("Notes: {$this->notes}")
-            ->action('Review Application', url('/membership/onboarding'))
+            ->action('Review Application', url(route('membership.signup')))
             ->line('Please log in and update your application.');
     }
 
@@ -35,7 +35,7 @@ class MembershipNeedsCorrection extends Notification implements ShouldQueue
         return [
             'title' => 'Application Needs Correction',
             'body' => "Your application needs correction: {$this->notes}",
-            'action_url' => '/membership/onboarding',
+            'action_url' => route('membership.signup'),
         ];
     }
 }

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Livewire\Membership\MembershipSignupWizard;
 use App\Models\Goal;
 use App\Models\Interest;
-use App\Models\MemberProfile;
 use App\Models\User;
 use Database\Seeders\GoalSeeder;
 use Database\Seeders\InterestSeeder;

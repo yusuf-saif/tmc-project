@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Events\MembershipActivated;
 use App\Livewire\Home\HomeDashboard;
 use App\Livewire\Profile\ProfileScreen;
-use App\Models\MemberProfile;
 use App\Models\User;
 use App\Notifications\MembershipRenewalReminder;
 use App\Services\MembershipStateService;

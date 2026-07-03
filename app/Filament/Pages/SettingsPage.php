@@ -5,11 +5,12 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use App\Services\AuditLogService;
 use App\Settings\SettingsRegistry;
-use Filament\Forms\Components\Section;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -88,7 +89,7 @@ class SettingsPage extends Page implements HasForms
         ];
     }
 
-    protected function buildField(string $key): ?\Filament\Forms\Components\Component
+    protected function buildField(string $key): ?Component
     {
         $type = SettingsRegistry::type($key);
         $label = SettingsRegistry::label($key);
@@ -147,7 +148,7 @@ class SettingsPage extends Page implements HasForms
     protected function getFormActions(): array
     {
         return [
-            \Filament\Actions\Action::make('save')
+            Action::make('save')
                 ->label('Save Settings')
                 ->submit('save')
                 ->keyBindings(['mod+s']),

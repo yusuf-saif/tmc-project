@@ -5,8 +5,8 @@ namespace App\Listeners;
 use App\Events\MembershipActivated;
 use App\Models\JannahCoinsLedger;
 use App\Models\Setting;
-use App\Services\CoinsService;
 use App\Services\AuditLogService;
+use App\Services\CoinsService;
 use Illuminate\Support\Facades\Log;
 
 class AwardWelcomeCoins

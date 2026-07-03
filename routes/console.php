@@ -85,7 +85,6 @@ Schedule::command('membership:send-renewal-reminders')
     ->dailyAt('08:00')
     ->name('send-membership-renewal-reminders');
 
-
 // ─── Database & file backups ──────────────────────────────────────
 Schedule::command('backup:clean')
     ->dailyAt('01:30')

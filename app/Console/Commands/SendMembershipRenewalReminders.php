@@ -31,7 +31,7 @@ class SendMembershipRenewalReminders extends Command
             ->where('current_period_ends_at', '<=', now()->addDays($reminderDays))
             ->where(function ($q) {
                 $q->whereNull('reminder_sent_at')
-                  ->orWhere('reminder_sent_at', '<', \DB::raw('current_period_ends_at'));
+                    ->orWhere('reminder_sent_at', '<', \DB::raw('current_period_ends_at'));
             })
             ->get();
 

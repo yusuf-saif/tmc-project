@@ -52,7 +52,7 @@ class PushNotificationService
 
         try {
             foreach ($this->webPush->flush() as $report) {
-                if (!$report->isSuccess() && $report->isSubscriptionExpired()) {
+                if (! $report->isSuccess() && $report->isSubscriptionExpired()) {
                     $endpoint = $report->getRequest()->getUri()->__toString();
                     PushSubscription::where('endpoint', $endpoint)->delete();
                 }

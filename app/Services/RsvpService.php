@@ -6,8 +6,8 @@ use App\Jobs\SendEventReminderNotification;
 use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\JannahCoinsLedger;
-use App\Models\User;
 use App\Models\Setting;
+use App\Models\User;
 use DomainException;
 
 class RsvpService

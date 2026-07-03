@@ -55,7 +55,7 @@ class SouqPaymentTest extends TestCase
         ]);
 
         Http::fake([
-            config('paystack.paymentUrl') . '/transaction/initialize' => Http::response([
+            config('paystack.paymentUrl').'/transaction/initialize' => Http::response([
                 'status' => true,
                 'data' => [
                     'authorization_url' => 'https://checkout.paystack.com/fake_souq_url',
@@ -77,7 +77,7 @@ class SouqPaymentTest extends TestCase
         $this->member->memberProfile->update(['onboarding_status' => 'onboarding']);
 
         Http::fake([
-            config('paystack.paymentUrl') . '/transaction/initialize' => Http::response([
+            config('paystack.paymentUrl').'/transaction/initialize' => Http::response([
                 'status' => true,
                 'data' => [
                     'authorization_url' => 'https://checkout.paystack.com/fake_membership_url',

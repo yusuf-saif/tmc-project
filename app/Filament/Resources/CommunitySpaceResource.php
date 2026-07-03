@@ -31,13 +31,13 @@ class CommunitySpaceResource extends Resource
             Forms\Components\TextInput::make('short_description')->required()->maxLength(255),
             Forms\Components\RichEditor::make('description')->required()->columnSpanFull(),
             Forms\Components\RichEditor::make('guidelines')->columnSpanFull(),
-            Forms\Components\FileUpload::make("cover_image_path")
+            Forms\Components\FileUpload::make('cover_image_path')
                 ->image()
-                ->imageResizeMode("cover")
+                ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(1200)
                 ->imageResizeUpscale(false)
-                ->disk("public")
-                ->directory("community/covers")
+                ->disk('public')
+                ->directory('community/covers')
                 ->image(),
             Forms\Components\TextInput::make('external_link')->url(),
             Forms\Components\Toggle::make('is_youth_space'),

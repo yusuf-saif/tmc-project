@@ -55,15 +55,15 @@
       </div>
       <button wire:click="switchTab('wallet')" x-on:click="activeTab = 'wallet'"
               class="profile-stat-card"
-              style="text-decoration:none;cursor:pointer;background:none;border:none;text-align:center;">
+              style="text-decoration:none;cursor:pointer;background:none;border:none;text-align:center;position:relative;">
         <p class="profile-stat-val">{{ number_format($this->coinsBalance) }}</p>
-        <p class="profile-stat-lbl">Coins</p>
+        <p class="profile-stat-lbl">Coins <span style="font-size:8px;color:var(--teal);">›</span></p>
       </button>
       <button wire:click="switchTab('membership')" x-on:click="activeTab = 'membership'"
               class="profile-stat-card"
-              style="text-decoration:none;cursor:pointer;background:none;border:none;text-align:center;">
+              style="text-decoration:none;cursor:pointer;background:none;border:none;text-align:center;position:relative;">
         <p class="profile-stat-val">{{ $this->badges->count() }}</p>
-        <p class="profile-stat-lbl">Badges</p>
+        <p class="profile-stat-lbl">Badges <span style="font-size:8px;color:var(--teal);">›</span></p>
       </button>
     </div>
 
@@ -121,7 +121,7 @@
 
   {{-- ═══════════ TAB: WALLET ═══════════ --}}
   @elseif($tab === 'wallet')
-  <div class="anim-fade-up page-pad" style="padding-top:12px;padding-bottom:12px;"
+  <div class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;"
        x-data="{ open: $wire.entangle('showHistory') }">
 
     {{-- Balance Card --}}
@@ -132,24 +132,35 @@
     </section>
 
     {{-- Referral Section --}}
-    <section class="referral-section" style="margin-top:12px;">
+    <section class="referral-section" style="margin-top:16px;">
       <h2>Invite a Sister, Earn 25 Coins</h2>
       <p>When a sister joins using your link, you both benefit</p>
-      <div class="referral-code-box">
-        <p class="referral-code-text">{{ $this->referralLink }}</p>
-      </div>
-      <div style="margin-top:12px;" x-data="{ copied: false }">
-        <button type="button" class="referral-copy-btn"
-          x-on:click="navigator.clipboard.writeText('{{ $this->referralLink }}'); copied = true; setTimeout(() => copied = false, 2000)"
-          x-text="copied ? 'Copied! ✓' : 'Copy Link'">
+      <div class="referral-code-box" x-data="{ copied: false, fallback: '' }">
+        <p class="referral-code-text">{{ auth()->user()->referral_code }}</p>
+        <button type="button" class="referral-code-copy-btn"
+          x-on:click="
+            try {
+              await navigator.clipboard.writeText('{{ $this->referralLink }}');
+              copied = true;
+            } catch(e) {
+              fallback = '{{ $this->referralLink }}';
+              $refs.fallbackInput.select();
+              document.execCommand('copy');
+              copied = true;
+            }
+            setTimeout(() => copied = false, 2000)"
+          x-text="copied ? 'Copied!' : 'Copy'">
         </button>
+        <input type="text" x-ref="fallbackInput" x-model="fallback" class="sr-only" aria-hidden="true">
       </div>
-      <p class="referral-stat">{{ $this->referralCount }} sister(s) joined with your link</p>
+      <p class="referral-stat" style="margin-top:8px;">{{ $this->referralCount }} sister(s) joined with your link</p>
     </section>
 
     {{-- History --}}
     <section class="wallet-history">
-      <button type="button" wire:click="toggleHistory" class="wallet-history-toggle">
+      <button type="button" wire:click="toggleHistory" class="wallet-history-toggle"
+              aria-expanded="{{ $showHistory ? 'true' : 'false' }}"
+              aria-controls="wallet-history-panel">
         <span class="wallet-history-toggle-text">View History</span>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="1.5" class="wallet-history-toggle-icon"
@@ -158,7 +169,7 @@
         </svg>
       </button>
 
-      <div x-show="open" x-transition x-cloak style="margin-top:16px;">
+      <div x-show="open" x-transition x-cloak id="wallet-history-panel" style="margin-top:16px;">
         <div class="wallet-history-header">
           <span>Date</span>
           <span>Reason</span>
@@ -269,7 +280,7 @@
 
   {{-- ═══════════ TAB: NOTIFICATIONS ═══════════ --}}
   @elseif($tab === 'notifications')
-  <div class="anim-fade-up page-pad" style="padding-top:12px;padding-bottom:12px;">
+  <div class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;">
 
     {{-- Notification Preferences Link --}}
     <a href="{{ route('profile.notifications') }}" class="notif-pref-link">
@@ -282,7 +293,8 @@
     @php($unread = $this->unreadCount)
     @if($notifications->count() > 0)
       @if($unread > 0)
-        <button type="button" wire:click="markAllAsRead" class="notif-mark-all">
+        <button type="button" wire:click="markAllAsRead" wire:confirm="Mark all notifications as read?"
+                class="notif-mark-all">
           <span class="notif-mark-all-text">Mark all as read</span>
           <span class="notif-mark-all-icon">✓</span>
         </button>
@@ -319,7 +331,7 @@
 
   {{-- ═══════════ TAB: REFERRALS ═══════════ --}}
   @elseif($tab === 'referrals')
-  <div class="anim-fade-up page-pad" style="padding-top:12px;padding-bottom:12px;">
+  <div class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;">
 
     {{-- Referral Stats --}}
     <section class="referral-hero">
@@ -331,14 +343,23 @@
     <section class="referral-card">
       <h3>Share Your Link</h3>
       <p class="referral-card-sub">Earn 25 coins for each sister who joins</p>
-      <div class="referral-code-box" style="background:var(--ivory);">
-        <p class="referral-code-text">{{ $this->referralLink }}</p>
-      </div>
-      <div style="margin-top:12px;" x-data="{ copied: false }">
-        <button type="button" class="referral-copy-btn" style="width:100%;"
-          x-on:click="navigator.clipboard.writeText('{{ $this->referralLink }}'); copied = true; setTimeout(() => copied = false, 2000)"
-          x-text="copied ? 'Copied! ✓' : 'Copy Referral Link'">
+      <div class="referral-code-box" style="background:var(--ivory);" x-data="{ copied: false, fallback: '' }">
+        <p class="referral-code-text">{{ auth()->user()->referral_code }}</p>
+        <button type="button" class="referral-code-copy-btn"
+          x-on:click="
+            try {
+              await navigator.clipboard.writeText('{{ $this->referralLink }}');
+              copied = true;
+            } catch(e) {
+              fallback = '{{ $this->referralLink }}';
+              $refs.fallbackInput2.select();
+              document.execCommand('copy');
+              copied = true;
+            }
+            setTimeout(() => copied = false, 2000)"
+          x-text="copied ? 'Copied!' : 'Copy Link'">
         </button>
+        <input type="text" x-ref="fallbackInput2" x-model="fallback" class="sr-only" aria-hidden="true">
       </div>
     </section>
 
@@ -357,7 +378,7 @@
                 <p class="referral-name">{{ $referral->referred?->name ?? 'Unknown' }}</p>
                 <p class="referral-date">Joined {{ $referral->created_at->diffForHumans() }}</p>
               </div>
-              <span class="referral-amount">+25</span>
+              <span class="referral-amount" title="Coins earned from this referral">+25</span>
             </div>
           @endforeach
         </div>
@@ -373,7 +394,7 @@
 
   {{-- ═══════════ TAB: SETTINGS ═══════════ --}}
   @elseif($tab === 'settings')
-  <div class="anim-fade-up page-pad" style="padding-top:12px;padding-bottom:12px;">
+  <div class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;">
     <div class="settings-list">
       <a href="{{ route('profile.edit') }}" class="settings-item">
         <span>Edit Profile</span>
@@ -383,8 +404,8 @@
         <span>Notification Preferences</span>
         <span class="settings-arrow">›</span>
       </a>
-      <a href="{{ route('password.change') }}" class="settings-item">
-        <span>Change Password</span>
+      <a href="{{ route('password.request') }}" class="settings-item">
+        <span>Reset Password</span>
         <span class="settings-arrow">›</span>
       </a>
       <a href="{{ route('profile.legacy-card') }}" class="settings-item">

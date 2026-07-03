@@ -28,11 +28,11 @@ class ListUsers extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $path = Storage::disk('local')->path($data['csv_file']);
+                    $disk = config('filament.default_filesystem_disk', 'public');
 
-                    $result = app(MembersImportService::class)->import($path);
+                    $result = app(MembersImportService::class)->import($data['csv_file'], $disk);
 
-                    Storage::disk('local')->delete($data['csv_file']);
+                    Storage::disk($disk)->delete($data['csv_file']);
 
                     $message = sprintf(
                         'Imported %d members. %d skipped.',

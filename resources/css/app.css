@@ -624,11 +624,22 @@
 }
 
 .profile-stat-card {
-  background: var(--white);
+  background: white;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 12px 8px;
+  padding: 14px 8px;
   text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-stat-card:hover {
+  border-color: var(--teal);
+}
+
+.profile-stat-card:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
 }
 
 .profile-stat-val {
@@ -1049,12 +1060,20 @@ textarea.input { resize: vertical; min-height: 120px; }
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 600;
-  padding: 8px 14px;
+  padding: 9px 16px;
   border-radius: 20px;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tab-pill:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
 }
 
 .tab-pill-active {
@@ -1093,13 +1112,21 @@ textarea.input { resize: vertical; min-height: 120px; }
   align-items: center;
   gap: 10px;
   padding: 14px;
-  border-radius: var(--radius-md);
   background: white;
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   cursor: pointer;
+  transition: all 0.2s;
   text-align: left;
-  text-decoration: none;
-  font-family: var(--font-body);
+}
+
+.quick-access-tile:hover {
+  border-color: var(--teal);
+}
+
+.quick-access-tile:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
 }
 
 .quick-access-tile-emoji {
@@ -1185,6 +1212,10 @@ textarea.input { resize: vertical; min-height: 120px; }
   border: 1px solid var(--border);
   background: white;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .referral-code-text {
@@ -1192,6 +1223,24 @@ textarea.input { resize: vertical; min-height: 120px; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.referral-code-copy-btn {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--teal);
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--teal-lt);
+  color: var(--teal);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .referral-copy-btn {
@@ -1733,15 +1782,18 @@ textarea.input { resize: vertical; min-height: 120px; }
 
 .settings-logout-form {
   padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
 }
 
 .settings-logout-btn {
   font-size: 14px;
-  color: var(--ink);
+  color: #DC2626;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
+  font-weight: 500;
 }
 
 /* ── SOUQ DIRECTORY ─────────────────────────────────── */
@@ -1883,6 +1935,41 @@ textarea.input { resize: vertical; min-height: 120px; }
 }
 
 /* ── JOURNAL SCREEN ─────────────────────────────────── */
+.journal-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 12px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.journal-type-card-active {
+  border-color: var(--teal);
+  background: var(--teal-lt);
+}
+
+.journal-type-card-icon {
+  color: var(--teal);
+}
+
+.journal-type-card-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--teal-dk);
+  line-height: 1;
+}
+
+.journal-type-card-sub {
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-weight: 300;
+}
+
 .journal-tabs {
   display: flex;
   align-items: center;
@@ -1947,14 +2034,19 @@ textarea.input { resize: vertical; min-height: 120px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   border: none;
   background: none;
   cursor: pointer;
   font-size: 16px;
   transition: background 0.2s;
+}
+
+.journal-action-btn:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
 }
 
 .journal-action-btn:hover {

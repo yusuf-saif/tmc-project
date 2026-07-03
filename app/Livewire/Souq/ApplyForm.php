@@ -4,11 +4,12 @@ namespace App\Livewire\Souq;
 
 use App\Models\Setting;
 use App\Models\SouqListing;
+use App\Services\BusinessStateService;
 use App\Services\CoinsService;
+use App\Services\ImageProcessingService;
 use App\Services\PaystackService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
-use App\Services\ImageProcessingService;
 use Livewire\WithFileUploads;
 
 class ApplyForm extends Component
@@ -69,7 +70,7 @@ class ApplyForm extends Component
         ]);
 
         /* @phpstan-ignore-next-line */
-        $path = $this->logo ? app(ImageProcessingService::class)->resizeAndStore($this->logo, "souq/logos", 400) : null;
+        $path = $this->logo ? app(ImageProcessingService::class)->resizeAndStore($this->logo, 'souq/logos', 400) : null;
 
         SouqListing::query()->create([
             'user_id' => auth()->id(),
@@ -99,7 +100,7 @@ class ApplyForm extends Component
                 $this->approvedUnpaidListing->paystack_reference
             );
 
-            app(\App\Services\BusinessStateService::class)->activate($this->approvedUnpaidListing);
+            app(BusinessStateService::class)->activate($this->approvedUnpaidListing);
 
             $this->syncListingState();
         } catch (\Throwable $e) {

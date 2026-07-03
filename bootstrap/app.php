@@ -10,6 +10,8 @@ use App\Providers\FortifyServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Sentry\Laravel\Integration;
+use Sentry\Laravel\ServiceProvider;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,8 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         AppServiceProvider::class,
         FortifyServiceProvider::class,
-        \Sentry\Laravel\ServiceProvider::class,
+        ServiceProvider::class,
     ])
     ->withExceptions(function (Exceptions $exceptions) {
-        \Sentry\Laravel\Integration::handles($exceptions);
+        Integration::handles($exceptions);
     })->create();

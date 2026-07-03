@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Membership\PaymentPage;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,7 +25,7 @@ class PaymentPageRedirectTest extends TestCase
         ]);
 
         Livewire::actingAs($user)
-            ->test(\App\Livewire\Membership\PaymentPage::class)
+            ->test(PaymentPage::class)
             ->assertRedirect(route('home'));
     }
 
@@ -40,7 +41,7 @@ class PaymentPageRedirectTest extends TestCase
         ]);
 
         Livewire::actingAs($user)
-            ->test(\App\Livewire\Membership\PaymentPage::class)
+            ->test(PaymentPage::class)
             ->assertOk()
             ->assertSet('paymentStatus', 'onboarding');
     }

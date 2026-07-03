@@ -4,9 +4,9 @@ namespace App\Livewire\Profile;
 
 use App\Models\Goal;
 use App\Models\Interest;
+use App\Services\ImageProcessingService;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
-use App\Services\ImageProcessingService;
 use Livewire\WithFileUploads;
 
 class EditProfile extends Component
@@ -64,7 +64,7 @@ class EditProfile extends Component
 
         if ($this->avatar) {
             /* @phpstan-ignore-next-line */
-            $profileData["avatar_path"] = app(ImageProcessingService::class)->resizeAndStore($this->avatar, "avatars", 400);
+            $profileData['avatar_path'] = app(ImageProcessingService::class)->resizeAndStore($this->avatar, 'avatars', 400);
         }
 
         $user->memberProfile()->update($profileData);

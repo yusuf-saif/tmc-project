@@ -21,7 +21,6 @@ class JannahCoinsLedger extends Model
         'amount',
         'reference_id',
         'admin_note',
-        'created_at',
     ];
 
     public function user(): BelongsTo

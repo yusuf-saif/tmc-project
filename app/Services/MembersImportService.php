@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\Goal;
+use App\Models\Interest;
 use App\Models\MemberProfile;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
@@ -21,23 +25,27 @@ class MembersImportService
 
     private array $errors = [];
 
-    public function import(string $csvPath): array
+    public function import(string $csvPath, string $disk = 'public'): array
     {
-        $handle = fopen($csvPath, 'r');
-        if (! $handle) {
+        $stream = Storage::disk($disk)->readStream($csvPath);
+        if (! $stream) {
             return ['imported' => 0, 'skipped' => 0, 'skipped_emails' => [], 'errors' => ['Could not open file']];
         }
 
-        $headers = fgetcsv($handle);
+        $headers = fgetcsv($stream, escape: '\\');
         if (! $headers) {
-            fclose($handle);
+            fclose($stream);
 
             return ['imported' => 0, 'skipped' => 0, 'skipped_emails' => [], 'errors' => ['Empty file']];
         }
 
         $headers = array_map(fn ($h) => trim((string) $h), $headers);
 
-        while (($row = fgetcsv($handle)) !== false) {
+        if ($this->rowIsData($headers)) {
+            $this->processRow($this->mapPositionalRow($headers));
+        }
+
+        while (($row = fgetcsv($stream, escape: '\\')) !== false) {
             $data = array_combine($headers, $row);
             if (! $data) {
                 continue;
@@ -46,7 +54,7 @@ class MembersImportService
             $this->processRow($data);
         }
 
-        fclose($handle);
+        fclose($stream);
 
         Log::info('MembersImportService: import completed', [
             'imported' => $this->imported,
@@ -117,7 +125,7 @@ class MembersImportService
                     'age_group' => $this->normalizeAgeGroup($this->valueOrNull($data, 'Age Group', 'age_group')),
                     'marital_status' => $this->valueOrNull($data, 'Marital Status', 'marital_status'),
                     'phone' => $this->valueOrNull($data, 'Phone Number', 'phone', 'phone_number'),
-                    'onboarding_status' => 'onboarding',
+                    'onboarding_status' => 'active',
                     'membership_id' => $membershipId ?: null,
                     'membership_type' => 'M',
                     'submitted_at' => $submittedAt,
@@ -143,7 +151,7 @@ class MembersImportService
     {
         $interestNames = $this->parseList($data['Interests'] ?? $data['interests'] ?? '');
         if ($interestNames) {
-            $interestIds = \App\Models\Interest::whereIn('name', $interestNames)->pluck('id');
+            $interestIds = Interest::whereIn('name', $interestNames)->pluck('id');
             if ($interestIds->isNotEmpty()) {
                 $user->interests()->sync($interestIds);
             }
@@ -151,7 +159,7 @@ class MembersImportService
 
         $goalNames = $this->parseList($data['Goals'] ?? $data['goals'] ?? '');
         if ($goalNames) {
-            $goalIds = \App\Models\Goal::whereIn('name', $goalNames)->pluck('id');
+            $goalIds = Goal::whereIn('name', $goalNames)->pluck('id');
             if ($goalIds->isNotEmpty()) {
                 $user->goals()->sync($goalIds);
             }
@@ -198,7 +206,7 @@ class MembersImportService
         };
     }
 
-    private function parseHijriDate(string $value): ?\Illuminate\Support\Carbon
+    private function parseHijriDate(string $value): ?Carbon
     {
         try {
             [$y, $m, $d] = array_pad(array_map('intval', explode('-', $value)), 3, 1);
@@ -221,5 +229,42 @@ class MembersImportService
         } while (User::where('referral_code', $code)->exists());
 
         return $code;
+    }
+
+    private function rowIsData(array $headers): bool
+    {
+        foreach ($headers as $cell) {
+            if (str_contains($cell, '@')) {
+                return true;
+            }
+        }
+
+        return count($headers) > 0 && ! in_array(strtolower($headers[0]), ['membership id', 'full name', 'name', 'email'], true);
+    }
+
+    private function mapPositionalRow(array $row): array
+    {
+        $map = [
+            'MEMBERSHIP ID' => fn ($v) => (string) $v,
+            'Hijri Date' => fn ($v) => (string) $v,
+            'Full Name' => fn ($v) => (string) $v,
+            'Nickname' => fn ($v) => (string) $v,
+            'Location' => fn ($v) => (string) $v,
+            'Age Group' => fn ($v) => (string) $v,
+            'Marital Status' => fn ($v) => (string) $v,
+            'Interests' => fn ($v) => (string) $v,
+            'Goals' => fn ($v) => (string) $v,
+            'Email' => fn ($v) => (string) $v,
+            'Phone Number' => fn ($v) => (string) $v,
+        ];
+
+        $keys = array_keys($map);
+        $result = [];
+
+        foreach ($keys as $i => $key) {
+            $result[$key] = ($map[$key])(isset($row[$i]) ? (string) $row[$i] : '');
+        }
+
+        return $result;
     }
 }

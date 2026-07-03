@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Services\ImageProcessingService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 use Tests\TestCase;
 
 class ImageUploadTest extends TestCase
@@ -21,8 +23,8 @@ class ImageUploadTest extends TestCase
         Storage::disk('public')->assertExists($path);
 
         $stored = Storage::disk('public')->get($path);
-        $manager = new \Intervention\Image\ImageManager(
-            \Intervention\Image\Drivers\Gd\Driver::class,
+        $manager = new ImageManager(
+            Driver::class,
         );
         $image = $manager->decodeBinary($stored);
 
@@ -41,8 +43,8 @@ class ImageUploadTest extends TestCase
         Storage::disk('public')->assertExists($path);
 
         $stored = Storage::disk('public')->get($path);
-        $manager = new \Intervention\Image\ImageManager(
-            \Intervention\Image\Drivers\Gd\Driver::class,
+        $manager = new ImageManager(
+            Driver::class,
         );
         $image = $manager->decodeBinary($stored);
 

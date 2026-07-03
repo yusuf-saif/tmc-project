@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Membership;
 
-use App\Models\MemberProfile;
 use App\Models\Setting;
 use App\Services\AuditLogService;
 use App\Services\CoinsService;

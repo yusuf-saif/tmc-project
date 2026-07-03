@@ -11,6 +11,7 @@ use App\Events\SubscriptionExpiringSoon;
 use App\Events\SubscriptionPaymentFailed;
 use App\Events\SubscriptionPaymentReceived;
 use App\Events\SubscriptionSuspended;
+use App\Models\Setting;
 use App\Notifications\BusinessActivated as BusinessActivatedNotification;
 use App\Notifications\BusinessApproved as BusinessApprovedNotification;
 use App\Notifications\BusinessSuspended as BusinessSuspendedNotification;
@@ -20,7 +21,6 @@ use App\Notifications\SubscriptionExpiringSoon as SubscriptionExpiringSoonNotifi
 use App\Notifications\SubscriptionPaymentFailed as SubscriptionPaymentFailedNotification;
 use App\Notifications\SubscriptionPaymentReceived as SubscriptionPaymentReceivedNotification;
 use App\Notifications\SubscriptionSuspended as SubscriptionSuspendedNotification;
-use App\Models\Setting;
 use App\Services\HijriDateService;
 use App\Services\PushNotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -111,7 +111,7 @@ class SendBillingNotifications implements ShouldQueue
         app(PushNotificationService::class)->send(
             $user,
             'Subscription Suspended',
-            "Your subscription has been suspended.",
+            'Your subscription has been suspended.',
             route('home'),
         );
     }

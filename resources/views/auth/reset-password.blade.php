@@ -26,6 +26,6 @@
             <input id="password_confirmation" name="password_confirmation" type="password" required autocomplete="new-password" class="tmc-input">
         </div>
 
-        <button type="submit" class="tmc-button-gold" x-data @click="$el.disabled=true;$el.textContent='Resetting...'">Reset Password</button>
+        <button type="submit" class="tmc-button-gold" x-data @click="$el.disabled=true;$el.textContent='Resetting...';$el.closest('form').submit()">Reset Password</button>
     </form>
 @endsection

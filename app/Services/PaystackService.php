@@ -48,17 +48,19 @@ class PaystackService
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$this->secretKey}",
             'Content-Type' => 'application/json',
-        ])->post("{$this->baseUrl}/transaction/initialize", [
-            'amount' => $amount,
-            'email' => $user->email,
-            'reference' => $reference,
-            'callback_url' => route('membership.payment'),
-            'metadata' => array_merge([
-                'user_id' => $user->id,
-                'billing_cycle' => $billingCycle,
-                'membership_type' => 'membership_payment',
-            ], $extraMetadata),
-        ]);
+        ])->timeout(15)
+            ->connectTimeout(5)
+            ->post("{$this->baseUrl}/transaction/initialize", [
+                'amount' => $amount,
+                'email' => $user->email,
+                'reference' => $reference,
+                'callback_url' => route('membership.payment'),
+                'metadata' => array_merge([
+                    'user_id' => $user->id,
+                    'billing_cycle' => $billingCycle,
+                    'membership_type' => 'membership_payment',
+                ], $extraMetadata),
+            ]);
 
         $body = $response->json();
 
@@ -89,7 +91,9 @@ class PaystackService
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$this->secretKey}",
             'Content-Type' => 'application/json',
-        ])->get("{$this->baseUrl}/transaction/verify/{$reference}");
+        ])->timeout(15)
+            ->connectTimeout(5)
+            ->get("{$this->baseUrl}/transaction/verify/{$reference}");
 
         $body = $response->json();
         $paidStatus = $body['data']['status'] ?? 'unknown';
@@ -152,17 +156,19 @@ class PaystackService
         $response = Http::withHeaders([
             'Authorization' => "Bearer {$this->secretKey}",
             'Content-Type' => 'application/json',
-        ])->post("{$this->baseUrl}/transaction/initialize", [
-            'amount' => $amountKobo,
-            'email' => $listing->owner->email,
-            'reference' => $reference,
-            'callback_url' => route('souq.apply'),
-            'metadata' => array_merge([
-                'user_id' => $listing->owner->id,
-                'payment_type' => 'souq_listing_fee',
-                'listing_id' => $listing->id,
-            ], $extraMetadata),
-        ]);
+        ])->timeout(15)
+            ->connectTimeout(5)
+            ->post("{$this->baseUrl}/transaction/initialize", [
+                'amount' => $amountKobo,
+                'email' => $listing->owner->email,
+                'reference' => $reference,
+                'callback_url' => route('souq.apply'),
+                'metadata' => array_merge([
+                    'user_id' => $listing->owner->id,
+                    'payment_type' => 'souq_listing_fee',
+                    'listing_id' => $listing->id,
+                ], $extraMetadata),
+            ]);
 
         $body = $response->json();
 

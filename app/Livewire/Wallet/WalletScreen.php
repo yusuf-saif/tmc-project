@@ -23,7 +23,7 @@ class WalletScreen extends Component
 
     public function getReferralLinkProperty(): string
     {
-        return url('/register').'?ref='.auth()->user()->referral_code;
+        return url('/membership/signup?ref='.auth()->user()->referral_code);
     }
 
     public function getReferralCountProperty(): int

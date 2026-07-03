@@ -18,20 +18,36 @@ class SouqDirectory extends Component
     #[Url]
     public string $search = '';
 
+    #[Url]
+    public string $sort = 'newest';
+
     public function getSouqListingsProperty()
     {
-        return SouqListing::query()
+        $query = SouqListing::query()
             ->active()
             ->when($this->category !== 'all', fn ($query) => $query->where('category', $this->category))
             ->when($this->search !== '', fn ($query) => $query->where('business_name', 'like', "%{$this->search}%"))
-            ->with('owner')
-            ->latest()
-            ->paginate(12);
+            ->with('owner');
+
+        $query = match ($this->sort) {
+            'oldest' => $query->orderBy('created_at'),
+            'title_asc' => $query->orderBy('business_name'),
+            'title_desc' => $query->orderByDesc('business_name'),
+            default => $query->latest(),
+        };
+
+        return $query->paginate(12);
     }
 
     public function setCategory(string $category): void
     {
         $this->category = $category;
+        $this->resetPage();
+    }
+
+    public function setSort(string $sort): void
+    {
+        $this->sort = $sort;
         $this->resetPage();
     }
 

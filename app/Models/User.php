@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\SetPasswordNotification;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -176,7 +177,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify(new \App\Notifications\SetPasswordNotification($token));
+        $this->notify(new SetPasswordNotification($token));
     }
 
     public function canAccessPanel(Panel $panel): bool
