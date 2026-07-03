@@ -102,8 +102,13 @@ Route::get('/password/change', fn () => redirect()->route('password.request'))
     ->name('password.change');
 
 Route::middleware(['auth'])->post('/password/send-reset', function () {
-    Password::sendResetLink(['email' => request()->user()->email]);
+    $email = request()->user()->email;
 
-    return redirect()->route('profile', ['tab' => 'settings'])
-        ->with('success', 'Password reset link sent — check your email.');
+    Password::sendResetLink(['email' => $email]);
+
+    Auth::guard('web')->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+
+    return redirect('/login')->with('status', 'A password reset link has been sent to '.$email.'. Check your email and click the link to set a new password.');
 })->name('password.send-reset');
