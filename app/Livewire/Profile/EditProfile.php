@@ -68,6 +68,7 @@ class EditProfile extends Component
         }
 
         $user->memberProfile()->update($profileData);
+        $user->update(['name' => $this->displayName]);
         $user->interests()->sync($this->selectedInterests);
         $user->goals()->sync($this->selectedGoals);
 
