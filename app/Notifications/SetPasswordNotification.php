@@ -28,12 +28,11 @@ class SetPasswordNotification extends Notification implements ShouldQueue
         ]);
 
         return (new MailMessage)
-            ->subject('Welcome to The Muhsinat Club — Set Your Password')
+            ->subject('Set Your Password — The Muhsinat Club')
             ->greeting('Assalamu Alaikum,')
-            ->line('Your membership account has been created.')
-            ->line('Please set your password using the link below to access your dashboard.')
+            ->line('Use the link below to set a password for your TMC account.')
             ->action('Set Your Password', $resetUrl)
-            ->line('This password set link will expire in 60 minutes.')
-            ->line('If you did not expect this email, please contact our support team.');
+            ->line('This link will expire in 60 minutes.')
+            ->line('If you did not request this, please contact our support team.');
     }
 }

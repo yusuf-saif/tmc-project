@@ -404,10 +404,11 @@
         <span>Notification Preferences</span>
         <span class="settings-arrow">›</span>
       </a>
-      <a href="{{ route('password.request') }}" class="settings-item">
-        <span>Reset Password</span>
+      <form method="POST" action="{{ route('password.send-reset') }}" class="settings-item">
+        @csrf
+        <button type="submit" class="settings-reset-btn">Reset Password</button>
         <span class="settings-arrow">›</span>
-      </a>
+      </form>
       <a href="{{ route('profile.legacy-card') }}" class="settings-item">
         <span>Legacy Card</span>
         <span class="settings-arrow">›</span>

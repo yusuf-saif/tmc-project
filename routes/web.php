@@ -26,6 +26,7 @@ use App\Livewire\Souq\SouqDirectory;
 use App\Models\Setting;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('landing'))->name('landing');
@@ -99,3 +100,10 @@ Route::post('/logout', function () {
 Route::get('/password/change', fn () => redirect()->route('password.request'))
     ->middleware(['auth'])
     ->name('password.change');
+
+Route::middleware(['auth'])->post('/password/send-reset', function () {
+    Password::sendResetLink(['email' => request()->user()->email]);
+
+    return redirect()->route('profile', ['tab' => 'settings'])
+        ->with('success', 'Password reset link sent — check your email.');
+})->name('password.send-reset');

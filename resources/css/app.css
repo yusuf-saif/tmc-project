@@ -1796,6 +1796,17 @@ textarea.input { resize: vertical; min-height: 120px; }
   font-weight: 500;
 }
 
+.settings-reset-btn {
+  font-size: 14px;
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex: 1;
+  text-align: left;
+}
+
 /* ── SOUQ DIRECTORY ─────────────────────────────────── */
 .souq-page-header {
   margin-bottom: 4px;
