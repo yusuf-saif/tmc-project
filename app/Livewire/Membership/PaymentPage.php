@@ -22,10 +22,14 @@ class PaymentPage extends Component
 
     public bool $applyCoins = false;
 
+    public string $paymentMethod = 'card';
+
+    public string $bankDetails = '';
+
     public function mount()
     {
         $this->loadBillingOptions();
-
+        $this->bankDetails = Setting::getValue('bank_details', 'Contact us for bank details');
         $this->refreshStatus();
     }
 
@@ -71,15 +75,27 @@ class PaymentPage extends Component
 
         $memberProfile = $user->memberProfile;
 
-        $status = $memberProfile?->onboarding_status;
-
-        if (! $status) {
+        if (! $memberProfile) {
             $this->redirect(route('membership.signup'));
 
             return;
         }
 
+        $status = $memberProfile->onboarding_status;
+
         $allowedStatuses = ['onboarding', 'active', 'suspended'];
+
+        if ($status === 'member') {
+            $this->redirect(route('home'));
+
+            return;
+        }
+
+        if ($memberProfile->payment_status === 'pending_verification') {
+            $this->paymentStatus = 'pending_verification';
+
+            return;
+        }
 
         if (! in_array($status, $allowedStatuses, true)) {
             $this->redirect(route('home'));
@@ -96,17 +112,20 @@ class PaymentPage extends Component
         $user->refresh();
 
         $profile = $user->memberProfile;
-        $status = $profile?->onboarding_status;
 
-        $allowedForVerification = ['onboarding', 'active', 'suspended'];
+        if (! $profile) {
+            return;
+        }
 
-        if ($status === 'member') {
+        if ($profile->onboarding_status === 'member') {
             $this->redirect(route('home'));
 
             return;
         }
 
-        if (in_array($status, $allowedForVerification) && $profile->paystack_reference && $profile->payment_verified_at === null) {
+        $allowedForVerification = ['onboarding', 'active', 'suspended'];
+
+        if (in_array($profile->onboarding_status, $allowedForVerification) && $profile->paystack_reference && $profile->payment_verified_at === null) {
             if (config('paystack.skipVerification', false)) {
                 $this->activateWithoutVerification($profile, $user);
             } else {
@@ -115,16 +134,21 @@ class PaymentPage extends Component
         }
 
         $profile->refresh();
-        $updatedStatus = $profile->onboarding_status;
 
-        if ($updatedStatus === 'member') {
+        if ($profile->onboarding_status === 'member') {
             $this->redirect(route('home'));
 
             return;
         }
 
-        if ($updatedStatus !== $this->paymentStatus) {
-            $this->paymentStatus = $updatedStatus;
+        if ($profile->payment_status === 'pending_verification') {
+            $this->paymentStatus = 'pending_verification';
+
+            return;
+        }
+
+        if ($profile->onboarding_status !== $this->paymentStatus) {
+            $this->paymentStatus = $profile->onboarding_status;
         }
     }
 
@@ -291,12 +315,56 @@ class PaymentPage extends Component
         }
     }
 
+    public function submitBankTransfer(): void
+    {
+        if ($this->submitting) {
+            return;
+        }
+
+        $user = auth()->user();
+        $memberProfile = $user->memberProfile;
+
+        if (! $memberProfile || ! in_array($memberProfile->onboarding_status, ['active', 'onboarding', 'suspended'], true)) {
+            return;
+        }
+
+        $this->submitting = true;
+
+        $memberProfile->forceFill([
+            'preferred_billing_cycle' => $this->billingCycle,
+            'payment_source' => 'bank_transfer',
+            'payment_status' => 'pending_verification',
+            'payment_submitted_at' => now(),
+        ])->saveQuietly();
+
+        AuditLogService::log(
+            action: 'manual_payment_submitted',
+            model: $memberProfile,
+            old: ['onboarding_status' => $memberProfile->onboarding_status, 'payment_status' => $memberProfile->payment_status],
+            new: ['payment_source' => 'bank_transfer', 'payment_status' => 'pending_verification', 'payment_submitted_at' => now()],
+            targetUserId: $user->id,
+        );
+
+        Log::info('PaymentPage: manual payment submitted', [
+            'user_id' => $user->id,
+            'profile_id' => $memberProfile->id,
+            'billing_cycle' => $this->billingCycle,
+        ]);
+
+        $this->paymentStatus = 'pending_verification';
+    }
+
     public function render()
     {
         $user = auth()->user();
         $memberProfile = $user->memberProfile;
 
         $profile = $memberProfile;
+
+        if ($memberProfile && $memberProfile->payment_status === 'pending_verification') {
+            $this->paymentStatus = 'pending_verification';
+        }
+
         $status = $this->paymentStatus ?: ($memberProfile?->onboarding_status);
 
         $billingCycle = $this->billingCycle;
@@ -318,6 +386,7 @@ class PaymentPage extends Component
             'amountDue' => $amountDue,
             'redemption' => $redemption,
             'finalAmountDue' => $finalAmountDue,
+            'bankDetails' => $this->bankDetails,
         ])->layout('layouts.guest-livewire', [
             'title' => 'Membership Payment',
         ]);

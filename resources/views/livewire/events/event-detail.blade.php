@@ -1,5 +1,7 @@
 <div class="space-y-6">
-    <a href="{{ route('events') }}" class="inline-flex items-center text-[13px] font-medium text-teal">&larr; All Events</a>
+    @push('backButton')
+        <a href="{{ route('events') }}" class="back-btn">&larr; All Events</a>
+    @endpush
 
     <section class="overflow-hidden rounded-[8px] bg-white" style="border:1px solid var(--border);">
         @if ($event->cover_image_path)

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
@@ -174,6 +175,15 @@ class User extends Authenticatable implements FilamentUser
     public function pushSubscriptions(): HasMany
     {
         return $this->hasMany(PushSubscription::class);
+    }
+
+    public static function generateUniqueReferralCode(): string
+    {
+        do {
+            $code = Str::upper(Str::random(8));
+        } while (static::where('referral_code', $code)->exists());
+
+        return $code;
     }
 
     public function sendPasswordResetNotification($token): void

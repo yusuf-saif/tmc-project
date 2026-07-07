@@ -1,3 +1,7 @@
+@push('backButton')
+    <a href="{{ route('home') }}" class="back-btn">&larr; Home</a>
+@endpush
+
 <div class="mx-auto flex min-h-screen w-full max-w-2xl items-center justify-center px-6 py-12"
      x-data="{ refreshing: false }"
      x-init="

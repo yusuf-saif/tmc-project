@@ -244,11 +244,7 @@ class MembersImportService
 
     private function generateReferralCode(): string
     {
-        do {
-            $code = strtoupper(Str::random(8));
-        } while (User::where('referral_code', $code)->exists());
-
-        return $code;
+        return User::generateUniqueReferralCode();
     }
 
     private function rowIsData(array $headers): bool

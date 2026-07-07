@@ -101,6 +101,10 @@ class OnboardingController extends Controller
                     'password' => Hash::make($validated['password']),
                     'status' => 'active',
                 ]);
+
+                if (! $user->referral_code) {
+                    $user->forceFill(['referral_code' => User::generateUniqueReferralCode()])->save();
+                }
                 $user->forceFill(['email_verified_at' => now()])->save();
 
                 $profile = $user->memberProfile;

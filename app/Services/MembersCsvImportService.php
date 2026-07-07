@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\MemberProfile;
 use App\Models\User;
 use App\Notifications\OnboardingInvitationNotification;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -166,6 +167,7 @@ class MembersCsvImportService
                     'password' => Hash::make(Str::random(32)),
                     'status' => 'pending_onboarding',
                     'email_verified_at' => null,
+                    'referral_code' => User::generateUniqueReferralCode(),
                 ]);
 
                 Role::firstOrCreate(['name' => 'member', 'guard_name' => 'web']);
@@ -202,7 +204,7 @@ class MembersCsvImportService
         return $parts[1] ?? 'M';
     }
 
-    private function parseHijriDateString(string $value): ?\Carbon\Carbon
+    private function parseHijriDateString(string $value): ?Carbon
     {
         try {
             $parts = preg_split('/[\s\-]+/', trim($value));

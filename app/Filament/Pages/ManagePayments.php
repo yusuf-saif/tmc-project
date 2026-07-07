@@ -4,7 +4,10 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
 use App\Models\MemberProfile;
+use App\Services\AuditLogService;
+use App\Services\MembershipStateService;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -30,7 +33,10 @@ class ManagePayments extends Page implements HasTable
         return $table
             ->query(
                 MemberProfile::query()
-                    ->where('onboarding_status', 'onboarding')
+                    ->where(fn ($q) => $q
+                        ->where('onboarding_status', 'onboarding')
+                        ->orWhere('payment_status', 'pending_verification')
+                    )
                     ->with('user')
             )
             ->defaultSort('updated_at', 'desc')
@@ -45,6 +51,19 @@ class ManagePayments extends Page implements HasTable
                 Tables\Columns\TextColumn::make('membership_id')
                     ->label('Membership ID')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('payment_source')
+                    ->label('Source')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'bank_transfer' => 'Bank Transfer',
+                        'paystack' => 'Paystack',
+                        default => '—',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'bank_transfer' => 'warning',
+                        'paystack' => 'success',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('onboarding_status')
                     ->label('Status')
                     ->badge()
@@ -52,32 +71,68 @@ class ManagePayments extends Page implements HasTable
                         'onboarding' => 'warning',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'onboarding' => 'Awaiting Payment',
+                    ->formatStateUsing(fn (string $state, MemberProfile $record): string => match (true) {
+                        $record->payment_status === 'pending_verification' => 'Pending Verification',
+                        $state === 'onboarding' => 'Awaiting Payment',
                         default => str($state)->replace('_', ' ')->title(),
                     }),
-                Tables\Columns\TextColumn::make('paystack_reference')
-                    ->label('Reference')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('payment_failed_reason')
-                    ->label('Failure Reason')
-                    ->limit(40)
-                    ->tooltip(fn (?string $state): ?string => $state)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('payment_submitted_at')
+                    ->label('Submitted')
+                    ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('payment_verified_at')
                     ->label('Verified')
                     ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
                     ->placeholder('—'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('onboarding_status')
+                Tables\Filters\SelectFilter::make('status')
                     ->label('Status')
                     ->options([
+                        'pending_verification' => 'Pending Verification',
                         'onboarding' => 'Awaiting Payment',
-                    ]),
+                    ])
+                    ->query(fn ($query, array $data) => match ($data['value'] ?? null) {
+                        'pending_verification' => $query->where('payment_status', 'pending_verification'),
+                        'onboarding' => $query->where('onboarding_status', 'onboarding'),
+                        default => $query,
+                    }),
             ])
             ->actions([
+                Tables\Actions\Action::make('verify')
+                    ->label('Verify Payment')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn (MemberProfile $record): bool => $record->payment_status === 'pending_verification' && $record->payment_source === 'bank_transfer')
+                    ->requiresConfirmation()
+                    ->modalHeading('Verify bank transfer payment')
+                    ->modalDescription(fn (MemberProfile $record): string => "Confirm that {$record->user?->name} has paid via bank transfer for ".ucfirst($record->preferred_billing_cycle ?? 'monthly').' billing?')
+                    ->modalSubmitActionLabel('Verify Payment')
+                    ->action(function (MemberProfile $record): void {
+                        $user = $record->user;
+                        $planLabel = $record->preferred_billing_cycle ?? 'monthly';
+
+                        $record->forceFill([
+                            'payment_verified_by' => auth()->id(),
+                        ])->saveQuietly();
+
+                        app(MembershipStateService::class)->recordPayment($record, $user, $planLabel);
+
+                        $record->refresh();
+
+                        AuditLogService::log(
+                            action: 'manual_payment_verified',
+                            model: $record,
+                            old: ['payment_status' => 'pending_verification', 'onboarding_status' => $record->onboarding_status],
+                            new: ['payment_status' => 'paid', 'onboarding_status' => $record->onboarding_status, 'membership_id' => $record->membership_id],
+                            targetUserId: $user->id,
+                        );
+
+                        Notification::make()
+                            ->title('Payment verified — membership activated')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('view')
                     ->label('View Application')
                     ->icon('heroicon-o-arrow-top-right-on-square')

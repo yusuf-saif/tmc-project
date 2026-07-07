@@ -18,9 +18,12 @@
 <body class="bg-ivory text-ink antialiased">
     <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
         <div class="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4">
-            <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
-                <img src="{{ asset('images/img1.png') }}" alt="TMC" class="h-7 w-auto object-contain">
-            </a>
+            <div class="inline-flex items-center gap-3">
+                @stack('backButton')
+                <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
+                    <img src="{{ asset('images/img1.png') }}" alt="TMC" class="h-7 w-auto object-contain">
+                </a>
+            </div>
             <span class="text-[11px] font-medium text-teal-dk/70" style="font-feature-settings:'tnum';">
               {{ now()->hijri('j M Y') }}
             </span>

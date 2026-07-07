@@ -3,10 +3,15 @@
 namespace App\Filament\Resources\MembershipApplicationResource\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
+use App\Models\Setting;
+use App\Services\AuditLogService;
+use App\Services\MembershipStateService;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewMembershipApplication extends ViewRecord
@@ -106,10 +111,12 @@ class ViewMembershipApplication extends ViewRecord
                             ->badge()
                             ->color(fn (?string $state): string => match ($state) {
                                 'paystack' => 'success',
+                                'bank_transfer' => 'warning',
                                 default => 'gray',
                             })
                             ->formatStateUsing(fn (?string $state): string => match ($state) {
                                 'paystack' => 'Paystack',
+                                'bank_transfer' => 'Bank Transfer',
                                 default => '—',
                             }),
                         TextEntry::make('paystack_reference')->label('Paystack Reference')
@@ -122,13 +129,52 @@ class ViewMembershipApplication extends ViewRecord
                             ->formatStateUsing(fn (?string $state): string => ucfirst($state ?? 'monthly')),
                         TextEntry::make('next_due_at')->label('Next Due')->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—'),
                     ])->columns(3)
-                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['active', 'member', 'onboarding'], true)),
+                    ->visible(fn ($record): bool => in_array($record->onboarding_status, ['active', 'member', 'onboarding'], true) || $record->payment_status === 'pending_verification'),
 
             ]);
     }
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Action::make('verifyBankPayment')
+                ->label('Verify Bank Payment')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->visible(fn ($record): bool => $record->payment_status === 'pending_verification' && $record->payment_source === 'bank_transfer')
+                ->requiresConfirmation()
+                ->modalHeading('Verify bank transfer payment')
+                ->modalDescription(fn ($record): string => "Confirm that {$record->user?->name} has paid ₦".number_format(match ($record->preferred_billing_cycle) {
+                    'quarterly' => (int) Setting::get('membership_fee_quarterly', 12000),
+                    'yearly' => (int) Setting::get('membership_fee_yearly', 40000),
+                    default => (int) Setting::get('membership_fee_monthly', 5000),
+                }).' via bank transfer for '.ucfirst($record->preferred_billing_cycle ?? 'monthly').' billing?')
+                ->modalSubmitActionLabel('Verify Payment')
+                ->action(function ($record): void {
+                    $user = $record->user;
+                    $planLabel = $record->preferred_billing_cycle ?? 'monthly';
+
+                    $record->forceFill([
+                        'payment_verified_by' => auth()->id(),
+                    ])->saveQuietly();
+
+                    app(MembershipStateService::class)->recordPayment($record, $user, $planLabel);
+
+                    $record->refresh();
+
+                    AuditLogService::log(
+                        action: 'manual_payment_verified',
+                        model: $record,
+                        old: ['payment_status' => 'pending_verification', 'onboarding_status' => $record->onboarding_status],
+                        new: ['payment_status' => 'paid', 'onboarding_status' => $record->onboarding_status, 'membership_id' => $record->membership_id],
+                        targetUserId: $user->id,
+                    );
+
+                    Notification::make()
+                        ->title('Payment verified — membership activated')
+                        ->success()
+                        ->send();
+                }),
+        ];
     }
 }

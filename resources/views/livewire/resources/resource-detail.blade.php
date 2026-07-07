@@ -1,5 +1,7 @@
 <div class="space-y-6">
-    <a href="{{ route('resources') }}" class="inline-flex items-center text-[13px] font-medium text-teal">&larr; Resources</a>
+    @push('backButton')
+        <a href="{{ route('resources') }}" class="back-btn">&larr; Resources</a>
+    @endpush
 
     <section class="overflow-hidden rounded-[8px] bg-white p-5" style="border:1px solid var(--border);">
         @if (in_array($resource->type, ['article', 'guide'], true))

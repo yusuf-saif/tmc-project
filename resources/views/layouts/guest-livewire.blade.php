@@ -16,6 +16,7 @@
     @livewireStyles
 </head>
 <body class="tmc-auth-body">
+    @stack('backButton')
     {{ $slot }}
 
     @livewireScripts

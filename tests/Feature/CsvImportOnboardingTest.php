@@ -11,6 +11,7 @@ use Database\Seeders\GoalSeeder;
 use Database\Seeders\InterestSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
@@ -37,7 +38,7 @@ class CsvImportOnboardingTest extends TestCase
 
         $csv = "MEMBERSHIP_ID,HIJRI_DATE,NAME,NICKNAME,EMAIL\n".
             "TMC-M-1448-001,15 Muharram 1448,Fatima Labaran Aliyu,Fati,fatima@example.com\n".
-            "TMC-M-1448-002,15 Muharram 1448,Aisha Bello,Aisha,aisha@example.com";
+            'TMC-M-1448-002,15 Muharram 1448,Aisha Bello,Aisha,aisha@example.com';
 
         $path = 'imports/test.csv';
         Storage::disk('public')->put($path, $csv);
@@ -79,7 +80,7 @@ class CsvImportOnboardingTest extends TestCase
 
         $csv = "MEMBERSHIP_ID,HIJRI_DATE,NAME,NICKNAME,EMAIL\n".
             "TMC-SM-1448-001,1 Ramadan 1448,Sister Young,Sister,young@example.com\n".
-            "TMC-E-1448-001,1 Shawwal 1448,Executive Member,Exec,exec@example.com";
+            'TMC-E-1448-001,1 Shawwal 1448,Executive Member,Exec,exec@example.com';
 
         $path = 'imports/test.csv';
         Storage::disk('public')->put($path, $csv);
@@ -104,7 +105,7 @@ class CsvImportOnboardingTest extends TestCase
         User::factory()->create(['email' => 'existing@example.com']);
 
         $csv = "MEMBERSHIP_ID,HIJRI_DATE,NAME,NICKNAME,EMAIL\n".
-            "TMC-M-1448-001,15 Muharram 1448,New Member,New,existing@example.com";
+            'TMC-M-1448-001,15 Muharram 1448,New Member,New,existing@example.com';
 
         $path = 'imports/test.csv';
         Storage::disk('public')->put($path, $csv);
@@ -123,7 +124,7 @@ class CsvImportOnboardingTest extends TestCase
         User::factory()->create(['member_id' => 'TMC-M-1448-001']);
 
         $csv = "MEMBERSHIP_ID,HIJRI_DATE,NAME,NICKNAME,EMAIL\n".
-            "TMC-M-1448-001,15 Muharram 1448,Another Member,Another,another@example.com";
+            'TMC-M-1448-001,15 Muharram 1448,Another Member,Another,another@example.com';
 
         $path = 'imports/test.csv';
         Storage::disk('public')->put($path, $csv);
@@ -140,7 +141,7 @@ class CsvImportOnboardingTest extends TestCase
         Storage::fake('public');
 
         $csv = "MEMBERSHIP_ID,HIJRI_DATE,NAME,NICKNAME,EMAIL\n".
-            "TMC-M-1448-001,15 Muharram 1448,Fatima Labaran Aliyu,Fati,fatima@example.com";
+            'TMC-M-1448-001,15 Muharram 1448,Fatima Labaran Aliyu,Fati,fatima@example.com';
 
         $path = 'imports/test.csv';
         Storage::disk('public')->put($path, $csv);
@@ -284,7 +285,7 @@ class CsvImportOnboardingTest extends TestCase
 
         $this->assertEquals('active', $user->status);
         $this->assertNotNull($user->email_verified_at);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('NewPassword123!', $user->password));
+        $this->assertTrue(Hash::check('NewPassword123!', $user->password));
 
         $profile = $user->memberProfile->refresh();
         $this->assertEquals('active', $profile->onboarding_status);
@@ -312,7 +313,7 @@ class CsvImportOnboardingTest extends TestCase
         $csv = "MEMBERSHIP_ID,HIJRI_DATE,NAME,NICKNAME,EMAIL\n".
             ",,Some Name,Nick,somename@example.com\n".
             "TMC-M-1448-001,,,Nick,noname@example.com\n".
-            "TMC-M-1448-002,15 Muharram 1448,Valid Name,Nick,";
+            'TMC-M-1448-002,15 Muharram 1448,Valid Name,Nick,';
 
         $path = 'imports/test.csv';
         Storage::disk('public')->put($path, $csv);

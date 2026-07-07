@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class MembershipSignupService
@@ -118,10 +117,6 @@ class MembershipSignupService
 
     protected function generateReferralCode(): string
     {
-        do {
-            $code = Str::upper(Str::random(8));
-        } while (User::where('referral_code', $code)->exists());
-
-        return $code;
+        return User::generateUniqueReferralCode();
     }
 }

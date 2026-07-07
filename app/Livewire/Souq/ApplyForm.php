@@ -4,6 +4,7 @@ namespace App\Livewire\Souq;
 
 use App\Models\Setting;
 use App\Models\SouqListing;
+use App\Services\AuditLogService;
 use App\Services\BusinessStateService;
 use App\Services\CoinsService;
 use App\Services\ImageProcessingService;
@@ -40,7 +41,13 @@ class ApplyForm extends Component
 
     public bool $hasApprovedUnpaid = false;
 
+    public bool $hasBankTransferPending = false;
+
     public bool $applyCoins = false;
+
+    public string $paymentMethod = 'card';
+
+    public string $bankDetails = '';
 
     public ?SouqListing $approvedListing = null;
 
@@ -49,6 +56,7 @@ class ApplyForm extends Component
     public function mount(): void
     {
         $this->contactEmail = (string) auth()->user()->email;
+        $this->bankDetails = Setting::getValue('bank_details', 'Contact us for bank details');
         $this->syncListingState();
     }
 
@@ -91,6 +99,12 @@ class ApplyForm extends Component
 
     public function checkPaymentStatus(): void
     {
+        $this->syncListingState();
+
+        if ($this->hasApproved) {
+            return;
+        }
+
         if (! $this->approvedUnpaidListing || ! $this->approvedUnpaidListing->paystack_reference) {
             return;
         }
@@ -157,24 +171,48 @@ class ApplyForm extends Component
         return redirect()->away($url);
     }
 
+    public function submitBankTransfer(): void
+    {
+        if (! $this->approvedUnpaidListing || $this->approvedUnpaidListing->payment_submitted_at) {
+            return;
+        }
+
+        $this->approvedUnpaidListing->forceFill([
+            'payment_source' => 'bank_transfer',
+            'payment_submitted_at' => now(),
+        ])->saveQuietly();
+
+        AuditLogService::log(
+            action: 'manual_payment_submitted',
+            model: $this->approvedUnpaidListing,
+            old: ['status' => 'approved_unpaid', 'payment_source' => null],
+            new: ['payment_source' => 'bank_transfer', 'payment_submitted_at' => now()],
+            targetUserId: auth()->id(),
+        );
+
+        $this->hasBankTransferPending = true;
+    }
+
     protected function syncListingState(): void
     {
-        $this->approvedListing = SouqListing::query()
-            ->where('user_id', auth()->id())
+        $query = SouqListing::query()
+            ->where('user_id', auth()->id());
+
+        $this->approvedListing = (clone $query)
             ->whereIn('status', ['approved', 'active'])
             ->first();
 
         $this->hasApproved = $this->approvedListing !== null;
 
-        $this->approvedUnpaidListing = SouqListing::query()
-            ->where('user_id', auth()->id())
+        $this->approvedUnpaidListing = (clone $query)
             ->where('status', 'approved_unpaid')
             ->first();
 
         $this->hasApprovedUnpaid = $this->approvedUnpaidListing !== null;
+        $this->hasBankTransferPending = $this->approvedUnpaidListing !== null
+            && $this->approvedUnpaidListing->payment_source === 'bank_transfer';
 
-        $pending = SouqListing::query()
-            ->where('user_id', auth()->id())
+        $pending = (clone $query)
             ->where('status', 'pending')
             ->first();
 
@@ -200,6 +238,7 @@ class ApplyForm extends Component
             'redemption' => $redemption,
             'feeAmount' => $feeAmountNaira,
             'finalFeeAmount' => $finalFeeAmount,
+            'bankDetails' => $this->bankDetails,
         ])->layout('layouts.app', ['title' => 'List Your Business']);
     }
 }

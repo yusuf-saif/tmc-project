@@ -9,6 +9,18 @@
             </div>
             <a href="{{ route('souq.show', $approvedListing->slug) }}" class="tmc-button-gold max-w-[220px] no-underline">View Listing</a>
         </section>
+
+    @elseif ($hasBankTransferPending && $approvedUnpaidListing)
+        <section class="space-y-4 rounded-[8px] bg-white p-6 text-center" style="border: 1px solid var(--border);" wire:poll.5s="checkPaymentStatus">
+            <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>
+            <p class="text-sm font-light leading-7 text-ink-soft">Your bank transfer is being reviewed.</p>
+            <div class="rounded-[8px] p-4" style="background: var(--gold-pale); border: 1px solid rgba(200, 168, 75, 0.25);">
+                <p class="text-sm font-semibold text-ink">{{ $approvedUnpaidListing->business_name }}</p>
+                <p class="mt-2 text-[12px] font-light leading-6 text-ink-soft">Listing fee: ₦{{ number_format($feeAmount) }}</p>
+            </div>
+            <p class="text-sm font-light leading-7 text-ink-soft">We'll activate your listing once the admin confirms your payment.</p>
+        </section>
+
     @elseif ($hasApprovedUnpaid && $approvedUnpaidListing)
         <section class="space-y-4 rounded-[8px] bg-white p-6" style="border: 1px solid var(--border);" wire:poll.5s="checkPaymentStatus">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>
@@ -17,13 +29,33 @@
                 <p class="text-sm font-semibold text-ink">{{ $approvedUnpaidListing->business_name }}</p>
                 <p class="mt-2 text-sm font-light leading-7 text-ink-soft">
                     Listing fee: ₦{{ number_format($finalFeeAmount) }}
-                    @if ($applyCoins && $redemption['eligible'])
+                    @if ($paymentMethod === 'card' && $applyCoins && $redemption['eligible'])
                         <span class="text-teal">(₦{{ number_format($feeAmount - $finalFeeAmount) }} covered by {{ $redemption['coins_to_use'] }} coins)</span>
                     @endif
                 </p>
             </div>
 
-            @if ($redemption['eligible'])
+            {{-- Payment method toggle --}}
+            <div class="space-y-2">
+                <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Payment Method</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" wire:click="$set('paymentMethod', 'card')"
+                            class="rounded-lg p-3 text-center transition"
+                            style="border: 2px solid {{ $paymentMethod === 'card' ? '#1A6B72' : '#E2E8F0' }}; background: {{ $paymentMethod === 'card' ? '#D6EDEF' : '#FFFFFF' }};">
+                        <p class="text-sm font-semibold text-teal-dk">Pay with Card</p>
+                        <p class="text-[10px] text-ink-soft">via Paystack</p>
+                    </button>
+                    <button type="button" wire:click="$set('paymentMethod', 'bank_transfer')"
+                            class="rounded-lg p-3 text-center transition"
+                            style="border: 2px solid {{ $paymentMethod === 'bank_transfer' ? '#1A6B72' : '#E2E8F0' }}; background: {{ $paymentMethod === 'bank_transfer' ? '#D6EDEF' : '#FFFFFF' }};">
+                        <p class="text-sm font-semibold text-teal-dk">Bank Transfer</p>
+                        <p class="text-[10px] text-ink-soft">Manual payment</p>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Jannah Coins (only for card) --}}
+            @if ($paymentMethod === 'card' && $redemption['eligible'])
                 <div class="rounded-[8px] border p-4" style="border-color: var(--teal-lt); background: rgba(210, 235, 230, 0.3);">
                     <label class="flex cursor-pointer items-center gap-3">
                         <input type="checkbox" wire:model.live="applyCoins" class="h-4 w-4 rounded border-teal text-teal focus:ring-teal">
@@ -38,23 +70,42 @@
                 </div>
             @endif
 
-            <button type="button" wire:click="payListing" wire:loading.attr="disabled" class="tmc-button-gold max-w-[220px] no-underline">
-                Pay ₦{{ number_format($finalFeeAmount) }} Now
-            </button>
+            {{-- Card payment --}}
+            @if ($paymentMethod === 'card')
+                <button type="button" wire:click="payListing" wire:loading.attr="disabled" class="tmc-button-gold max-w-[220px] no-underline">
+                    Pay ₦{{ number_format($finalFeeAmount) }} Now
+                </button>
+
+            {{-- Bank transfer --}}
+            @else
+                <div class="rounded-[8px] border p-4" style="border-color: var(--gold); background: var(--ivory);">
+                    <h3 class="text-sm font-semibold text-teal-dk">Bank Transfer Details</h3>
+                    <pre class="mt-3 whitespace-pre-wrap font-body text-sm font-light leading-7 text-ink-md">{{ $bankDetails }}</pre>
+                </div>
+                <button type="button" wire:click="submitBankTransfer" wire:loading.attr="disabled" class="tmc-button-gold max-w-[220px] no-underline">
+                    <span wire:loading.remove wire:target="submitBankTransfer">I've Made the Transfer</span>
+                    <span wire:loading wire:target="submitBankTransfer">Submitting...</span>
+                </button>
+            @endif
         </section>
+
     @elseif ($submitted)
         <section class="space-y-4 rounded-[8px] bg-white p-6 text-center" style="border: 1px solid var(--border);">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>
             <p class="text-sm font-light leading-7 text-ink-soft">JazakAllahu Khairan — your application has been submitted! We review within 48 hours, insha'Allah.</p>
             <div>
-                <a href="{{ route('souq') }}" class="tmc-link">Back to The Souq</a>
+                @push('backButton')
+                    <a href="{{ route('souq') }}" class="back-btn">&larr; The Souq</a>
+                @endpush
             </div>
         </section>
+
     @elseif ($hasPending)
         <section class="space-y-4 rounded-[8px] p-6" style="background: var(--gold-pale); border: 1px solid rgba(200, 168, 75, 0.25);">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">List Your Business</h1>
             <p class="text-sm font-light leading-7 text-ink-soft">Your application is under review — we'll be in touch insha'Allah within 48 hours.</p>
         </section>
+
     @else
         <section class="space-y-6">
             <div>

@@ -60,6 +60,10 @@ class SouqListing extends Model
         'last_billed_at',
         'billing_suspended_at',
         'paystack_reference',
+        'payment_source',
+        'payment_submitted_at',
+        'payment_verified_by',
+        'payment_verified_at',
     ];
 
     protected function casts(): array
@@ -70,6 +74,8 @@ class SouqListing extends Model
             'billing_end_date' => 'datetime',
             'last_billed_at' => 'datetime',
             'billing_suspended_at' => 'datetime',
+            'payment_submitted_at' => 'datetime',
+            'payment_verified_at' => 'datetime',
             'monthly_fee' => 'decimal:2',
         ];
     }
@@ -98,6 +104,11 @@ class SouqListing extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function paymentVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'payment_verified_by');
     }
 
     public function scopeActive($query)

@@ -3,13 +3,17 @@
         <section class="space-y-4 rounded-[8px] bg-white p-6 text-center" style="border:1px solid var(--border);">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">{{ $this->heading() }}</h1>
             <p class="text-sm font-light leading-7 text-ink-soft">JazakAllahu Khairan — your application has been submitted! We'll be in touch insha'Allah.</p>
-            <a href="{{ route('community') }}" class="tmc-link">Back to Community</a>
+            @push('backButton')
+                <a href="{{ route('community') }}" class="back-btn">&larr; Community</a>
+            @endpush
         </section>
     @elseif ($existing)
         <section class="space-y-4 rounded-[8px] p-6" style="background:var(--gold-pale);border:1px solid rgba(200,168,75,0.25);">
             <h1 class="font-display text-[1.8rem] leading-none text-teal">{{ $this->heading() }}</h1>
             <p class="text-sm font-light leading-7 text-ink-soft">Your application is under review — JazakAllahu Khairan for your interest. We'll be in touch insha'Allah.</p>
-            <a href="{{ route('community') }}" class="tmc-link">Back to Community</a>
+            @push('backButton')
+                <a href="{{ route('community') }}" class="back-btn">&larr; Community</a>
+            @endpush
         </section>
     @else
         <section class="space-y-6">

@@ -28,6 +28,7 @@ use App\Listeners\SendWelcomePush;
 use App\Services\HijriDateService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -56,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('local')) {
             Model::preventLazyLoading();
         }
+
+        Paginator::useTailwind();
 
         Carbon::macro('hijri', function (string $format = 'd M Y'): string {
             return app(HijriDateService::class)->formatHijriDate($this, $format);

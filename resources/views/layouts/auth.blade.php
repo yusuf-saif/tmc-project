@@ -24,6 +24,8 @@
                 </a>
                 <p class="tmc-auth-brand">The Muhsinat Club</p>
 
+                <a href="{{ route('landing') }}" class="back-btn mb-4">&larr; Back to Home</a>
+
                 @yield('content')
             </div>
         </section>

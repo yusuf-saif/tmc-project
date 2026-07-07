@@ -1,5 +1,7 @@
 <div class="space-y-6">
-    <a href="{{ route('community') }}" class="inline-flex items-center text-[13px] font-medium text-teal">&larr; Community</a>
+    @push('backButton')
+        <a href="{{ route('community') }}" class="back-btn">&larr; Community</a>
+    @endpush
 
     <section class="overflow-hidden rounded-[8px] bg-white" style="border: 1px solid var(--border);">
         @if ($space->cover_image_path)

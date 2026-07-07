@@ -164,6 +164,22 @@
   border-bottom: 1px solid var(--glass-border);
 }
 
+/* ── BACK BUTTON ────────────────────────────────────── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--teal);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.back-btn:hover {
+  opacity: 0.7;
+}
+
 /* ── BOTTOM NAV ─────────────────────────────────────── */
 .bottom-nav {
   position: fixed;

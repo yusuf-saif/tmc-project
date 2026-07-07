@@ -25,11 +25,14 @@
 
   {{-- Top bar --}}
   <header class="top-bar">
-    <a href="{{ route('home') }}" style="display:inline-flex;align-items:center;">
-      <img src="{{ asset('images/img1.png') }}"
-           alt="TMC"
-           style="width:32px;height:32px;object-fit:contain;">
-    </a>
+    <div style="display:inline-flex;align-items:center;gap:10px;">
+      @stack('backButton')
+      <a href="{{ route('home') }}" style="display:inline-flex;align-items:center;">
+        <img src="{{ asset('images/img1.png') }}"
+             alt="TMC"
+             style="width:32px;height:32px;object-fit:contain;">
+      </a>
+    </div>
     <span class="text-[11px] font-medium text-teal-dk/70" style="font-feature-settings:'tnum';">
       {{ now()->hijri('j M Y') }}
     </span>

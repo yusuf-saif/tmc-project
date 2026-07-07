@@ -1,5 +1,7 @@
 <div class="space-y-6">
-    <a href="{{ route('profile') }}" class="inline-flex items-center text-[13px] font-medium text-teal">&larr; Profile</a>
+    @push('backButton')
+        <a href="{{ route('profile') }}" class="back-btn">&larr; Profile</a>
+    @endpush
     <h1 class="font-display text-[1.8rem] leading-none text-teal">Notifications</h1>
 
     <section class="space-y-4 rounded-[8px] bg-white p-5" style="border:1px solid var(--border);">

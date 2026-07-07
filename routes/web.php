@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ReceiptDownloadController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PaymentStatusController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -33,8 +34,8 @@ Route::get('/', fn () => view('landing'))->name('landing');
 Route::get('/offline', fn () => view('offline'))->name('offline');
 
 // Onboarding for CSV-imported members — no auth (token-gated)
-Route::get('/onboarding', [\App\Http\Controllers\OnboardingController::class, 'showForm'])->name('onboarding.form');
-Route::post('/onboarding/complete', [\App\Http\Controllers\OnboardingController::class, 'complete'])->name('onboarding.complete');
+Route::get('/onboarding', [OnboardingController::class, 'showForm'])->name('onboarding.form');
+Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 
 // Membership signup — no auth middleware (wizard creates user + logs in internally)
 Route::get('/membership/signup', MembershipSignupWizard::class)->name('membership.signup');

@@ -26,7 +26,7 @@
 - Fortify uses custom Blade views in `resources/views/auth/*`; do not swap in starter-kit assumptions.
 - Login redirect logic is custom in `app/Http/Responses/FortifyLoginResponse.php`: admin-capable roles go to `/admin`, members without completed onboarding go to `/onboarding`, everyone else goes to `/home`.
 - Register redirect is custom too: `app/Http/Responses/FortifyRegisterResponse.php` sends browser requests straight to `/home`.
-- Referral awards are wired off `Illuminate\Auth\Events\Verified` in `app/Providers/AppServiceProvider.php`, even though `config/fortify.php` currently does not enable the email verification feature.
+- Referral awards are wired off `App\Events\MembershipActivated` in `app/Providers/AppServiceProvider.php`.
 
 ## Brand And UI Constraints
 - Keep landing-page styling decisions in `resources/views/landing.blade.php` unless the task is specifically about that page.

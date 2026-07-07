@@ -24,11 +24,14 @@
                 <p class="mt-3 text-sm font-light leading-7 text-ink-soft">Set up your login credentials.</p>
             </div>
 
-            @if ($referralCode)
-                <div class="rounded-sm bg-gold-pale px-4 py-3 text-sm text-teal-dk">
-                    You are joining through a referral invitation.
-                </div>
-            @endif
+            <div>
+                <label class="tmc-label" for="referralCode">Referral Code <span class="text-ink-soft">(optional)</span></label>
+                <input id="referralCode" type="text" wire:model.blur="referralCode" class="tmc-input" placeholder="Enter code" maxlength="8">
+                @error('referralCode') <p class="tmc-error">{{ $message }}</p> @enderror
+                @if ($referralCode && ! $errors->has('referralCode'))
+                    <p class="mt-1 text-xs text-teal">Referral invitation applied</p>
+                @endif
+            </div>
 
             <div>
                 <label class="tmc-label" for="firstName">First Name *</label>
@@ -213,6 +216,13 @@
                     <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Contact</h4>
                     <p class="text-ink-md">{{ $phone ?: 'Not provided' }}</p>
                 </div>
+
+                @if ($referralCode)
+                <div class="border-b border-ivory pb-3">
+                    <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Referral</h4>
+                    <p class="text-ink-md">Code: {{ $referralCode }}</p>
+                </div>
+                @endif
 
                 <div class="border-b border-ivory pb-3">
                     <h4 class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Social Media</h4>

@@ -133,7 +133,7 @@
 
     {{-- Referral Section --}}
     <section class="referral-section" style="margin-top:16px;">
-      <h2>Invite a Sister, Earn 25 Coins</h2>
+      <h2>Invite a Sister, Earn {{ \App\Models\Setting::get('referral_coins_amount') }} Coins</h2>
       <p>When a sister joins using your link, you both benefit</p>
       <div class="referral-code-box" x-data="{ copied: false, fallback: '' }">
         <p class="referral-code-text">{{ auth()->user()->referral_code }}</p>
@@ -342,7 +342,7 @@
     {{-- Share Link --}}
     <section class="referral-card">
       <h3>Share Your Link</h3>
-      <p class="referral-card-sub">Earn 25 coins for each sister who joins</p>
+      <p class="referral-card-sub">Earn {{ \App\Models\Setting::get('referral_coins_amount') }} coins for each sister who joins</p>
       <div class="referral-code-box" style="background:var(--ivory);" x-data="{ copied: false, fallback: '' }">
         <p class="referral-code-text">{{ auth()->user()->referral_code }}</p>
         <button type="button" class="referral-code-copy-btn"
@@ -378,7 +378,7 @@
                 <p class="referral-name">{{ $referral->referred?->name ?? 'Unknown' }}</p>
                 <p class="referral-date">Joined {{ $referral->created_at->diffForHumans() }}</p>
               </div>
-              <span class="referral-amount" title="Coins earned from this referral">+25</span>
+              <span class="referral-amount" title="Coins earned from this referral">+{{ \App\Models\Setting::get('referral_coins_amount') }}</span>
             </div>
           @endforeach
         </div>

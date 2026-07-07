@@ -88,6 +88,22 @@ class SouqListingResource extends Resource
                         'archived' => 'gray',
                         default => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('payment_source')
+                    ->label('Payment')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state, SouqListing $record): string => match (true) {
+                        $record->payment_source === 'bank_transfer' && $record->status === 'approved_unpaid' => 'Bank Transfer',
+                        $record->paystack_reference !== null && $record->status === 'approved_unpaid' => 'Paystack',
+                        $record->status === 'active' && $record->payment_source === 'bank_transfer' => 'Bank Transfer',
+                        $record->status === 'active' => 'Paystack',
+                        default => '—',
+                    })
+                    ->color(fn (?string $state, SouqListing $record): string => match (true) {
+                        $record->payment_source === 'bank_transfer' && $record->status === 'approved_unpaid' => 'warning',
+                        $record->status === 'active' => 'success',
+                        default => 'gray',
+                    })
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Applied')
                     ->formatStateUsing(fn ($state) => $state ? Carbon::parse($state)->hijri('d M Y H:i') : '—')
@@ -130,6 +146,28 @@ class SouqListingResource extends Resource
 
                         Notification::make()
                             ->title('Listing rejected')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('verifyBankPayment')
+                    ->label('Verify Bank Payment')
+                    ->color('success')
+                    ->icon('heroicon-o-check-circle')
+                    ->visible(fn (SouqListing $record): bool => $record->status === 'approved_unpaid' && $record->payment_source === 'bank_transfer')
+                    ->requiresConfirmation()
+                    ->modalHeading('Verify bank transfer payment')
+                    ->modalDescription(fn (SouqListing $record): string => "Confirm that {$record->owner?->name} has paid ₦".number_format((int) $record->monthly_fee).' via bank transfer for this listing?')
+                    ->modalSubmitActionLabel('Verify Payment')
+                    ->action(function (SouqListing $record): void {
+                        app(BusinessStateService::class)->activate($record);
+
+                        $record->forceFill([
+                            'payment_verified_by' => auth()->id(),
+                            'payment_verified_at' => now(),
+                        ])->saveQuietly();
+
+                        Notification::make()
+                            ->title('Payment verified — listing activated')
                             ->success()
                             ->send();
                     }),

@@ -2,7 +2,9 @@
 @php($websiteLabel = $this->websiteLabel())
 
 <div class="space-y-6">
-    <a href="{{ route('souq') }}" class="inline-flex items-center text-[13px] font-medium text-teal">&larr; The Souq</a>
+    @push('backButton')
+        <a href="{{ route('souq') }}" class="back-btn">&larr; The Souq</a>
+    @endpush
 
     <section class="rounded-[8px] bg-white p-6" style="border: 1px solid var(--border);">
         <div class="flex flex-col items-center text-center">

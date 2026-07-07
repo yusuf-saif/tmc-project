@@ -10,7 +10,7 @@
     </section>
 
     <section class="rounded-[12px] p-5" style="background: var(--ivory); border: 1px solid rgba(200, 168, 75, 0.2);">
-        <h2 class="text-sm font-semibold text-ink">Invite a Sister, Earn 25 Coins</h2>
+        <h2 class="text-sm font-semibold text-ink">Invite a Sister, Earn {{ \App\Models\Setting::get('referral_coins_amount') }} Coins</h2>
         <p class="mt-2 text-[12px] font-light leading-6 text-ink-soft">When a sister joins using your link, you both benefit</p>
 
         <div class="mt-4 rounded-[6px] px-3 py-2 text-[13px] text-ink" style="border: 1px solid var(--border); background: var(--ivory);">

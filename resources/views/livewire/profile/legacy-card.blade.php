@@ -42,9 +42,6 @@
                 x-on:click="if (navigator.share) { navigator.share({ title: 'The Muhsinat Club', text: 'I am a member of The Muhsinat Club', url: window.location.href }) } else { alert('Screenshot this card to share it, insha\'Allah ✧') }"
             >Share My Card</button>
 
-            <div class="mt-4">
-                <a href="{{ route('profile') }}" class="text-[13px] no-underline transition-opacity duration-150 hover:opacity-70" style="color:#0f6b73;">&larr; Back to Profile</a>
-            </div>
         </div>
     </div>
 @else
@@ -60,9 +57,10 @@
                 <p class="mt-2 text-sm text-ink-soft">Complete your membership registration to access your digital legacy card.</p>
                 <a href="{{ route('membership.signup') }}" class="mt-6 inline-block rounded-sm bg-teal px-6 py-2.5 text-sm font-semibold text-white no-underline transition-all duration-200 hover:bg-teal-dk">Get Started</a>
             </div>
-            <div class="mt-4">
-                <a href="{{ route('profile') }}" class="text-[13px] no-underline transition-opacity duration-150 hover:opacity-70" style="color:#0f6b73;">&larr; Back to Profile</a>
-            </div>
         </div>
     </div>
 @endif
+
+@push('backButton')
+    <a href="{{ route('profile') }}" class="back-btn">&larr; Profile</a>
+@endpush
