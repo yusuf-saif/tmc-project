@@ -4,6 +4,7 @@ namespace App\Livewire\Membership;
 
 use App\Models\Goal;
 use App\Models\Interest;
+use App\Models\User;
 use App\Services\MembershipSignupService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -212,6 +213,11 @@ class MembershipSignupWizard extends Component
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed:passwordConfirmation'],
+            'referralCode' => ['nullable', 'string', 'max:8', function ($attribute, $value, $fail) {
+                if ($value && !User::where('referral_code', $value)->exists()) {
+                    $fail('The referral code is invalid.');
+                }
+            }],
             'locationState' => [Rule::requiredIf(fn () => $this->locationCountry === 'Nigeria'), 'nullable', 'string', 'max:255'],
             'locationInternational' => [Rule::requiredIf(fn () => $this->locationCountry !== 'Nigeria'), 'nullable', 'string', 'max:500'],
             'ageGroup' => ['required', 'string', 'max:50'],
@@ -230,7 +236,6 @@ class MembershipSignupWizard extends Component
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
                 'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed:passwordConfirmation'],
-                'referralCode' => ['nullable', 'string', 'max:8', 'exists:users,referral_code'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],

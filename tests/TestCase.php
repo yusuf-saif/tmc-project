@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -9,6 +10,11 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Clear signup rate limiter so previous local runs don't carry over when
+        // .env has CACHE_STORE=file and variables_order=GPCS prevents PHPUnit's
+        // <env name="CACHE_STORE" value="array"/> from taking effect.
+        Cache::forget('signup:127.0.0.1');
 
         error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
