@@ -192,6 +192,13 @@ class SettingsRegistry
             'label' => 'Primary Color',
             'description' => 'Hex color code used for the admin panel theme (e.g. #1A6B72).',
         ],
+        'onboarding_token_expiry_hours' => [
+            'group' => 'membership',
+            'type' => 'int',
+            'default' => 72,
+            'label' => 'Onboarding Token Expiry (hours)',
+            'description' => 'Hours before an onboarding invitation link expires.',
+        ],
         'dashboard_active_window_days' => [
             'group' => 'dashboard',
             'type' => 'int',

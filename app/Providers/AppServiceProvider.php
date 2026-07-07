@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\BusinessActivated;
 use App\Events\BusinessApproved;
 use App\Events\BusinessSuspended;
+use App\Events\MemberOnboardingCompleted;
 use App\Events\MembershipActivated;
 use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
@@ -20,8 +21,10 @@ use App\Listeners\AwardReferralCoins;
 use App\Listeners\AwardWelcomeCoins;
 use App\Listeners\LogBillingEvent;
 use App\Listeners\LogMembershipEvent;
+use App\Listeners\LogOnboardingEvent;
 use App\Listeners\SendBillingNotifications;
 use App\Listeners\SendMembershipNotifications;
+use App\Listeners\SendWelcomePush;
 use App\Services\HijriDateService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -99,6 +102,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(MembershipActivated::class, AwardWelcomeCoins::class);
         Event::listen(MembershipActivated::class, LogBillingEvent::class);
         Event::listen(MembershipActivated::class, SendMembershipNotifications::class);
+
+        Event::listen(MemberOnboardingCompleted::class, AwardWelcomeCoins::class);
+        Event::listen(MemberOnboardingCompleted::class, SendWelcomePush::class);
+        Event::listen(MemberOnboardingCompleted::class, LogOnboardingEvent::class);
 
         $this->validateDatabaseConnection();
     }

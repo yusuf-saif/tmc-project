@@ -47,6 +47,10 @@ class EnsureUserStateRedirect
             return redirect()->route('membership.signup');
         }
 
+        if ($status === 'pending_onboarding') {
+            return redirect()->route('login');
+        }
+
         if (in_array($status, ['active', 'member'], true)) {
             return $next($request);
         }

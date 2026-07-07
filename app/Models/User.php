@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'status',
+        'member_id',
         'suspended_at',
         'suspended_reason',
         'referral_code',

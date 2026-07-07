@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Events\MemberOnboardingCompleted;
 use App\Events\MembershipActivated;
 use App\Models\JannahCoinsLedger;
 use App\Models\Setting;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class AwardWelcomeCoins
 {
-    public function handle(MembershipActivated $event): void
+    public function handle(MembershipActivated|MemberOnboardingCompleted $event): void
     {
         if (JannahCoinsLedger::query()
             ->where('user_id', $event->user->id)

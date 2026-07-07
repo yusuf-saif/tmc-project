@@ -45,6 +45,10 @@ class FortifyLoginResponse implements LoginResponseContract
             return route('membership.signup');
         }
 
+        if ($status === 'pending_onboarding') {
+            return '/login';
+        }
+
         if (in_array($status, ['active', 'member'], true)) {
             return '/home';
         }

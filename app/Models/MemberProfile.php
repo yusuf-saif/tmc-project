@@ -57,6 +57,7 @@ class MemberProfile extends Model
         'payment_failed_reason',
         'payment_source',
         'payment_status',
+        'hijri_join_date',
         'current_period_ends_at',
         'reminder_sent_at',
         'onboarding_completed_at',
@@ -83,6 +84,7 @@ class MemberProfile extends Model
             'goals' => 'array',
             'under_review_email_sent_at' => 'datetime',
             'approval_email_sent_at' => 'datetime',
+            'hijri_join_date' => 'datetime',
             'payment_confirmed_email_sent_at' => 'datetime',
         ];
     }

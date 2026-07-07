@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
-use App\Services\MembersImportService;
+use App\Services\MembersCsvImportService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
@@ -30,7 +30,7 @@ class ListUsers extends ListRecords
                 ->action(function (array $data): void {
                     $disk = config('filament.default_filesystem_disk', 'public');
 
-                    $result = app(MembersImportService::class)->import($data['csv_file'], $disk);
+                    $result = app(MembersCsvImportService::class)->import($data['csv_file'], $disk);
 
                     Storage::disk($disk)->delete($data['csv_file']);
 
