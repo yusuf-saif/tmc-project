@@ -53,8 +53,7 @@
 
             <div>
                 <label class="tmc-label" for="password">Password *</label>
-                <input id="password" type="password" wire:model="password" class="tmc-input" autocomplete="new-password"
-                       x-data x-init x-model="password">
+x                <input id="password" type="password" wire:model="password" class="tmc-input" autocomplete="new-password">
                 @error('password') <p class="tmc-error">{{ $message }}</p> @enderror
 
                 <div x-show="$wire.password && $wire.password.length > 0" x-cloak class="pw-checklist">

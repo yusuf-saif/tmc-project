@@ -150,9 +150,9 @@ class MembershipSignupWizard extends Component
 
         RateLimiter::hit($key, 3600);
 
-        $this->submitting = true;
-
         $this->validate($this->fullValidationRules());
+
+        $this->submitting = true;
 
         try {
             $service->register(
