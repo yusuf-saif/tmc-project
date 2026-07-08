@@ -19,8 +19,28 @@
 - Focused auth/onboarding regression: `php artisan test --filter AuthOnboardingTest`
 - Seed local data set: `php artisan migrate --seed`
 - Seed Playwright login user: `php artisan db:seed --class=PlaywrightSeeder`
-- Production fix sequence after membership flow deploy: `php artisan migrate --force && php artisan db:seed --class=RoleSeeder --force && php artisan db:seed --class=AdminUserSeeder --force && php artisan optimize:clear && php artisan permission:cache-reset`
 - Playwright expects the app at `http://127.0.0.1:8000`: `npm run test:e2e`
+
+## Railway Deployment
+- Deploy from GitHub repo — Nixpacks auto-detects Laravel web process (PHP-FPM + Nginx, doc root `public/`)
+- Worker: `Procfile` defines `php artisan queue:work --sleep=3 --tries=3`
+- Scheduler: `railway.json` runs `php artisan schedule:run` every minute via cron
+- Database: Railway PostgreSQL plugin (auto-injects `DATABASE_URL` — manually set `DB_CONNECTION=pgsql` and individual env vars)
+- Storage: Railway Tigris (S3-compatible) — set `FILESYSTEM_DISK=s3` and AWS env vars
+- Env vars: copy from `.env.example`, fill in all production secrets in Railway dashboard
+- Repo-level env overrides: `railway.json.build.buildCommand` runs `npm ci && npm run build && php artisan storage:link && php artisan optimize` on each deploy
+- Remote Artisan: `railway run "php artisan migrate --force"`
+- Remote seed: `railway run "php artisan db:seed --class=RoleSeeder --force"`
+- Remote shell: `railway shell`
+- Remote logs: `railway logs`
+- Production fix sequence (run sequentially via `railway run`):
+  ```
+  php artisan migrate --force
+  php artisan db:seed --class=RoleSeeder --force
+  php artisan db:seed --class=AdminUserSeeder --force
+  php artisan optimize:clear
+  php artisan permission:cache-reset
+  ```
 
 ## Auth And Redirects
 - Fortify uses custom Blade views in `resources/views/auth/*`; do not swap in starter-kit assumptions.
@@ -50,6 +70,9 @@
 ## Tooling And Deploy Gotchas
 - Composer `post-autoload-dump` runs `scripts/patch-laravel-framework-config.php` before package discovery and `artisan filament:upgrade`; do not remove or bypass that patch casually.
 - `railway.json` is the checked-in deploy recipe. Production there is Railway with PostgreSQL, while tests/local are SQLite.
+- Railway filesystem is ephemeral — `public/storage` symlink is recreated on each deploy via the build command; uploaded files (avatars, event covers, etc.) must use Tigris (S3-compatible) storage.
+- Railway auto-detects Laravel web process via Nixpacks; `Procfile` only defines the queue worker (web process is handled automatically).
+- On first deploy, run the fix sequence in Railway Commands above to seed roles and admin user.
 
 ## Product Docs
 - For feature work, read `docs/BUILD_PHASES.md` first, then `docs/TRD.md`, then the relevant UI doc in `docs/DESIGN_GUIDE.md` or `docs/DESIGN_SYSTEM.md`.

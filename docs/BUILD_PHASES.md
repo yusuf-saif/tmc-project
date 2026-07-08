@@ -13,12 +13,13 @@ App:          The Muhsinat Club — faith-based community PWA for Muslim women
 Framework:    Laravel 11 (PHP 8.2+)
 Frontend:     Blade + Livewire 3 + Alpine.js
 Styling:      Tailwind CSS v3
-Database:     MySQL 8.0+
+Database:     PostgreSQL (Railway prod, SQLite local/test)
 Admin:        Filament v3 (panel at /admin)
 Auth:         Laravel Fortify
 Permissions:  Spatie Laravel Permission
-Queue:        database driver (dev), Redis (prod)
-Storage:      Laravel Storage local (dev), S3 (prod)
+Queue:        database driver (dev + prod)
+Storage:      Laravel Storage local (dev), S3-compatible Tigris (prod)
+Deploy:       Railway (Nixpacks, PHP-FPM + Nginx)
 Tests:        PHPUnit
 
 Brand colours:
@@ -929,40 +930,55 @@ STEP 3 — Performance
   Add eager loading where needed
   Install intervention/image, resize uploads to max 800px on save
 
-STEP 4 — Production server
-  Ubuntu 22.04, PHP 8.2, MySQL 8.0, Nginx
-  Install Let's Encrypt SSL (certbot):
-    sudo certbot --nginx -d yourdomain.com
-  HTTPS is required for service worker and push notifications.
+STEP 4 — Deploy to Railway
+  Connect the GitHub repo to Railway dashboard.
+  Railway auto-detects Laravel web process (Nixpacks: PHP-FPM + Nginx, doc root public/).
 
-  .env production values:
+  Add plugins in Railway dashboard:
+    - PostgreSQL (injects DATABASE_URL automatically)
+    - Tigris (S3-compatible object storage)
+
+  Set environment variables in Railway dashboard (copy from .env.example):
+    DB_CONNECTION=pgsql
+    DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+      → Railway auto-sets DATABASE_URL; parse it or set individual vars manually
+    FILESYSTEM_DISK=s3
+    AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION, AWS_BUCKET,
+    AWS_ENDPOINT, AWS_URL, AWS_USE_PATH_STYLE_ENDPOINT
+      → All provided by Railway Tigris plugin
+    APP_URL=https://yourdomain.com
     APP_ENV=production
     APP_DEBUG=false
-    APP_URL=https://yourdomain.com
-    QUEUE_CONNECTION=redis
-    SESSION_DRIVER=redis
-    MAIL_MAILER=smtp (configure with real SMTP)
+    CACHE_STORE=database
+    SESSION_DRIVER=database
+    QUEUE_CONNECTION=database
+    MAIL_MAILER=resend (or preferred provider)
+    RESEND_API_KEY, PAYSTACK_SECRET_KEY, PAYSTACK_PUBLIC_KEY, PAYSTACK_WEBHOOK_SECRET
+    VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
 
-  Deploy commands:
-    composer install --no-dev --optimize-autoloader
+  Build happens automatically via railway.json:
+    npm ci && npm run build && php artisan storage:link && php artisan optimize
+
+  Worker process (Procfile):
+    worker: php artisan queue:work --sleep=3 --tries=3
+
+  Scheduler (railway.json cron):
+    * * * * * php artisan schedule:run
+
+  HTTPS is automatic on Railway (no certbot needed).
+  Railway filesystem is ephemeral — storage:link runs on each deploy; uploaded files
+  must use Tigris (S3-compatible).
+
+  Post-deploy (run via railway run):
     php artisan migrate --force
-    php artisan db:seed --class=RoleSeeder
-    php artisan db:seed --class=AdminUserSeeder
-    php artisan optimize
-    npm run build
+    php artisan db:seed --class=RoleSeeder --force
+    php artisan db:seed --class=AdminUserSeeder --force
+    php artisan optimize:clear
+    php artisan permission:cache-reset
 
-  Supervisor config (/etc/supervisor/conf.d/tmc-worker.conf):
-    [program:tmc-worker]
-    command=php /var/www/tmc/artisan queue:work --queue=notifications,broadcasts,emails,default --tries=3
-    autostart=true
-    autorestart=true
-
-  Cron:
-    * * * * * cd /var/www/tmc && php artisan schedule:run >> /dev/null 2>&1
-
-  Backups (Spatie Laravel Backup):
-    composer require spatie/laravel-backup
-    Configure: daily at 2am, S3 or Backblaze B2, keep 7 days
+  Connect custom domain:
+    Namecheap → CNAME record → Railway-provided deploy target
+    Add domain in Railway dashboard settings
 
 STEP 5 — Post-deploy smoke test
   Perform these manually on the live URL:

@@ -1,6 +1,7 @@
 # The Muhsinat Club (TMC) — Technical Requirements Document
-**Version:** 2.0  
-**Stack:** Laravel 11 · Livewire 3 · Tailwind CSS · MySQL 8 · Filament v3 · Spatie
+**Version:** 2.1  
+**Stack:** Laravel 11 · Livewire 3 · Tailwind CSS · PostgreSQL · Filament v3 · Spatie
+**Deploy:** Railway (Nixpacks, PHP-FPM + Nginx)
 
 ---
 
@@ -13,16 +14,16 @@
 | Frontend | Blade + Livewire | 3.x |
 | Interactivity | Alpine.js | 3.x |
 | Styling | Tailwind CSS | 3.x |
-| Database | MySQL | 8.0+ |
+| Database | PostgreSQL (prod) / SQLite (local, test) | 15+ |
 | Admin panel | Filament | 3.x |
 | Auth | Laravel Fortify | — |
 | Permissions | Spatie Laravel Permission | 6.x |
 | Push notifications | minishlink/web-push | — |
-| Queue driver | Database (dev) · Redis (prod) | — |
-| File storage | Laravel Storage (local dev, S3 prod) | — |
+| Queue driver | Database | — |
+| File storage | Laravel Storage (local dev, S3-compatible Tigris prod) | — |
 | Rich text editor | TipTap (via Filament) | — |
 | Testing | PHPUnit | — |
-| Deployment | Nginx · Ubuntu 22.04 · Laravel Forge | — |
+| Deployment | Railway (Nixpacks — PHP-FPM + Nginx) | — |
 
 ---
 
@@ -538,26 +539,25 @@ Every phase must pass `php artisan test` before the next phase starts.
 ## 14. Deployment Checklist
 
 ```bash
-# Server
-Ubuntu 22.04, PHP 8.2, MySQL 8.0, Nginx
-SSL via Let's Encrypt (required for PWA + push)
+# Platform
+Railway (Nixpacks auto-detects Laravel — PHP-FPM + Nginx, doc root public/)
+Database: PostgreSQL (Railway Postgres plugin)
+Storage: Tigris S3-compatible (Railway Tigris plugin)
+SSL: Automatic on Railway (required for PWA + push)
 
-# App
-composer install --no-dev --optimize-autoloader
-cp .env.example .env
-php artisan key:generate
+# Build (runs automatically via railway.json)
+npm ci && npm run build && php artisan storage:link && php artisan optimize
+
+# Worker (Procfile)
+worker: php artisan queue:work --sleep=3 --tries=3
+
+# Scheduler (railway.json cron)
+* * * * * php artisan schedule:run
+
+# Post-deploy (run via railway run)
 php artisan migrate --force
-php artisan db:seed --class=RoleSeeder
-php artisan db:seed --class=AdminUserSeeder
-php artisan optimize
-npm run build
-
-# Background workers (Supervisor)
-php artisan queue:work --queue=notifications,broadcasts,emails,default
-
-# Cron
-* * * * * cd /var/www/tmc && php artisan schedule:run >> /dev/null 2>&1
-
-# Backups (Spatie Backup)
-php artisan backup:run (scheduled daily at 2am, stored off-server)
+php artisan db:seed --class=RoleSeeder --force
+php artisan db:seed --class=AdminUserSeeder --force
+php artisan optimize:clear
+php artisan permission:cache-reset
 ```
