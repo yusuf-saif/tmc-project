@@ -35,8 +35,12 @@ class AwardReferralCoins
                 ],
             );
 
-            if (! $referral->wasRecentlyCreated) {
+            if (! $referral->wasRecentlyCreated && $referral->coins_awarded) {
                 return;
+            }
+
+            if (! $referral->wasRecentlyCreated && ! $referral->coins_awarded) {
+                $referral->update(['coins_awarded' => true]);
             }
 
             $amount = (int) Setting::get('referral_coins_amount');

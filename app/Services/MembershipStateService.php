@@ -133,7 +133,15 @@ class MembershipStateService
             'current_period_ends_at' => $profile->fresh()->current_period_ends_at?->toIso8601String(),
         ]);
 
-        MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
+        try {
+            MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
+        } catch (\Throwable $e) {
+            Log::error('MembershipActivated event handler failed', [
+                'user_id' => $user->id,
+                'membership_id' => $profile->membership_id ?? 'N/A',
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function checkGracePeriod(MemberProfile $profile): void

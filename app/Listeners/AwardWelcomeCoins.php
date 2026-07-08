@@ -30,28 +30,21 @@ class AwardWelcomeCoins
             return;
         }
 
-        try {
-            CoinsService::award($event->user, $amount, 'welcome', null, 'Welcome bonus on membership activation');
+        CoinsService::award($event->user, $amount, 'welcome', null, 'Welcome bonus on membership activation');
 
-            AuditLogService::log(
-                'welcome_coins_awarded',
-                null,
-                [],
-                [
-                    'user_id' => $event->user->id,
-                    'amount' => $amount,
-                ],
-            );
-
-            Log::info('Welcome coins awarded', [
+        AuditLogService::log(
+            'welcome_coins_awarded',
+            null,
+            [],
+            [
                 'user_id' => $event->user->id,
                 'amount' => $amount,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Failed to award welcome coins', [
-                'user_id' => $event->user->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
+
+        Log::info('Welcome coins awarded', [
+            'user_id' => $event->user->id,
+            'amount' => $amount,
+        ]);
     }
 }
