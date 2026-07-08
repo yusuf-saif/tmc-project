@@ -21,7 +21,7 @@ class ImageProcessingService
         UploadedFile $file,
         string $directory,
         int $maxWidth = 800,
-        string $disk = 'public'
+        string $disk = 'r2'
     ): string {
         $image = $this->manager->decodePath($file->getRealPath());
 
