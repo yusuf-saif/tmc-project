@@ -28,7 +28,7 @@ class ListUsers extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $disk = config('filament.default_filesystem_disk', 'public');
+                    $disk = config('filament.default_filesystem_disk', config('filesystems.default'));
 
                     $result = app(MembersCsvImportService::class)->import($data['csv_file'], $disk);
 

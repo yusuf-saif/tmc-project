@@ -47,6 +47,11 @@ class MembersImportService
         }
 
         while (($row = fgetcsv($stream, escape: '\\')) !== false) {
+            if (count($headers) !== count($row)) {
+                $this->skipped++;
+                $this->errors[] = 'Row skipped: column count mismatch (expected '.count($headers).', got '.count($row).')';
+                continue;
+            }
             $data = array_combine($headers, $row);
             if (! $data) {
                 continue;
