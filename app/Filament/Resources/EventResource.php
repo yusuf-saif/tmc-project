@@ -62,7 +62,7 @@ class EventResource extends Resource
                     ->imageResizeMode('cover')
                     ->imageResizeTargetWidth(800)
                     ->imageResizeUpscale(false)
-                    ->disk('public')
+                    ->disk('r2')
                     ->directory('events/covers')
                     ->maxSize(2048),
                 Forms\Components\TextInput::make('external_link')
@@ -91,7 +91,7 @@ class EventResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->withCount(['rsvps as active_rsvps_count' => fn ($rsvpQuery) => $rsvpQuery->active()]))
             ->columns([
                 Tables\Columns\ImageColumn::make('cover_image_path')
-                    ->disk('public')
+                    ->disk('r2')
                     ->size(30),
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()

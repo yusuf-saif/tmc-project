@@ -58,7 +58,7 @@ class SouqListingResource extends Resource
                 ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(400)
                 ->imageResizeUpscale(false)
-                ->disk('public')
+                ->disk('r2')
                 ->directory('souq/logos')
                 ->image(),
         ]);

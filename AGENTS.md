@@ -49,7 +49,7 @@
 
 ## Tooling And Deploy Gotchas
 - Composer `post-autoload-dump` runs `scripts/patch-laravel-framework-config.php` before package discovery and `artisan filament:upgrade`; do not remove or bypass that patch casually.
-- `render.yaml` is the checked-in deploy recipe. Production there is PostgreSQL, while tests are SQLite.
+- `railway.json` is the checked-in deploy recipe. Production there is Railway with PostgreSQL, while tests/local are SQLite.
 
 ## Product Docs
 - For feature work, read `docs/BUILD_PHASES.md` first, then `docs/TRD.md`, then the relevant UI doc in `docs/DESIGN_GUIDE.md` or `docs/DESIGN_SYSTEM.md`.

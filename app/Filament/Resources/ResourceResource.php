@@ -60,7 +60,7 @@ class ResourceResource extends Resource
             Forms\Components\RichEditor::make('body')
                 ->columnSpanFull(),
             Forms\Components\FileUpload::make('file_path')
-                ->disk('public')
+                ->disk('r2')
                 ->directory('resources/files')
                 ->acceptedFileTypes(['image/*', 'application/pdf', 'audio/*'])
                 ->maxSize(10240),
@@ -71,7 +71,7 @@ class ResourceResource extends Resource
                 ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(400)
                 ->imageResizeUpscale(false)
-                ->disk('public')
+                ->disk('r2')
                 ->directory('resources/thumbnails')
                 ->image(),
             Forms\Components\Select::make('status')

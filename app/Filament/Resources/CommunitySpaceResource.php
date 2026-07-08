@@ -36,7 +36,7 @@ class CommunitySpaceResource extends Resource
                 ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(1200)
                 ->imageResizeUpscale(false)
-                ->disk('public')
+                ->disk('r2')
                 ->directory('community/covers')
                 ->image(),
             Forms\Components\TextInput::make('external_link')->url(),

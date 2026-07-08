@@ -33,7 +33,7 @@ class BadgeResource extends Resource
                 ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(200)
                 ->imageResizeUpscale(false)
-                ->disk('public')
+                ->disk('r2')
                 ->directory('badges/icons')
                 ->image(),
             Forms\Components\Textarea::make('criteria')->required()->columnSpanFull(),
