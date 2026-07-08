@@ -27,13 +27,13 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName(Schema::hasTable('settings') ? Setting::get('brand_name', 'The Muhsinat Club') : 'The Muhsinat Club')
+            ->brandName(rescue(fn () => Schema::hasTable('settings') ? Setting::get('brand_name', 'The Muhsinat Club') : 'The Muhsinat Club', 'The Muhsinat Club', false))
             ->brandLogo(asset('images/img2.png'))
             ->favicon(asset('images/img1.png'))
             ->homeUrl('/admin')
             ->login()
             ->colors([
-                'primary' => Color::hex(Schema::hasTable('settings') ? Setting::get('brand_primary_color', '#1A6B72') : '#1A6B72'),
+                'primary' => Color::hex(rescue(fn () => Schema::hasTable('settings') ? Setting::get('brand_primary_color', '#1A6B72') : '#1A6B72', '#1A6B72', false)),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
