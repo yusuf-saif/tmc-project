@@ -148,7 +148,16 @@ class MembersImportService
                 $userId = $user->id;
             });
 
-            Password::sendResetLink(['email' => $email]);
+            $this->imported++;
+
+            try {
+                Password::sendResetLink(['email' => $email]);
+            } catch (\Throwable $e) {
+                Log::error('MembersImportService: password reset link failed', [
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $user = User::find($userId);
             if ($user) {
@@ -161,8 +170,6 @@ class MembersImportService
                     ]);
                 }
             }
-
-            $this->imported++;
         } catch (\Throwable $e) {
             Log::error('MembersImportService: row failed', [
                 'email' => $email,

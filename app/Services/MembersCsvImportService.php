@@ -189,10 +189,18 @@ class MembersCsvImportService
                 ]);
             });
 
-            $token = Password::broker()->createToken($user);
-            $user->notify(new OnboardingInvitationNotification($token, $membershipId));
-
             $this->imported++;
+
+            try {
+                $token = Password::broker()->createToken($user);
+                $user->notify(new OnboardingInvitationNotification($token, $membershipId));
+            } catch (\Throwable $e) {
+                Log::error('MembersCsvImportService: notification failed', [
+                    'email' => $email,
+                    'error' => $e->getMessage(),
+                ]);
+                $this->errors[] = "User {$email} imported but notification failed: {$e->getMessage()}";
+            }
         } catch (\Throwable $e) {
             Log::error('MembersCsvImportService: row failed', [
                 'email' => $email,
