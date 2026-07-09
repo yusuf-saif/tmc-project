@@ -7,7 +7,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE jannah_coins_ledger DROP CONSTRAINT IF EXISTS jannah_coins_ledger_reason_check');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE jannah_coins_ledger DROP CONSTRAINT IF EXISTS jannah_coins_ledger_reason_check');
+        }
     }
 
     public function down(): void

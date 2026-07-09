@@ -26,7 +26,7 @@
 
         {{-- Cover image or gradient placeholder --}}
         @if ($event->cover_image_path)
-          <img src="{{ asset('storage/'.$event->cover_image_path) }}"
+          <img src="{{ Storage::disk('r2')->url($event->cover_image_path) }}"
                alt="{{ $event->title }}"
                class="event-cover-img">
         @else

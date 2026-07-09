@@ -67,6 +67,7 @@ class MembersCsvImportService
             if (count($headers) !== count($row)) {
                 $this->skipped++;
                 $this->errors[] = 'Row skipped: column count mismatch (expected '.count($headers).', got '.count($row).')';
+
                 continue;
             }
             $data = array_combine($headers, $row);
@@ -161,6 +162,15 @@ class MembersCsvImportService
         $membershipType = $this->parseMembershipType($membershipId);
         $hijriDate = $hijriDateStr ? $this->parseHijriDateString($hijriDateStr) : null;
 
+        $idParts = null;
+        if (preg_match('/^TMC-([A-Z]+)-(\d+)-(\d+)$/', $membershipId, $matches)) {
+            $idParts = [
+                'type' => $matches[1],
+                'hijri_year' => (int) $matches[2],
+                'serial' => (int) $matches[3],
+            ];
+        }
+
         try {
             $user = null;
 
@@ -182,6 +192,8 @@ class MembersCsvImportService
                     'user_id' => $user->id,
                     'membership_id' => $membershipId,
                     'membership_type' => $membershipType,
+                    'hijri_year' => $idParts['hijri_year'] ?? null,
+                    'membership_serial' => $idParts['serial'] ?? null,
                     'display_name' => $nickname ?: $name,
                     'hijri_join_date' => $hijriDate,
                     'payment_status' => 'free',
@@ -191,8 +203,19 @@ class MembersCsvImportService
 
             $this->imported++;
 
+            if ($idParts !== null) {
+                try {
+                    MembershipIdService::syncCounter($idParts['type'], $idParts['hijri_year'], $idParts['serial']);
+                } catch (\Throwable $e) {
+                    Log::warning('MembersCsvImportService: failed to sync serial counter', [
+                        'membership_id' => $membershipId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             try {
-                $token = Password::broker()->createToken($user);
+                $token = Password::broker('onboarding')->createToken($user);
                 $user->notify(new OnboardingInvitationNotification($token, $membershipId));
             } catch (\Throwable $e) {
                 Log::error('MembersCsvImportService: notification failed', [

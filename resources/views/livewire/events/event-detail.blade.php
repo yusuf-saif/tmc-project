@@ -5,7 +5,7 @@
 
     <section class="overflow-hidden rounded-[8px] bg-white" style="border:1px solid var(--border);">
         @if ($event->cover_image_path)
-            <img src="{{ asset('storage/'.$event->cover_image_path) }}" alt="{{ $event->title }}" class="max-h-[240px] w-full object-cover">
+            <img src="{{ Storage::disk('r2')->url($event->cover_image_path) }}" alt="{{ $event->title }}" class="max-h-[240px] w-full object-cover">
         @else
             <div class="flex h-[120px] items-center justify-center bg-teal text-center text-white">
                 <div>
@@ -42,7 +42,7 @@
         </div>
 
         @if ($event->cover_image_path)
-            <img src="{{ asset('storage/'.$event->cover_image_path) }}" alt="{{ $event->title }}"
+            <img src="{{ Storage::disk('r2')->url($event->cover_image_path) }}" alt="{{ $event->title }}"
                  class="w-full object-cover">
         @endif
 

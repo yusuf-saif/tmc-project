@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\MemberProfile;
 use App\Models\MembershipSerial;
 use App\Models\User;
 use Illuminate\Support\Facades\App;
@@ -63,10 +64,31 @@ class MembershipIdService
                     ]);
                 }
 
-                $counter->increment('last_serial');
-                $serial = $counter->last_serial;
+                $maxAttempts = 1000;
+                $membershipId = null;
+                $serial = null;
 
-                $membershipId = sprintf('TMC-%s-%d-%03d', $typeCode, $hijriYear, $serial);
+                for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+                    $counter->increment('last_serial');
+                    $serial = $counter->last_serial;
+                    $membershipId = sprintf('TMC-%s-%d-%03d', $typeCode, $hijriYear, $serial);
+
+                    if (! MemberProfile::query()->where('membership_id', $membershipId)->exists()) {
+                        break;
+                    }
+
+                    Log::warning('MembershipIdService: generated ID already exists — retrying', [
+                        'membership_id' => $membershipId,
+                        'attempt' => $attempt + 1,
+                    ]);
+
+                    $membershipId = null;
+                    $serial = null;
+                }
+
+                if ($membershipId === null) {
+                    throw new \RuntimeException("Failed to generate a unique membership ID after {$maxAttempts} attempts for type {$membershipType} in year {$hijriYear}");
+                }
 
                 return [
                     'membership_id' => $membershipId,
@@ -82,6 +104,26 @@ class MembershipIdService
                 'error' => $e->getMessage(),
             ]);
             throw $e;
+        }
+    }
+
+    public static function syncCounter(string $membershipType, int $hijriYear, int $serial): void
+    {
+        $counter = MembershipSerial::query()
+            ->where('membership_type', $membershipType)
+            ->where('hijri_year', $hijriYear)
+            ->first();
+
+        if ($counter) {
+            if ($serial > $counter->last_serial) {
+                $counter->update(['last_serial' => $serial]);
+            }
+        } else {
+            MembershipSerial::query()->create([
+                'membership_type' => $membershipType,
+                'hijri_year' => $hijriYear,
+                'last_serial' => $serial,
+            ]);
         }
     }
 }

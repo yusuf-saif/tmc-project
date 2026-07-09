@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
-use App\Notifications\SetPasswordNotification;
+use App\Notifications\OnboardingInvitationNotification;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -109,18 +109,22 @@ class ViewUser extends ViewRecord
                     UserResource::deductCoins($this->record, (int) $data['amount'], $data['reason']);
                     Notification::make()->title('Coins deducted')->success()->send();
                 }),
-            Actions\Action::make('resendPasswordSetup')
-                ->label('Resend Password Setup Link')
+            Actions\Action::make('resendOnboardingInvitation')
+                ->label('Resend Onboarding Invitation')
                 ->icon('heroicon-o-envelope')
+                ->visible(fn (): bool => $this->record->status === 'pending_onboarding')
                 ->requiresConfirmation()
-                ->modalHeading('Resend Password Setup Link')
-                ->modalDescription('This will send a new password setup email to '.($this->record->email ?? 'this user').'. The link expires in 60 minutes.')
+                ->modalHeading('Resend Onboarding Invitation')
+                ->modalDescription('This will send a new onboarding invitation to '.($this->record->email ?? 'this user').'.')
                 ->modalSubmitActionLabel('Send')
                 ->action(function (): void {
-                    $token = Password::broker()->createToken($this->record);
-                    NotificationFacade::sendNow($this->record, new SetPasswordNotification($token));
+                    $token = Password::broker('onboarding')->createToken($this->record);
+                    NotificationFacade::sendNow(
+                        $this->record,
+                        new OnboardingInvitationNotification($token, $this->record->member_id)
+                    );
                     Notification::make()
-                        ->title('Password setup link sent')
+                        ->title('Onboarding invitation sent')
                         ->success()
                         ->send();
                 }),

@@ -40,7 +40,7 @@ class ResendInvitations extends Command
         $sent = 0;
 
         foreach ($users as $user) {
-            $token = Password::broker()->createToken($user);
+            $token = Password::broker('onboarding')->createToken($user);
             $membershipId = $user->member_id ?? $user->memberProfile?->membership_id ?? 'N/A';
             Notification::sendNow($user, new OnboardingInvitationNotification($token, $membershipId));
             $sent++;

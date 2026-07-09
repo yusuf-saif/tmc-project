@@ -34,11 +34,11 @@ class OnboardingController extends Controller
             return redirect()->route('login')->withErrors(['email' => 'Invalid onboarding link.']);
         }
 
-        if ($user->status !== 'pending_onboarding') {
+        if (! in_array($user->status, ['onboarding', 'pending_onboarding'])) {
             return redirect()->route('login')->withErrors(['email' => 'This account has already been activated.']);
         }
 
-        if (! Password::broker()->tokenExists($user, $token)) {
+        if (! Password::broker('onboarding')->tokenExists($user, $token)) {
             return redirect()->route('login')->withErrors(['email' => 'This onboarding link has expired. Please request a new one.']);
         }
 
@@ -87,11 +87,11 @@ class OnboardingController extends Controller
             return redirect()->route('login')->withErrors(['email' => 'Invalid onboarding link.']);
         }
 
-        if ($user->status !== 'pending_onboarding') {
+        if (! in_array($user->status, ['onboarding', 'pending_onboarding'])) {
             return redirect()->route('login')->withErrors(['email' => 'This account has already been activated.']);
         }
 
-        if (! Password::broker()->tokenExists($user, $token)) {
+        if (! Password::broker('onboarding')->tokenExists($user, $token)) {
             return redirect()->route('login')->withErrors(['email' => 'This onboarding link has expired. Please request a new one.']);
         }
 
@@ -132,7 +132,7 @@ class OnboardingController extends Controller
                 $user->goals()->sync($goalIds);
             });
 
-            Password::broker()->deleteToken($user);
+            Password::broker('onboarding')->deleteToken($user);
 
             MemberOnboardingCompleted::dispatch($user, $memberId);
 
