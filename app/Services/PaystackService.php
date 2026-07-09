@@ -68,7 +68,7 @@ class PaystackService
             Log::error('PaystackService: initialization failed', [
                 'user_id' => $user->id,
                 'http_status' => $response->status(),
-                'response' => $body,
+                'message' => $body['message'] ?? 'Unknown error',
             ]);
             throw new \RuntimeException('Payment initialization failed. Please try again.');
         }
@@ -105,7 +105,6 @@ class PaystackService
                 'http_status' => $response->status(),
                 'paystack_status' => $paidStatus,
                 'paid_amount' => $paidAmount,
-                'response' => $body,
             ]);
             throw new \RuntimeException('Payment verification failed.');
         }
@@ -176,7 +175,7 @@ class PaystackService
             Log::error('PaystackService: Souq payment initialization failed', [
                 'listing_id' => $listing->id,
                 'http_status' => $response->status(),
-                'response' => $body,
+                'message' => $body['message'] ?? 'Unknown error',
             ]);
             throw new \RuntimeException('Payment initialization failed. Please try again.');
         }

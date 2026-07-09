@@ -35,8 +35,8 @@ class MembershipSignupWizardTest extends TestCase
             'firstName' => 'Aisha',
             'lastName' => 'Member',
             'email' => 'aisha@example.com',
-            'password' => 'Password123!',
-            'passwordConfirmation' => 'Password123!',
+            'password' => 'Tmc2024!Sec#Pass99',
+            'passwordConfirmation' => 'Tmc2024!Sec#Pass99',
             'locationCountry' => 'Nigeria',
             'locationState' => 'Lagos',
             'ageGroup' => '25_34',
@@ -157,8 +157,8 @@ class MembershipSignupWizardTest extends TestCase
             ->set('firstName', 'Aisha')
             ->set('lastName', 'Member')
             ->set('email', 'aisha@example.com')
-            ->set('password', 'Password123!')
-            ->set('passwordConfirmation', 'Password123!')
+            ->set('password', 'Tmc2024!Sec#Pass99')
+            ->set('passwordConfirmation', 'Tmc2024!Sec#Pass99')
             ->call('nextStep')
             ->assertHasErrors(['email']);
     }
@@ -177,8 +177,8 @@ class MembershipSignupWizardTest extends TestCase
             ->set('firstName', 'Safiyyah')
             ->set('lastName', 'Referred')
             ->set('email', 'safiyyah@example.com')
-            ->set('password', 'Password123!')
-            ->set('passwordConfirmation', 'Password123!')
+            ->set('password', 'Tmc2024!Sec#Pass99')
+            ->set('passwordConfirmation', 'Tmc2024!Sec#Pass99')
             ->call('nextStep')
             ->set('locationCountry', 'Nigeria')
             ->set('locationState', 'Lagos')

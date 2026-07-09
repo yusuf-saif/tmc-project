@@ -6,6 +6,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Encoders\JpegEncoder;
+use Intervention\Image\Encoders\PngEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
 
 class ImageProcessingService
@@ -29,11 +31,18 @@ class ImageProcessingService
             $image->scale(width: $maxWidth);
         }
 
-        $filename = $directory.'/'.bin2hex(random_bytes(16)).'.jpeg';
+        $filename = $directory.'/'.bin2hex(random_bytes(16)).'.'.$file->getClientOriginalExtension();
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        $encoder = match ($extension) {
+            'png' => new PngEncoder,
+            'webp' => new WebpEncoder,
+            default => new JpegEncoder(quality: 80),
+        };
 
         Storage::disk($disk)->put(
             $filename,
-            (string) $image->encode(new JpegEncoder(quality: 80))
+            (string) $image->encode($encoder),
         );
 
         return $filename;

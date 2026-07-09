@@ -50,7 +50,7 @@ class EventsList extends Component
     public function rsvp(int $eventId, RsvpService $rsvpService): void
     {
         try {
-            $rsvpService->rsvp(Auth::user(), Event::query()->findOrFail($eventId));
+            $rsvpService->rsvp(Auth::user(), Event::where('status', 'published')->findOrFail($eventId));
 
             session()->flash('success', 'RSVP confirmed. We saved your place, insha\'Allah.');
         } catch (DomainException $exception) {
@@ -60,7 +60,7 @@ class EventsList extends Component
 
     public function cancelRsvp(int $eventId, RsvpService $rsvpService): void
     {
-        $rsvpService->cancel(Auth::user(), Event::query()->findOrFail($eventId));
+        $rsvpService->cancel(Auth::user(), Event::where('status', 'published')->findOrFail($eventId));
 
         session()->flash('success', 'Your RSVP has been cancelled.');
     }

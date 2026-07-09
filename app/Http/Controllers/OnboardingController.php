@@ -64,7 +64,7 @@ class OnboardingController extends Controller
         }
 
         $validated = $request->validate([
-            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols(), 'confirmed'],
+            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed'],
             'location_country' => ['required', 'string', 'max:255'],
             'location_state' => [Rule::requiredIf(fn () => $request->input('location_country') === 'Nigeria'), 'nullable', 'string', 'max:255'],
             'location_international' => [Rule::requiredIf(fn () => $request->input('location_country') !== 'Nigeria'), 'nullable', 'string', 'max:500'],
@@ -135,6 +135,8 @@ class OnboardingController extends Controller
             Password::broker('onboarding')->deleteToken($user);
 
             MemberOnboardingCompleted::dispatch($user, $memberId);
+
+            $request->session()->regenerate();
 
             Auth::login($user);
 

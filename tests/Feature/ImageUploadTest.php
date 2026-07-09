@@ -13,16 +13,16 @@ class ImageUploadTest extends TestCase
 {
     public function test_resizes_image_when_larger_than_max_width(): void
     {
-        Storage::fake('public');
+        Storage::fake('r2');
 
         $file = UploadedFile::fake()->image('test.jpg', 1600, 1200);
 
         $service = app(ImageProcessingService::class);
         $path = $service->resizeAndStore($file, 'avatars', 800);
 
-        Storage::disk('public')->assertExists($path);
+        Storage::disk('r2')->assertExists($path);
 
-        $stored = Storage::disk('public')->get($path);
+        $stored = Storage::disk('r2')->get($path);
         $manager = new ImageManager(
             Driver::class,
         );
@@ -33,16 +33,16 @@ class ImageUploadTest extends TestCase
 
     public function test_does_not_upscale_smaller_images(): void
     {
-        Storage::fake('public');
+        Storage::fake('r2');
 
         $file = UploadedFile::fake()->image('small.jpg', 300, 200);
 
         $service = app(ImageProcessingService::class);
         $path = $service->resizeAndStore($file, 'logos', 800);
 
-        Storage::disk('public')->assertExists($path);
+        Storage::disk('r2')->assertExists($path);
 
-        $stored = Storage::disk('public')->get($path);
+        $stored = Storage::disk('r2')->get($path);
         $manager = new ImageManager(
             Driver::class,
         );

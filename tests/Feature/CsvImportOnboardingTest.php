@@ -264,8 +264,8 @@ class CsvImportOnboardingTest extends TestCase
             'token' => $token,
             'email' => $user->email,
             'member_id' => $user->member_id,
-            'password' => 'NewPassword123!',
-            'password_confirmation' => 'NewPassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
+            'password_confirmation' => 'Tmc2024!Sec#Pass99',
             'location_country' => 'Nigeria',
             'location_state' => 'Lagos',
             'age_group' => '25_34',
@@ -285,7 +285,7 @@ class CsvImportOnboardingTest extends TestCase
 
         $this->assertEquals('active', $user->status);
         $this->assertNotNull($user->email_verified_at);
-        $this->assertTrue(Hash::check('NewPassword123!', $user->password));
+        $this->assertTrue(Hash::check('Tmc2024!Sec#Pass99', $user->password));
 
         $profile = $user->memberProfile->refresh();
         $this->assertEquals('active', $profile->onboarding_status);

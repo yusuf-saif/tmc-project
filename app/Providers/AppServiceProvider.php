@@ -20,6 +20,7 @@ use App\Events\SubscriptionSuspended;
 use App\Listeners\AwardReferralCoins;
 use App\Listeners\AwardWelcomeCoins;
 use App\Listeners\LogBillingEvent;
+use App\Listeners\LogFailedLogin;
 use App\Listeners\LogMembershipEvent;
 use App\Listeners\LogOnboardingEvent;
 use App\Listeners\SendBillingNotifications;
@@ -27,6 +28,7 @@ use App\Listeners\SendMembershipNotifications;
 use App\Listeners\SendWelcomePush;
 use App\Services\HijriDateService;
 use Carbon\Carbon;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
@@ -109,6 +111,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(MemberOnboardingCompleted::class, AwardWelcomeCoins::class);
         Event::listen(MemberOnboardingCompleted::class, SendWelcomePush::class);
         Event::listen(MemberOnboardingCompleted::class, LogOnboardingEvent::class);
+
+        Event::listen(Failed::class, LogFailedLogin::class);
 
         $this->validateDatabaseConnection();
     }

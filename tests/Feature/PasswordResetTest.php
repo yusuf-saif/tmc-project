@@ -81,7 +81,7 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create([
             'email' => 'aisha@example.com',
             'status' => 'active',
-            'password' => Hash::make('OldPassword123!'),
+            'password' => Hash::make('Tmc2024!Sec#Pass99'),
         ]);
 
         $token = \Str::random(60);
@@ -94,12 +94,12 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewSecurePassword123!',
-            'password_confirmation' => 'NewSecurePassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
+            'password_confirmation' => 'Tmc2024!Sec#Pass99',
         ])->assertRedirect('/login');
 
         $user->refresh();
-        $this->assertTrue(Hash::check('NewSecurePassword123!', $user->password));
+        $this->assertTrue(Hash::check('Tmc2024!Sec#Pass99', $user->password));
     }
 
     public function test_old_password_no_longer_works_after_reset(): void
@@ -107,7 +107,7 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create([
             'email' => 'aisha@example.com',
             'status' => 'active',
-            'password' => Hash::make('OldPassword123!'),
+            'password' => Hash::make('Old!2024Secure#1'),
         ]);
 
         $token = \Str::random(60);
@@ -120,13 +120,13 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewSecurePassword123!',
-            'password_confirmation' => 'NewSecurePassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
+            'password_confirmation' => 'Tmc2024!Sec#Pass99',
         ])->assertRedirect('/login');
 
         $this->post('/login', [
             'email' => $user->email,
-            'password' => 'OldPassword123!',
+            'password' => 'Old!2024Secure#1',
         ])->assertSessionHasErrors('email');
     }
 
@@ -135,7 +135,7 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create([
             'email' => 'aisha@example.com',
             'status' => 'active',
-            'password' => Hash::make('OldPassword123!'),
+            'password' => Hash::make('Tmc2024!Sec#Pass99'),
         ]);
 
         $token = \Str::random(60);
@@ -148,13 +148,13 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewSecurePassword123!',
-            'password_confirmation' => 'NewSecurePassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
+            'password_confirmation' => 'Tmc2024!Sec#Pass99',
         ])->assertRedirect('/login');
 
         $this->post('/login', [
             'email' => $user->email,
-            'password' => 'NewSecurePassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
         ])->assertSessionHasNoErrors();
     }
 
@@ -182,8 +182,8 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewSecurePassword123!',
-            'password_confirmation' => 'NewSecurePassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
+            'password_confirmation' => 'Tmc2024!Sec#Pass99',
         ])->assertSessionHasErrors('email');
     }
 
@@ -204,7 +204,7 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'NewSecurePassword123!',
+            'password' => 'Tmc2024!Sec#Pass99',
             'password_confirmation' => 'DifferentPassword123!',
         ])->assertSessionHasErrors('password');
     }

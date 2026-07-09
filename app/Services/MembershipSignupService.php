@@ -7,7 +7,6 @@ use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -94,8 +93,6 @@ class MembershipSignupService
 
         $user = $result['user'];
         $profile = $result['profile'];
-
-        Auth::login($user);
 
         Log::info('MembershipSignupService: user created and activated', [
             'user_id' => $user->id,

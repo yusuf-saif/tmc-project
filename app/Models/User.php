@@ -24,6 +24,10 @@ class User extends Authenticatable implements FilamentUser
     /**
      * The attributes that are mass assignable.
      *
+     * Sensitive fields (status, suspended_at, suspended_reason) are in
+     * $fillable for service-layer mass assignment but must never be
+     * exposed to direct user input.
+     *
      * @var list<string>
      */
     protected $fillable = [

@@ -9,6 +9,7 @@ use App\Http\Responses\FortifyLoginResponse;
 use App\Http\Responses\FortifyRegisterResponse;
 use App\Http\Responses\FortifyVerifyEmailResponse;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -48,6 +49,13 @@ class FortifyServiceProvider extends ServiceProvider
 
             if ($user && Hash::check($request->password, $user->password)) {
                 if ($user->status === 'suspended') {
+                    AuditLogService::log(
+                        'login_attempt_suspended_user',
+                        $user,
+                        [],
+                        ['ip' => $request->ip()],
+                    );
+
                     return null;
                 }
 
@@ -64,7 +72,15 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            $attempts = RateLimiter::attempts($throttleKey);
+            $maxAttempts = match (true) {
+                $attempts >= 10 => 1,
+                $attempts >= 5 => 2,
+                $attempts >= 3 => 3,
+                default => 5,
+            };
+
+            return Limit::perMinute($maxAttempts)->by($throttleKey);
         });
     }
 }

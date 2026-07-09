@@ -126,11 +126,7 @@ class PaymentPage extends Component
         $allowedForVerification = ['onboarding', 'active', 'suspended'];
 
         if (in_array($profile->onboarding_status, $allowedForVerification) && $profile->paystack_reference && $profile->payment_verified_at === null) {
-            if (config('paystack.skipVerification', false)) {
-                $this->activateWithoutVerification($profile, $user);
-            } else {
-                $this->verifyPaymentWithPaystack($profile, $user);
-            }
+            $this->verifyPaymentWithPaystack($profile, $user);
         }
 
         $profile->refresh();
@@ -210,36 +206,6 @@ class PaymentPage extends Component
             ]);
         } catch (\Throwable $e) {
             Log::info('PaymentPage: Paystack verification not yet ready', [
-                'user_id' => $user->id,
-                'reference' => $profile->paystack_reference,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    protected function activateWithoutVerification($profile, $user): void
-    {
-        try {
-            $planLabel = $profile->preferred_billing_cycle ?? 'monthly';
-
-            app(MembershipStateService::class)->recordPayment($profile, $user, $planLabel);
-
-            $profile->refresh();
-
-            AuditLogService::log(
-                action: 'payment_verified_bypass',
-                model: $profile,
-                old: ['onboarding_status' => $profile->onboarding_status],
-                new: ['onboarding_status' => $profile->onboarding_status, 'membership_id' => $profile->membership_id],
-                targetUserId: $user->id,
-            );
-
-            Log::info('PaymentPage: payment bypassed (skip verification)', [
-                'user_id' => $user->id,
-                'reference' => $profile->paystack_reference,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('PaymentPage: bypass activation failed', [
                 'user_id' => $user->id,
                 'reference' => $profile->paystack_reference,
                 'error' => $e->getMessage(),

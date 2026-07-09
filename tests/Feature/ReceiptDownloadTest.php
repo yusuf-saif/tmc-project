@@ -18,6 +18,8 @@ class ReceiptDownloadTest extends TestCase
 
     protected User $member;
 
+    protected User $otherMember;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,12 +31,17 @@ class ReceiptDownloadTest extends TestCase
 
         $this->member = User::factory()->create();
         $this->member->assignRole('member');
+
+        $this->otherMember = User::factory()->create();
+        $this->otherMember->assignRole('member');
     }
 
-    protected function createProfileWithReceipt(?string $path = null): MemberProfile
-    {
+    protected function createProfileWithReceipt(
+        ?string $path = null,
+        ?User $owner = null,
+    ): MemberProfile {
         return MemberProfile::create([
-            'user_id' => $this->member->id,
+            'user_id' => ($owner ?? $this->member)->id,
             'onboarding_status' => 'onboarding',
             'payment_proof_path' => $path,
             'preferred_billing_cycle' => 'monthly',
@@ -43,10 +50,10 @@ class ReceiptDownloadTest extends TestCase
 
     public function test_admin_can_download_receipt(): void
     {
-        Storage::fake('public');
+        Storage::fake('r2');
 
         $file = UploadedFile::fake()->image('receipt.jpg', 100, 100);
-        $path = $file->store('payment-proofs', 'public');
+        $path = $file->store('payment-proofs', 'r2');
 
         $profile = $this->createProfileWithReceipt($path);
 
@@ -57,16 +64,16 @@ class ReceiptDownloadTest extends TestCase
 
     public function test_member_cannot_download_receipt(): void
     {
-        Storage::fake('public');
+        Storage::fake('r2');
 
         $file = UploadedFile::fake()->image('receipt.jpg', 100, 100);
-        $path = $file->store('payment-proofs', 'public');
+        $path = $file->store('payment-proofs', 'r2');
 
-        $profile = $this->createProfileWithReceipt($path);
+        $profile = $this->createProfileWithReceipt($path, $this->otherMember);
 
         $this->actingAs($this->member)
             ->get(route('admin.receipt.download', $profile))
-            ->assertStatus(403);
+            ->assertStatus(404);
     }
 
     public function test_receipt_download_returns_404_when_no_receipt(): void

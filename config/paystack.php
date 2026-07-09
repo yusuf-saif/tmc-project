@@ -45,6 +45,6 @@ return [
     |
     */
 
-    'skipVerification' => env('PAYSTACK_SKIP_VERIFICATION', false),
+    'skipVerification' => false,
 
 ];

@@ -13,8 +13,11 @@ class ReceiptDownloadController
     {
         $user = $request->user();
 
-        if (! $user || ! $user->hasAnyRole(['super_admin', 'admin'])) {
-            abort(403, 'Unauthorized');
+        if ($user && $user->hasAnyRole(['super_admin', 'admin'])) {
+            // Admin: can download any receipt
+        } else {
+            // Member: can only download their own receipt
+            abort_unless($memberProfile->user_id === optional($user)->id, 404);
         }
 
         if (! $memberProfile->payment_proof_path) {

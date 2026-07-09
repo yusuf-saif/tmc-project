@@ -5,11 +5,13 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 
 use App\Http\Middleware\EnsureNotSuspendedFromRestrictedAreas;
 use App\Http\Middleware\EnsureUserStateRedirect;
+use App\Http\Middleware\SecurityHeaders;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Sentry\Laravel\Integration;
 use Sentry\Laravel\ServiceProvider;
 
@@ -20,7 +22,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->trustProxies(at: '*');
+        $middleware->append(SecurityHeaders::class);
+
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR |
+                     Request::HEADER_X_FORWARDED_HOST |
+                     Request::HEADER_X_FORWARDED_PORT |
+                     Request::HEADER_X_FORWARDED_PROTO,
+        );
 
         $middleware->alias([
             'ensure.user.state' => EnsureUserStateRedirect::class,

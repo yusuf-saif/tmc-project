@@ -6,6 +6,7 @@ use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\User;
 use App\Services\MembershipSignupService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -156,7 +157,7 @@ class MembershipSignupWizard extends Component
         $this->submitting = true;
 
         try {
-            $service->register(
+            $profile = $service->register(
                 firstName: $this->firstName,
                 lastName: $this->lastName,
                 email: $this->email,
@@ -165,6 +166,12 @@ class MembershipSignupWizard extends Component
                 data: $this->dataPayload(),
                 passwordIsHashed: true,
             );
+
+            $user = User::find($profile->user_id);
+
+            session()->regenerate();
+
+            Auth::login($user);
         } catch (\Throwable $e) {
             Log::error('MembershipSignupWizard: submit failed', [
                 'error' => $e->getMessage(),
@@ -212,9 +219,9 @@ class MembershipSignupWizard extends Component
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed:passwordConfirmation'],
+            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
             'referralCode' => ['nullable', 'string', 'max:8', function ($attribute, $value, $fail) {
-                if ($value && !User::where('referral_code', $value)->exists()) {
+                if ($value && ! User::where('referral_code', $value)->exists()) {
                     $fail('The referral code is invalid.');
                 }
             }],
@@ -235,7 +242,7 @@ class MembershipSignupWizard extends Component
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
-                'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed:passwordConfirmation'],
+                'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],
