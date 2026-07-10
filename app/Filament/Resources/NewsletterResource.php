@@ -46,7 +46,9 @@ class NewsletterResource extends Resource
                             'bold', 'italic', 'underline', 'link', 'image',
                             'h2', 'h3', 'bulletList', 'orderedList',
                         ])
-                        ->imageUpload.disk('r2')->directory('newsletters/images')
+                        ->imageUpload(true)
+                        ->imageUploadDisk('r2')
+                        ->imageUploadDirectory('newsletters/images')
                         ->columnSpanFull(),
                 ]),
 
