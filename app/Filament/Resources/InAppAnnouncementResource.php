@@ -4,9 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\InAppAnnouncementResource\Pages;
 use App\Models\InAppAnnouncement;
+use App\Services\AuditLogService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -117,6 +119,33 @@ class InAppAnnouncementResource extends Resource
             ->emptyStateDescription('No in-app announcements have been created.')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('resend')
+                    ->label('Resend')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Resend Announcement')
+                    ->modalDescription('This will create a copy of this announcement. You can then set new dates and activate it.')
+                    ->action(function (InAppAnnouncement $record) {
+                        $clone = $record->replicate();
+                        $clone->status = 'inactive';
+                        $clone->start_at = null;
+                        $clone->expires_at = null;
+                        $clone->created_by = auth()->id();
+                        $clone->updated_by = auth()->id();
+                        $clone->save();
+
+                        AuditLogService::log('in_app_announcement_created', $clone, [], $clone->only([
+                            'title', 'type', 'priority', 'status',
+                        ]));
+
+                        Notification::make()
+                            ->title('Announcement duplicated')
+                            ->success()
+                            ->send();
+
+                        $this->redirect(InAppAnnouncementResource::getUrl('edit', ['record' => $clone]));
+                    }),
                 Tables\Actions\DeleteAction::make(),
             ]);
     }

@@ -149,6 +149,18 @@ class BroadcastResource extends Resource
                         SendBroadcastNotificationJob::dispatch($record);
                         AuditLogService::log('broadcast_dispatched', $record, [], ['title' => $record->title]);
                     }),
+                Tables\Actions\Action::make('resend')
+                    ->label('Resend')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Resend Broadcast')
+                    ->modalDescription('This will send the broadcast again to all targeted recipients.')
+                    ->visible(fn (Broadcast $record) => in_array($record->status, ['sent', 'failed']))
+                    ->action(function (Broadcast $record) {
+                        SendBroadcastNotificationJob::dispatch($record);
+                        AuditLogService::log('broadcast_resent', $record, [], ['title' => $record->title]);
+                    }),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (Broadcast $record) => in_array($record->status, ['queued', 'failed'])),
             ]);
