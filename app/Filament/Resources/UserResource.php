@@ -35,7 +35,7 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['roles', 'profile']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['roles', 'profile', 'pushSubscriptions']))
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
@@ -52,6 +52,10 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('coins_balance')
                     ->label('Coins')
                     ->state(fn (User $record): string => CoinsService::getBalance($record).' coins'),
+                Tables\Columns\IconColumn::make('has_push')
+                    ->label('Push')
+                    ->getStateUsing(fn (User $record): bool => $record->pushSubscriptions()->exists())
+                    ->boolean(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('role')
@@ -73,6 +77,23 @@ class UserResource extends Resource
                         'active' => 'Active',
                         'suspended' => 'Suspended',
                     ]),
+                Tables\Filters\SelectFilter::make('has_push')
+                    ->label('Push Notifications')
+                    ->options([
+                        '1' => 'Enabled',
+                        '0' => 'Not Enabled',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = $data['value'] ?? null;
+
+                        if ($value === '1') {
+                            return $query->has('pushSubscriptions');
+                        } elseif ($value === '0') {
+                            return $query->doesntHave('pushSubscriptions');
+                        }
+
+                        return $query;
+                    }),
             ])
             ->emptyStateHeading('No users found')
             ->emptyStateDescription('No users match your filters.')

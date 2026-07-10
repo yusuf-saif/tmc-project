@@ -30,6 +30,28 @@
   </div>
   @endif
 
+  {{-- Push notification enable banner --}}
+  @if(!$hasPushEnabled)
+  <div x-data="{ dismissed: localStorage.getItem('tmc_push_banner_dismissed') === '1' }" x-show="!dismissed"
+       x-transition.opacity.duration.300ms
+       style="margin-bottom:12px;background:var(--teal);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:16px;">🔔</span>
+    <p style="flex:1;font-size:13px;font-weight:500;color:white;line-height:1.4;">
+      Enable notifications to stay updated on events, announcements, and more.
+    </p>
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <button id="push-enable-btn"
+              style="background:white;color:var(--teal-dk);border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+        Enable
+      </button>
+      <button @click="dismissed = true; localStorage.setItem('tmc_push_banner_dismissed', '1')"
+              style="background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:0;line-height:1;">
+        ×
+      </button>
+    </div>
+  </div>
+  @endif
+
   {{-- Coins card --}}
   <a href="{{ url('/profile?tab=wallet') }}" class="coins-card anim-fade-up delay-1">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -154,3 +176,45 @@
   </div>
 
 </div>
+
+@once
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.getElementById('push-enable-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function () {
+      if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+        return;
+      }
+
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+
+      try {
+        var reg = await navigator.serviceWorker.register('/sw.js');
+        var sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        await fetch('/push/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+          },
+          body: JSON.stringify(sub)
+        });
+
+        var banner = btn.closest('[x-data]');
+        if (banner && typeof Alpine !== 'undefined') {
+          Alpine.$data(banner).dismissed = true;
+        }
+      } catch (e) {
+        console.warn('Push subscription failed:', e);
+      }
+    });
+  });
+</script>
+@endonce

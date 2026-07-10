@@ -64,6 +64,7 @@ class HomeDashboard extends Component
             'balance' => $user ? CoinsService::getBalance($user) : 0,
             'events' => $this->upcomingEvents(),
             'onboardingStatus' => $user->profile?->onboarding_status,
+            'hasPushEnabled' => $user ? $user->pushSubscriptions()->exists() : false,
         ])->layout('layouts.app', [
             'title' => 'Home',
         ]);
