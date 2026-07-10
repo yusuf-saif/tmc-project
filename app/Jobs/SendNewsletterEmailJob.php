@@ -49,18 +49,27 @@ class SendNewsletterEmailJob implements ShouldQueue
                 });
             });
 
-        $this->newsletter->update([
-            'status' => 'sent',
-            'sent_count' => $count,
-        ]);
+        if ($count > 0) {
+            $this->newsletter->update([
+                'status' => 'sent',
+                'sent_count' => $count,
+            ]);
 
-        AuditLogService::log('newsletter_sent', $this->newsletter, [], [
-            'subject' => $this->newsletter->subject,
-            'audience' => $this->newsletter->target_audience,
-            'sent_count' => $count,
-        ]);
+            AuditLogService::log('newsletter_sent', $this->newsletter, [], [
+                'subject' => $this->newsletter->subject,
+                'audience' => $this->newsletter->target_audience,
+                'sent_count' => $count,
+            ]);
 
-        Log::info("Newsletter #{$this->newsletter->id} queued for {$count} recipients.");
+            Log::info("Newsletter #{$this->newsletter->id} queued for {$count} recipients.");
+        } else {
+            $this->newsletter->update([
+                'status' => 'failed',
+                'sent_count' => 0,
+            ]);
+
+            Log::warning("Newsletter #{$this->newsletter->id} had 0 eligible recipients — marked as failed.");
+        }
     }
 
     public function failed(\Throwable $exception): void

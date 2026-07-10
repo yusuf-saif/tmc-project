@@ -5,7 +5,7 @@
     }"
     x-effect="showModal = $wire.showModal; currentIndex = $wire.currentIndex"
     wire:poll.5s="loadAnnouncements"
-    style="display:none;"
+    x-show="showModal"
 >
     @isset($currentAnnouncement)
     <template x-if="showModal && $wire.currentAnnouncement">

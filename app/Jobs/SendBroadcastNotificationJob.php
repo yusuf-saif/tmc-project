@@ -25,18 +25,18 @@ class SendBroadcastNotificationJob implements ShouldQueue
 
     public function handle(NotificationService $notificationService): void
     {
-        $broadcast->update(['status' => 'sending']);
+        $this->broadcast->update(['status' => 'sending']);
 
-        if ($broadcast->expires_at && $broadcast->expires_at->isPast()) {
-            $broadcast->update(['status' => 'failed']);
-            Log::info("Broadcast #{$broadcast->id} expired before delivery.");
+        if ($this->broadcast->expires_at && $this->broadcast->expires_at->isPast()) {
+            $this->broadcast->update(['status' => 'failed']);
+            Log::info("Broadcast #{$this->broadcast->id} expired before delivery.");
 
             return;
         }
 
         $users = $notificationService->resolveAudience(
-            $broadcast->target_audience,
-            $broadcast->audience_value
+            $this->broadcast->target_audience,
+            $this->broadcast->audience_value
         );
 
         $push = app(PushNotificationService::class);
@@ -44,25 +44,25 @@ class SendBroadcastNotificationJob implements ShouldQueue
 
         foreach ($users as $user) {
             try {
-                $push->send($user, $broadcast->title, $broadcast->body, route('home'));
+                $push->send($user, $this->broadcast->title, $this->broadcast->body, route('home'));
                 $count++;
             } catch (\Exception $e) {
                 Log::warning("Failed to send broadcast to user #{$user->id}: {$e->getMessage()}");
             }
         }
 
-        $broadcast->update([
+        $this->broadcast->update([
             'status' => 'sent',
             'delivery_count' => $count,
         ]);
 
-        AuditLogService::log('broadcast_sent', $broadcast, [], [
-            'title' => $broadcast->title,
-            'audience' => $broadcast->target_audience,
+        AuditLogService::log('broadcast_sent', $this->broadcast, [], [
+            'title' => $this->broadcast->title,
+            'audience' => $this->broadcast->target_audience,
             'delivery_count' => $count,
         ]);
 
-        Log::info("Broadcast #{$broadcast->id} sent to {$count} users.");
+        Log::info("Broadcast #{$this->broadcast->id} sent to {$count} users.");
     }
 
     public function failed(\Throwable $exception): void
