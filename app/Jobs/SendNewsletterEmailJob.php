@@ -40,8 +40,7 @@ class SendNewsletterEmailJob implements ShouldQueue
                 $chunk->each(function ($user) use (&$count, $index) {
                     try {
                         Mail::to($user->email)
-                            ->queue(new NewsletterMail($this->newsletter, $user))
-                            ->delay(now()->addSeconds($index * 10));
+                            ->later(now()->addSeconds($index * 10), new NewsletterMail($this->newsletter, $user));
                         $count++;
                     } catch (\Exception $e) {
                         Log::warning("Failed to queue newsletter email to {$user->email}: {$e->getMessage()}");
