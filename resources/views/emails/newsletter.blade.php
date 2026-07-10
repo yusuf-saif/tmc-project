@@ -13,6 +13,7 @@
         .header p { color: rgba(255,255,255,0.7); font-size: 13px; margin: 4px 0 0; letter-spacing: 1px; text-transform: uppercase; }
         .body-content { padding: 32px 24px; color: #1C1A17; line-height: 1.7; font-size: 15px; }
         .body-content h2 { color: #1A6B72; font-size: 20px; margin-top: 0; }
+        .body-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 16px 0; display: block; }
         .divider { border: none; border-top: 1px solid #E4F2F3; margin: 24px 0; }
         .footer { background: #F5F5F0; padding: 24px; text-align: center; }
         .footer p { color: #6B6760; font-size: 12px; margin: 4px 0; }

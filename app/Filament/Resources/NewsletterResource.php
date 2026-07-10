@@ -43,9 +43,10 @@ class NewsletterResource extends Resource
                     Forms\Components\RichEditor::make('body')
                         ->required()
                         ->toolbarButtons([
-                            'bold', 'italic', 'underline', 'link',
+                            'bold', 'italic', 'underline', 'link', 'image',
                             'h2', 'h3', 'bulletList', 'orderedList',
                         ])
+                        ->imageUpload.disk('r2')->directory('newsletters/images')
                         ->columnSpanFull(),
                 ]),
 
@@ -79,17 +80,6 @@ class NewsletterResource extends Resource
                         })
                         ->multiple()
                         ->visible(fn (Forms\Get $get) => in_array($get('target_audience'), ['interest', 'goal']))
-                        ->columnSpan(1),
-                    Forms\Components\Select::make('status')
-                        ->options([
-                            'draft' => 'Draft',
-                            'scheduled' => 'Scheduled',
-                            'sending' => 'Sending',
-                            'sent' => 'Sent',
-                            'failed' => 'Failed',
-                        ])
-                        ->required()
-                        ->default('draft')
                         ->columnSpan(1),
                     Forms\Components\DateTimePicker::make('schedule_at')
                         ->label('Schedule At')

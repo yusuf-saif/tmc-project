@@ -77,6 +77,14 @@ class BroadcastResource extends Resource
                         ->multiple()
                         ->visible(fn (Forms\Get $get) => in_array($get('target_audience'), ['interest', 'goal']))
                         ->columnSpan(1),
+                    Forms\Components\Select::make('frequency')
+                        ->options([
+                            'once' => 'Send Once',
+                            'daily' => 'Repeat Daily',
+                        ])
+                        ->required()
+                        ->default('once')
+                        ->columnSpan(1),
                     Forms\Components\DateTimePicker::make('send_at')
                         ->label('Send At (leave empty for immediate)')
                         ->nullable()

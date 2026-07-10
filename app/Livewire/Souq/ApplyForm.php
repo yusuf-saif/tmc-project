@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Souq;
 
+use App\Models\JannahCoinsLedger;
 use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Services\AuditLogService;
@@ -129,12 +130,20 @@ class ApplyForm extends Component
             app(BusinessStateService::class)->activate($this->approvedUnpaidListing);
 
             if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
-                app(CoinsService::class)->applyRedemption(
-                    $this->approvedUnpaidListing->owner,
-                    (int) $verifiedMetadata['coins_used'],
-                    'souq',
-                    $this->approvedUnpaidListing->id,
-                );
+                $alreadyRedeemed = JannahCoinsLedger::query()
+                    ->where('user_id', $this->approvedUnpaidListing->user_id)
+                    ->where('reason', 'redemption_souq')
+                    ->where('reference_id', $this->approvedUnpaidListing->id)
+                    ->exists();
+
+                if (! $alreadyRedeemed) {
+                    app(CoinsService::class)->applyRedemption(
+                        $this->approvedUnpaidListing->owner,
+                        (int) $verifiedMetadata['coins_used'],
+                        'souq',
+                        $this->approvedUnpaidListing->id,
+                    );
+                }
             }
 
             $this->syncListingState();

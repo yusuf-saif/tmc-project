@@ -61,13 +61,6 @@ class InAppAnnouncementResource extends Resource
                         ->default('medium'),
                     Forms\Components\Toggle::make('dismissible')
                         ->default(true),
-                    Forms\Components\Select::make('status')
-                        ->options([
-                            'active' => 'Active',
-                            'inactive' => 'Inactive',
-                        ])
-                        ->required()
-                        ->default('active'),
                 ])->columns(2),
 
             Forms\Components\Section::make('Schedule')

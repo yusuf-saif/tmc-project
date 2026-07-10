@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Membership;
 
+use App\Models\JannahCoinsLedger;
 use App\Models\Setting;
 use App\Services\AuditLogService;
 use App\Services\CoinsService;
@@ -180,12 +181,20 @@ class PaymentPage extends Component
             }
 
             if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
-                app(CoinsService::class)->applyRedemption(
-                    $user,
-                    (int) $verifiedMetadata['coins_used'],
-                    'membership',
-                    $profile->id,
-                );
+                $alreadyRedeemed = JannahCoinsLedger::query()
+                    ->where('user_id', $user->id)
+                    ->where('reason', 'redemption_membership')
+                    ->where('reference_id', $profile->id)
+                    ->exists();
+
+                if (! $alreadyRedeemed) {
+                    app(CoinsService::class)->applyRedemption(
+                        $user,
+                        (int) $verifiedMetadata['coins_used'],
+                        'membership',
+                        $profile->id,
+                    );
+                }
             }
 
             app(MembershipStateService::class)->recordPayment($profile, $user, $planLabel);

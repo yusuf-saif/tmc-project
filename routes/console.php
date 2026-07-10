@@ -18,6 +18,17 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// ─── Activate scheduled in-app announcements ──────────────────────
+Schedule::call(function () {
+    InAppAnnouncement::query()
+        ->where('status', 'inactive')
+        ->where('start_at', '<=', now())
+        ->where(function ($query) {
+            $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        })
+        ->update(['status' => 'active']);
+})->everyMinute()->name('activate-in-app-announcements');
+
 // ─── Expire in-app announcements ──────────────────────────────────
 Schedule::call(function () {
     InAppAnnouncement::query()

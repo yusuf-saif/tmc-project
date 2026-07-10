@@ -17,6 +17,7 @@ class Broadcast extends Model
         'audience_value',
         'send_at',
         'expires_at',
+        'frequency',
         'status',
         'delivery_count',
         'created_by',

@@ -63,6 +63,31 @@ class SendBroadcastNotificationJob implements ShouldQueue
         ]);
 
         Log::info("Broadcast #{$this->broadcast->id} sent to {$count} users.");
+
+        $this->requeueIfDaily();
+    }
+
+    protected function requeueIfDaily(): void
+    {
+        if ($this->broadcast->frequency !== 'daily') {
+            return;
+        }
+
+        $tomorrow = now()->addDay();
+
+        if ($this->broadcast->expires_at && $this->broadcast->expires_at->lte($tomorrow)) {
+            return;
+        }
+
+        $this->broadcast->update([
+            'status' => 'queued',
+            'send_at' => $tomorrow->copy()->setTime(
+                $this->broadcast->send_at ? $this->broadcast->send_at->hour : now()->hour,
+                $this->broadcast->send_at ? $this->broadcast->send_at->minute : now()->minute,
+            ),
+        ]);
+
+        Log::info("Broadcast #{$this->broadcast->id} re-queued for tomorrow.");
     }
 
     public function failed(\Throwable $exception): void
