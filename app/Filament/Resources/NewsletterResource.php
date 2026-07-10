@@ -46,8 +46,6 @@ class NewsletterResource extends Resource
                             'bold', 'italic', 'underline', 'link', 'attachFiles',
                             'h2', 'h3', 'bulletList', 'orderedList',
                         ])
-                        ->fileAttachmentsDisk('r2')
-                        ->fileAttachmentsDirectory('newsletters/images')
                         ->columnSpanFull(),
                 ]),
 
