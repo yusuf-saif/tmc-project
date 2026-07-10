@@ -43,12 +43,11 @@ class NewsletterResource extends Resource
                     Forms\Components\RichEditor::make('body')
                         ->required()
                         ->toolbarButtons([
-                            'bold', 'italic', 'underline', 'link', 'image',
+                            'bold', 'italic', 'underline', 'link', 'attachFiles',
                             'h2', 'h3', 'bulletList', 'orderedList',
                         ])
-                        ->imageUpload(true)
-                        ->imageUploadDisk('r2')
-                        ->imageUploadDirectory('newsletters/images')
+                        ->fileAttachmentsDisk('r2')
+                        ->fileAttachmentsDirectory('newsletters/images')
                         ->columnSpanFull(),
                 ]),
 
