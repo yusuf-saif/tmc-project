@@ -505,4 +505,93 @@ class MembershipApplicationTest extends TestCase
         $serial3 = MembershipIdService::generate('student_member');
         $this->assertEquals(1, $serial3['membership_serial']);
     }
+
+    // ─── Reconcile Type For User ─────────────────────────────────────
+
+    public function test_reconcile_changes_m_to_sm_for_under_18(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate([
+            'display_name' => $user->name,
+            'membership_type' => 'M',
+            'membership_id' => 'TMC-M-1447-099',
+            'hijri_year' => 1447,
+            'membership_serial' => 99,
+            'age_group' => 'under_18',
+        ]);
+
+        $newId = MembershipIdService::reconcileTypeForUser($user);
+
+        $this->assertNotNull($newId);
+        $this->assertStringStartsWith('TMC-SM-', $newId);
+        $this->assertEquals('SM', $user->fresh()->memberProfile->membership_type);
+        $this->assertEquals($newId, $user->fresh()->member_id);
+        $this->assertEquals($newId, $user->fresh()->memberProfile->membership_id);
+    }
+
+    public function test_reconcile_does_nothing_when_type_already_correct(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate([
+            'display_name' => $user->name,
+            'membership_type' => 'M',
+            'membership_id' => 'TMC-M-1447-050',
+            'hijri_year' => 1447,
+            'membership_serial' => 50,
+            'age_group' => '25_34',
+        ]);
+
+        $result = MembershipIdService::reconcileTypeForUser($user);
+
+        $this->assertNull($result);
+        $this->assertEquals('M', $user->fresh()->memberProfile->membership_type);
+        $this->assertEquals('TMC-M-1447-050', $user->fresh()->memberProfile->membership_id);
+    }
+
+    public function test_reconcile_returns_null_when_no_membership_id(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate([
+            'display_name' => $user->name,
+            'age_group' => 'under_18',
+        ]);
+
+        $result = MembershipIdService::reconcileTypeForUser($user);
+
+        $this->assertNull($result);
+    }
+
+    public function test_reconcile_preserves_independent_serial_counters(): void
+    {
+        $hijriYear = MembershipIdService::getCurrentHijriYear();
+
+        $m1 = MembershipIdService::generate('member');
+        $m2 = MembershipIdService::generate('member');
+        $this->assertEquals(2, $m2['membership_serial']);
+
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate([
+            'display_name' => $user->name,
+            'membership_type' => 'M',
+            'membership_id' => $m1['membership_id'],
+            'hijri_year' => $hijriYear,
+            'membership_serial' => $m1['membership_serial'],
+            'age_group' => 'under_18',
+        ]);
+
+        $reconciledId = MembershipIdService::reconcileTypeForUser($user);
+
+        $this->assertStringStartsWith('TMC-SM-', $reconciledId);
+
+        $sm1 = MembershipIdService::generate('student_member');
+        $this->assertEquals(2, $sm1['membership_serial']);
+        $this->assertStringStartsWith("TMC-SM-{$hijriYear}-", $sm1['membership_id']);
+
+        $m3 = MembershipIdService::generate('member');
+        $this->assertEquals(3, $m3['membership_serial']);
+    }
 }

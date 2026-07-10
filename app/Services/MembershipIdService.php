@@ -37,6 +37,34 @@ class MembershipIdService
         return 'M';
     }
 
+    public static function reconcileTypeForUser(User $user): ?string
+    {
+        $profile = $user->memberProfile;
+        if (! $profile || ! $profile->membership_id) {
+            return null;
+        }
+
+        $correctType = self::determineMembershipType($user);
+        $currentType = self::normalizeType($profile->membership_type ?? 'M');
+
+        if ($correctType === $currentType) {
+            return null;
+        }
+
+        $generated = self::generate($correctType);
+
+        $profile->update([
+            'membership_type' => $correctType,
+            'membership_id' => $generated['membership_id'],
+            'hijri_year' => $generated['membership_hijri_year'],
+            'membership_serial' => $generated['membership_serial'],
+        ]);
+
+        $user->update(['member_id' => $generated['membership_id']]);
+
+        return $generated['membership_id'];
+    }
+
     public static function getCurrentHijriYear(): int
     {
         return App::make(HijriDateService::class)->currentYear();

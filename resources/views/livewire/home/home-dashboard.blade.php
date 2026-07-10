@@ -1,5 +1,7 @@
 <div class="anim-fade-in">
 
+  <livewire:announcement-popup />
+
   {{-- Greeting card --}}
   <div class="greeting-card anim-fade-up">
     <div class="greeting-card__bg"></div>

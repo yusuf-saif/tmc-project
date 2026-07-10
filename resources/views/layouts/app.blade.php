@@ -84,8 +84,6 @@
   </div>
 @endif
 
-<livewire:announcement-popup />
-
 @livewireScripts
 
 <style>

@@ -196,4 +196,42 @@ class MembershipSignupServiceTest extends TestCase
             'onboarding_status' => 'active',
         ]);
     }
+
+    public function test_register_under_18_gets_sm_membership_type(): void
+    {
+        $service = app(MembershipSignupService::class);
+
+        $profile = $service->register(
+            firstName: 'Junior',
+            lastName: 'Member',
+            email: 'junior@example.com',
+            password: 'Password123!',
+            referralCode: null,
+            data: [
+                'age_group' => 'under_18',
+            ],
+        );
+
+        $this->assertEquals('SM', $profile->membership_type);
+        $this->assertStringStartsWith('TMC-SM-', $profile->membership_id);
+    }
+
+    public function test_register_adult_gets_m_membership_type(): void
+    {
+        $service = app(MembershipSignupService::class);
+
+        $profile = $service->register(
+            firstName: 'Adult',
+            lastName: 'Member',
+            email: 'adult@example.com',
+            password: 'Password123!',
+            referralCode: null,
+            data: [
+                'age_group' => '25_34',
+            ],
+        );
+
+        $this->assertEquals('M', $profile->membership_type);
+        $this->assertStringStartsWith('TMC-M-', $profile->membership_id);
+    }
 }

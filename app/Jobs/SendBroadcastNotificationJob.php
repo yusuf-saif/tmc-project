@@ -3,9 +3,9 @@
 namespace App\Jobs;
 
 use App\Models\Broadcast;
-use App\Notifications\BroadcastNotification;
 use App\Services\AuditLogService;
 use App\Services\NotificationService;
+use App\Services\PushNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -39,14 +39,12 @@ class SendBroadcastNotificationJob implements ShouldQueue
             $broadcast->audience_value
         );
 
+        $push = app(PushNotificationService::class);
         $count = 0;
 
         foreach ($users as $user) {
             try {
-                // FCM / Web Push integration point
-                // If user has fcm_token or push_subscription, send here
-                // For now, store as Laravel notification for in-app retrieval
-                $user->notify(new BroadcastNotification($broadcast));
+                $push->send($user, $broadcast->title, $broadcast->body, route('home'));
                 $count++;
             } catch (\Exception $e) {
                 Log::warning("Failed to send broadcast to user #{$user->id}: {$e->getMessage()}");

@@ -6,6 +6,7 @@ use App\Events\MemberOnboardingCompleted;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\User;
+use App\Services\MembershipIdService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -123,6 +124,8 @@ class OnboardingController extends Controller
                         'onboarding_status' => 'active',
                         'onboarding_completed_at' => now(),
                     ]);
+
+                    MembershipIdService::reconcileTypeForUser($user);
                 }
 
                 $interestIds = Interest::whereIn('slug', $validated['interests'])->pluck('id');

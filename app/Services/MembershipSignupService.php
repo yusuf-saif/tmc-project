@@ -47,7 +47,8 @@ class MembershipSignupService
             }
             $user->assignRole('member');
 
-            $idData = MembershipIdService::generate('member');
+            $membershipType = (($data['age_group'] ?? null) === 'under_18') ? 'SM' : 'M';
+            $idData = MembershipIdService::generate($membershipType);
 
             $profile = MemberProfile::create([
                 'user_id' => $user->id,
@@ -67,7 +68,7 @@ class MembershipSignupService
                 'tiktok_username' => $data['tiktok_username'] ?? null,
                 'onboarding_status' => 'active',
                 'membership_id' => $idData['membership_id'],
-                'membership_type' => 'M',
+                'membership_type' => $membershipType,
                 'hijri_year' => $idData['membership_hijri_year'],
                 'membership_serial' => $idData['membership_serial'],
                 'activated_at' => now(),
