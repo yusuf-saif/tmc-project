@@ -23,7 +23,7 @@
 
 ## Railway Deployment
 - Deploy from GitHub repo — Nixpacks auto-detects Laravel web process (PHP-FPM + Nginx, doc root `public/`)
-- Worker: `Procfile` defines `php artisan queue:work --sleep=3 --tries=3`
+- Worker: `Procfile` defines `php artisan queue:work --sleep=3 --tries=3 --timeout=600`. **The worker is mandatory in production** — without it, queued notifications (import completion, billing, membership emails) silently accumulate in the `jobs` table and are never sent.
 - Scheduler: `railway.json` runs `php artisan schedule:run` every minute via cron
 - Database: Railway PostgreSQL plugin (auto-injects `DATABASE_URL` — manually set `DB_CONNECTION=pgsql` and individual env vars)
 - Storage: Railway Tigris (S3-compatible) — set `FILESYSTEM_DISK=s3` and AWS env vars

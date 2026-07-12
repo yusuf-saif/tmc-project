@@ -8,6 +8,10 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 
+/**
+ * Legacy command — use `members:send-pending-invites` for post-import sends.
+ * This command does not track invited_at and should not be run against future imports.
+ */
 class ResendInvitations extends Command
 {
     protected $signature = 'member:resend-invitations {--dry-run : Show which users would receive the email without sending}';

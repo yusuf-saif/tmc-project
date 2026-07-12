@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
-use App\Services\MembersCsvImportService;
+use App\Jobs\ImportMembersJob;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
@@ -28,31 +28,16 @@ class ListUsers extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    $disk = config('filament.default_filesystem_disk', config('filesystems.default'));
+                    $disk = 'local';
+                    $path = Storage::disk($disk)->putFile('imports', $data['csv_file']);
 
-                    $result = app(MembersCsvImportService::class)->import($data['csv_file'], $disk);
+                    ImportMembersJob::dispatch($path, auth()->id(), $disk);
 
-                    Storage::disk($disk)->delete($data['csv_file']);
-
-                    $message = sprintf(
-                        'Imported %d members. %d skipped.',
-                        $result['imported'],
-                        $result['skipped']
-                    );
-
-                    if (! empty($result['errors'])) {
-                        Notification::make()
-                            ->title('Import completed with errors')
-                            ->body($message.' '.count($result['errors']).' errors.')
-                            ->warning()
-                            ->send();
-                    } else {
-                        Notification::make()
-                            ->title('Import completed')
-                            ->body($message)
-                            ->success()
-                            ->send();
-                    }
+                    Notification::make()
+                        ->title('Import started')
+                        ->body('You will be notified when the import completes.')
+                        ->success()
+                        ->send();
                 }),
         ];
     }

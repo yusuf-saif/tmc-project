@@ -35,6 +35,7 @@ class User extends Authenticatable implements FilamentUser
         'email',
         'password',
         'status',
+        'invited_at',
         'member_id',
         'suspended_at',
         'suspended_reason',
@@ -63,6 +64,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'suspended_at' => 'datetime',
+            'invited_at' => 'datetime',
         ];
     }
 

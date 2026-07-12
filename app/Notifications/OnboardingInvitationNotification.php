@@ -12,6 +12,13 @@ class OnboardingInvitationNotification extends Notification implements ShouldQue
 {
     use Queueable;
 
+    public int $tries = 5;
+
+    public function backoff(): array
+    {
+        return [300, 1800, 7200, 21600];
+    }
+
     public function __construct(
         public string $token,
         public string $membershipId,

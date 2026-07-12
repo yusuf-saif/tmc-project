@@ -12,6 +12,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Illuminate\Support\Facades\Password;
+use Resend\Exceptions\ErrorException as ResendErrorException;
+use Symfony\Component\Mailer\Exception\TransportException;
 
 class ViewUser extends ViewRecord
 {
@@ -118,15 +120,27 @@ class ViewUser extends ViewRecord
                 ->modalDescription('This will send a new onboarding invitation to '.($this->record->email ?? 'this user').'.')
                 ->modalSubmitActionLabel('Send')
                 ->action(function (): void {
-                    $token = Password::broker('onboarding')->createToken($this->record);
-                    NotificationFacade::sendNow(
-                        $this->record,
-                        new OnboardingInvitationNotification($token, $this->record->member_id)
-                    );
-                    Notification::make()
-                        ->title('Onboarding invitation sent')
-                        ->success()
-                        ->send();
+                    try {
+                        $token = Password::broker('onboarding')->createToken($this->record);
+                        NotificationFacade::sendNow(
+                            $this->record,
+                            new OnboardingInvitationNotification($token, $this->record->member_id)
+                        );
+                        Notification::make()
+                            ->title('Onboarding invitation sent')
+                            ->success()
+                            ->send();
+                    } catch (TransportException) {
+                        Notification::make()
+                            ->title('Email could not be sent — provider quota may be reached. It will not retry automatically from this button.')
+                            ->danger()
+                            ->send();
+                    } catch (ResendErrorException) {
+                        Notification::make()
+                            ->title('Email could not be sent — provider quota may be reached. It will not retry automatically from this button.')
+                            ->danger()
+                            ->send();
+                    }
                 }),
         ];
     }

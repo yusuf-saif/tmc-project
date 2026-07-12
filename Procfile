@@ -1,1 +1,1 @@
-worker: php artisan queue:work --sleep=3 --tries=3
+worker: php artisan queue:work --sleep=3 --tries=3 --timeout=600

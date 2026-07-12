@@ -127,11 +127,11 @@ class MembersCsvImportService
 
     private function processRow(array $data): void
     {
-        $membershipId = trim((string) ($data['membership_id'] ?? ''));
-        $hijriDateStr = trim((string) ($data['hijri_date'] ?? ''));
-        $name = trim((string) ($data['name'] ?? ''));
-        $nickname = trim((string) ($data['nickname'] ?? ''));
-        $email = trim((string) ($data['email'] ?? ''));
+        $membershipId = $this->toUtf8(trim((string) ($data['membership_id'] ?? '')));
+        $hijriDateStr = $this->toUtf8(trim((string) ($data['hijri_date'] ?? '')));
+        $name = $this->toUtf8(trim((string) ($data['name'] ?? '')));
+        $nickname = $this->toUtf8(trim((string) ($data['nickname'] ?? '')));
+        $email = $this->toUtf8(trim((string) ($data['email'] ?? '')));
 
         if (! $membershipId || ! $name || ! $email) {
             $this->errors[] = 'Row skipped: missing required fields';
@@ -231,6 +231,21 @@ class MembersCsvImportService
             ]);
             $this->errors[] = "Failed to import {$email}: {$e->getMessage()}";
         }
+    }
+
+    private function toUtf8(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        if (! mb_check_encoding($value, 'UTF-8')) {
+            $value = mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
+        }
+
+        $value = str_replace(["\xE2\x80\x98", "\xE2\x80\x99"], "'", $value);
+
+        return $value;
     }
 
     private function parseMembershipType(string $membershipId): string

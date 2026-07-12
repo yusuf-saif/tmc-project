@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(asset('images/img1.png'))
             ->homeUrl('/admin')
             ->login()
+            ->databaseNotifications()
             ->colors([
                 'primary' => Color::hex(rescue(fn () => Schema::hasTable('settings') ? Setting::get('brand_primary_color', '#1A6B72') : '#1A6B72', '#1A6B72', false)),
             ])
