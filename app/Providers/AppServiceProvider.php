@@ -173,16 +173,33 @@ class AppServiceProvider extends ServiceProvider
         }
 
         try {
-            DB::table('users')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
-            DB::table('password_reset_tokens')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+            DB::transaction(function () {
+                // Deduplicate users whose emails differ only by case.
+                // Keep the lower-ID (older) account, delete the rest.
+                $duplicates = DB::select('
+                    SELECT u1.id
+                    FROM users u1
+                    INNER JOIN users u2
+                        ON LOWER(u1.email) = LOWER(u2.email)
+                        AND u1.id > u2.id
+                ');
 
-            if (DB::getSchemaBuilder()->hasTable('support_applications')) {
-                DB::table('support_applications')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
-            }
+                if ($duplicates !== []) {
+                    $ids = array_column($duplicates, 'id');
+                    DB::table('users')->whereIn('id', $ids)->delete();
+                }
 
-            if (DB::getSchemaBuilder()->hasTable('souq_listings') && DB::getSchemaBuilder()->hasColumn('souq_listings', 'contact_email')) {
-                DB::table('souq_listings')->whereRaw('contact_email != LOWER(contact_email)')->update(['contact_email' => DB::raw('LOWER(contact_email)')]);
-            }
+                DB::table('users')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+                DB::table('password_reset_tokens')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+
+                if (DB::getSchemaBuilder()->hasTable('support_applications')) {
+                    DB::table('support_applications')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+                }
+
+                if (DB::getSchemaBuilder()->hasTable('souq_listings') && DB::getSchemaBuilder()->hasColumn('souq_listings', 'contact_email')) {
+                    DB::table('souq_listings')->whereRaw('contact_email != LOWER(contact_email)')->update(['contact_email' => DB::raw('LOWER(contact_email)')]);
+                }
+            });
 
             file_put_contents($flag, app()->version());
         } catch (\Throwable $e) {
