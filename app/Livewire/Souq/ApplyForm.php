@@ -106,7 +106,7 @@ class ApplyForm extends Component
             return;
         }
 
-        if (! $this->approvedUnpaidListing || ! $this->approvedUnpaidListing->paystack_reference) {
+        if (! config('payments.enabled', true) || ! $this->approvedUnpaidListing || ! $this->approvedUnpaidListing->paystack_reference) {
             return;
         }
 
@@ -154,6 +154,13 @@ class ApplyForm extends Component
 
     public function payListing(PaystackService $paystack)
     {
+        if (! config('payments.enabled', true)) {
+            session()->flash('error', 'Online payment is temporarily unavailable. Please pay via bank transfer.');
+            $this->redirect(route('souq.apply'));
+
+            return;
+        }
+
         if (! $this->approvedUnpaidListing) {
             return;
         }
@@ -248,6 +255,7 @@ class ApplyForm extends Component
             'feeAmount' => $feeAmountNaira,
             'finalFeeAmount' => $finalFeeAmount,
             'bankDetails' => $this->bankDetails,
+            'paymentsEnabled' => config('payments.enabled', true),
         ])->layout('layouts.app', ['title' => 'List Your Business']);
     }
 }

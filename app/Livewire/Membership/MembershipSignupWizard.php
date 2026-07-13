@@ -218,7 +218,7 @@ class MembershipSignupWizard extends Component
         return [
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$this->email]))],
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
             'referralCode' => ['nullable', 'string', 'max:8', function ($attribute, $value, $fail) {
                 if ($value && ! User::where('referral_code', $value)->exists()) {
@@ -241,7 +241,7 @@ class MembershipSignupWizard extends Component
             1 => [
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())],
+                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$this->email]))],
                 'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
             ],
             2 => [

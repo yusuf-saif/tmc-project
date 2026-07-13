@@ -13,6 +13,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Log;
 
 class ViewMembershipApplication extends ViewRecord
 {
@@ -151,29 +152,38 @@ class ViewMembershipApplication extends ViewRecord
                 }).' via bank transfer for '.ucfirst($record->preferred_billing_cycle ?? 'monthly').' billing?')
                 ->modalSubmitActionLabel('Verify Payment')
                 ->action(function ($record): void {
-                    $user = $record->user;
-                    $planLabel = $record->preferred_billing_cycle ?? 'monthly';
+                    try {
+                        $user = $record->user;
+                        $planLabel = $record->preferred_billing_cycle ?? 'monthly';
 
-                    $record->forceFill([
-                        'payment_verified_by' => auth()->id(),
-                    ])->saveQuietly();
+                        $record->forceFill([
+                            'payment_verified_by' => auth()->id(),
+                        ])->saveQuietly();
 
-                    app(MembershipStateService::class)->recordPayment($record, $user, $planLabel);
+                        app(MembershipStateService::class)->recordPayment($record, $user, $planLabel);
 
-                    $record->refresh();
+                        $record->refresh();
 
-                    AuditLogService::log(
-                        action: 'manual_payment_verified',
-                        model: $record,
-                        old: ['payment_status' => 'pending_verification', 'onboarding_status' => $record->onboarding_status],
-                        new: ['payment_status' => 'paid', 'onboarding_status' => $record->onboarding_status, 'membership_id' => $record->membership_id],
-                        targetUserId: $user->id,
-                    );
+                        AuditLogService::log(
+                            action: 'manual_payment_verified',
+                            model: $record,
+                            old: ['payment_status' => 'pending_verification', 'onboarding_status' => $record->onboarding_status],
+                            new: ['payment_status' => 'paid', 'onboarding_status' => $record->onboarding_status, 'membership_id' => $record->membership_id],
+                            targetUserId: $user->id,
+                        );
 
-                    Notification::make()
-                        ->title('Payment verified — membership activated')
-                        ->success()
-                        ->send();
+                        Notification::make()
+                            ->title('Payment verified — membership activated')
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Log::error('ViewMembershipApplication: verifyBankPayment failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                        Notification::make()
+                            ->title('Payment verification failed')
+                            ->body('An error occurred. Please try again or contact support.')
+                            ->danger()
+                            ->send();
+                    }
                 }),
         ];
     }

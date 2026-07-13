@@ -19,6 +19,12 @@ class PaystackWebhookController extends Controller
 {
     public function __invoke(Request $request, PaystackService $paystackService): JsonResponse
     {
+        if (! config('payments.enabled', true)) {
+            Log::info('PaystackWebhook: payments disabled, returning 200');
+
+            return response()->json(['status' => 'payments_disabled']);
+        }
+
         $payload = $request->all();
         $signature = $request->header('x-paystack-signature');
         $webhookSecret = config('paystack.webhookSecret');

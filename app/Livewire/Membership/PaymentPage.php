@@ -126,7 +126,7 @@ class PaymentPage extends Component
 
         $allowedForVerification = ['onboarding', 'active', 'suspended'];
 
-        if (in_array($profile->onboarding_status, $allowedForVerification) && $profile->paystack_reference && $profile->payment_verified_at === null) {
+        if (config('payments.enabled', true) && in_array($profile->onboarding_status, $allowedForVerification) && $profile->paystack_reference && $profile->payment_verified_at === null) {
             $this->verifyPaymentWithPaystack($profile, $user);
         }
 
@@ -151,6 +151,10 @@ class PaymentPage extends Component
 
     protected function verifyPaymentWithPaystack($profile, $user): void
     {
+        if (! config('payments.enabled', true)) {
+            return;
+        }
+
         try {
             $paystackService = app(PaystackService::class);
             $verifiedData = $paystackService->verifyPayment($profile->paystack_reference);
@@ -224,6 +228,13 @@ class PaymentPage extends Component
 
     public function redirectToPaystack(PaystackService $paystackService)
     {
+        if (! config('payments.enabled', true)) {
+            session()->flash('message', 'Online payment is temporarily unavailable. Please pay via bank transfer.');
+            $this->redirect(route('membership.payment'));
+
+            return;
+        }
+
         if ($this->submitting) {
             return;
         }
@@ -362,6 +373,7 @@ class PaymentPage extends Component
             'redemption' => $redemption,
             'finalAmountDue' => $finalAmountDue,
             'bankDetails' => $this->bankDetails,
+            'paymentsEnabled' => config('payments.enabled', true),
         ])->layout('layouts.guest-livewire', [
             'title' => 'Membership Payment',
         ]);

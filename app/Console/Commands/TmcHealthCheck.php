@@ -126,6 +126,12 @@ class TmcHealthCheck extends Command
 
     protected function checkPaystackConfig(): void
     {
+        if (! config('payments.enabled', true)) {
+            $this->components->twoColumnDetail('Paystack Config', '<fg=yellow>SKIP</> (payments disabled)');
+
+            return;
+        }
+
         $isProduction = app()->environment('production');
 
         $secret = Config::get('paystack.secretKey');

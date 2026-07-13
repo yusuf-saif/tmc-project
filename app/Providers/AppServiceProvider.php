@@ -62,6 +62,8 @@ class AppServiceProvider extends ServiceProvider
 
         Paginator::useTailwind();
 
+        $this->normalizeExistingEmails();
+
         Carbon::macro('hijri', function (string $format = 'd M Y'): string {
             return app(HijriDateService::class)->formatHijriDate($this, $format);
         });
@@ -154,6 +156,38 @@ class AppServiceProvider extends ServiceProvider
             Log::error('Database connection validation failed', [
                 'message' => $e->getMessage(),
                 'connection' => config('database.default'),
+            ]);
+        }
+    }
+
+    protected function normalizeExistingEmails(): void
+    {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
+        $flag = storage_path('app/.emails_normalized');
+
+        if (file_exists($flag) && file_get_contents($flag) === app()->version()) {
+            return;
+        }
+
+        try {
+            DB::table('users')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+            DB::table('password_reset_tokens')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+
+            if (DB::getSchemaBuilder()->hasTable('support_applications')) {
+                DB::table('support_applications')->whereRaw('email != LOWER(email)')->update(['email' => DB::raw('LOWER(email)')]);
+            }
+
+            if (DB::getSchemaBuilder()->hasTable('souq_listings') && DB::getSchemaBuilder()->hasColumn('souq_listings', 'contact_email')) {
+                DB::table('souq_listings')->whereRaw('contact_email != LOWER(contact_email)')->update(['contact_email' => DB::raw('LOWER(contact_email)')]);
+            }
+
+            file_put_contents($flag, app()->version());
+        } catch (\Throwable $e) {
+            Log::warning('Email normalization failed on boot', [
+                'error' => $e->getMessage(),
             ]);
         }
     }

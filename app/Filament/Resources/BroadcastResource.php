@@ -11,9 +11,11 @@ use App\Services\AuditLogService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 
 class BroadcastResource extends Resource
 {
@@ -145,9 +147,22 @@ class BroadcastResource extends Resource
                     ->modalDescription('This will queue the broadcast for immediate delivery.')
                     ->visible(fn (Broadcast $record) => $record->status === 'queued')
                     ->action(function (Broadcast $record) {
-                        $record->update(['send_at' => now()]);
-                        SendBroadcastNotificationJob::dispatch($record);
-                        AuditLogService::log('broadcast_dispatched', $record, [], ['title' => $record->title]);
+                        try {
+                            $record->update(['send_at' => now()]);
+                            SendBroadcastNotificationJob::dispatch($record);
+                            AuditLogService::log('broadcast_dispatched', $record, [], ['title' => $record->title]);
+                            Notification::make()
+                                ->title('Broadcast queued for delivery')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Log::error('BroadcastResource: send failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                            Notification::make()
+                                ->title('Failed to queue broadcast')
+                                ->body('An error occurred. Please try again or contact support.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('resend')
                     ->label('Resend')
@@ -158,8 +173,21 @@ class BroadcastResource extends Resource
                     ->modalDescription('This will send the broadcast again to all targeted recipients.')
                     ->visible(fn (Broadcast $record) => in_array($record->status, ['sent', 'failed']))
                     ->action(function (Broadcast $record) {
-                        SendBroadcastNotificationJob::dispatch($record);
-                        AuditLogService::log('broadcast_resent', $record, [], ['title' => $record->title]);
+                        try {
+                            SendBroadcastNotificationJob::dispatch($record);
+                            AuditLogService::log('broadcast_resent', $record, [], ['title' => $record->title]);
+                            Notification::make()
+                                ->title('Broadcast queued for resend')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Log::error('BroadcastResource: resend failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                            Notification::make()
+                                ->title('Failed to resend broadcast')
+                                ->body('An error occurred. Please try again or contact support.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (Broadcast $record) => in_array($record->status, ['queued', 'failed'])),

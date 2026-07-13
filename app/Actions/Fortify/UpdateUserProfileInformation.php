@@ -28,17 +28,20 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 'string',
                 'email',
                 'max:255',
-                Rule::unique('users')->ignore($user->id),
+                Rule::unique('users')->ignore($user->id)->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$input['email'] ?? ''])),
             ],
         ])->validateWithBag('updateProfileInformation');
 
-        if ($input['email'] !== $user->email &&
+        $email = strtolower($input['email']);
+
+        if ($email !== $user->email &&
             $user instanceof MustVerifyEmail) {
+            $input['email'] = $email;
             $this->updateVerifiedUser($user, $input);
         } else {
             $user->forceFill([
                 'name' => $input['name'],
-                'email' => $input['email'],
+                'email' => $email,
             ])->save();
         }
     }

@@ -90,7 +90,7 @@ class MembersImportService
 
     private function processRow(array $data): void
     {
-        $email = trim((string) ($data['Email'] ?? $data['email'] ?? $data['EMAIL'] ?? ''));
+        $email = strtolower(trim((string) ($data['Email'] ?? $data['email'] ?? $data['EMAIL'] ?? '')));
 
         if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->errors[] = "Invalid or missing email: {$email}";
@@ -98,7 +98,7 @@ class MembersImportService
             return;
         }
 
-        if (User::where('email', $email)->exists()) {
+        if (User::whereEmail($email)->exists()) {
             $this->skipped++;
             $this->skippedEmails[] = $email;
 
@@ -117,7 +117,7 @@ class MembersImportService
             DB::transaction(function () use ($email, $name, $membershipId, $submittedAt, $data, &$userId, &$membershipIdForEvent) {
                 $user = User::create([
                     'name' => $name,
-                    'email' => $email,
+                    'email' => strtolower($email),
                     'password' => Hash::make(Str::random(32)),
                     'status' => 'onboarding',
                     'referral_code' => $this->generateReferralCode(),

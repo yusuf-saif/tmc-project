@@ -22,14 +22,14 @@ class OnboardingController extends Controller
     public function showForm(Request $request): View|RedirectResponse
     {
         $token = $request->query('token');
-        $email = $request->query('email');
+        $email = strtolower($request->query('email') ?? '');
         $memberId = $request->query('member_id');
 
         if (! $token || ! $email || ! $memberId) {
             return redirect()->route('login')->withErrors(['email' => 'Invalid onboarding link.']);
         }
 
-        $user = User::where('email', $email)->first();
+        $user = User::whereEmail($email)->first();
 
         if (! $user || $user->member_id !== $memberId) {
             return redirect()->route('login')->withErrors(['email' => 'Invalid onboarding link.']);
@@ -57,7 +57,7 @@ class OnboardingController extends Controller
     public function complete(Request $request): RedirectResponse
     {
         $token = $request->input('token');
-        $email = $request->input('email');
+        $email = strtolower($request->input('email') ?? '');
         $memberId = $request->input('member_id');
 
         if (! $token || ! $email || ! $memberId) {
@@ -82,7 +82,7 @@ class OnboardingController extends Controller
             'goals.*' => ['string', 'exists:goals,slug'],
         ]);
 
-        $user = User::where('email', $email)->first();
+        $user = User::whereEmail($email)->first();
 
         if (! $user || $user->member_id !== $memberId) {
             return redirect()->route('login')->withErrors(['email' => 'Invalid onboarding link.']);

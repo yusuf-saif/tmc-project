@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 
 class SouqListingResource extends Resource
 {
@@ -125,12 +126,20 @@ class SouqListingResource extends Resource
                     ->color('success')
                     ->visible(fn (SouqListing $record): bool => $record->status === 'pending')
                     ->action(function (SouqListing $record): void {
-                        static::approveListing($record);
-
-                        Notification::make()
-                            ->title('Listing approved')
-                            ->success()
-                            ->send();
+                        try {
+                            static::approveListing($record);
+                            Notification::make()
+                                ->title('Listing approved')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Log::error('SouqListingResource: approve failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                            Notification::make()
+                                ->title('Failed to approve listing')
+                                ->body('An error occurred. Please try again or contact support.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('reject')
                     ->label('Reject')
@@ -142,12 +151,20 @@ class SouqListingResource extends Resource
                             ->rows(4),
                     ])
                     ->action(function (SouqListing $record, array $data): void {
-                        static::rejectListing($record, $data['admin_note']);
-
-                        Notification::make()
-                            ->title('Listing rejected')
-                            ->success()
-                            ->send();
+                        try {
+                            static::rejectListing($record, $data['admin_note']);
+                            Notification::make()
+                                ->title('Listing rejected')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Log::error('SouqListingResource: reject failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                            Notification::make()
+                                ->title('Failed to reject listing')
+                                ->body('An error occurred. Please try again or contact support.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('verifyBankPayment')
                     ->label('Verify Bank Payment')
@@ -159,17 +176,26 @@ class SouqListingResource extends Resource
                     ->modalDescription(fn (SouqListing $record): string => "Confirm that {$record->owner?->name} has paid ₦".number_format((int) $record->monthly_fee).' via bank transfer for this listing?')
                     ->modalSubmitActionLabel('Verify Payment')
                     ->action(function (SouqListing $record): void {
-                        app(BusinessStateService::class)->activate($record);
+                        try {
+                            app(BusinessStateService::class)->activate($record);
 
-                        $record->forceFill([
-                            'payment_verified_by' => auth()->id(),
-                            'payment_verified_at' => now(),
-                        ])->saveQuietly();
+                            $record->forceFill([
+                                'payment_verified_by' => auth()->id(),
+                                'payment_verified_at' => now(),
+                            ])->saveQuietly();
 
-                        Notification::make()
-                            ->title('Payment verified — listing activated')
-                            ->success()
-                            ->send();
+                            Notification::make()
+                                ->title('Payment verified — listing activated')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Log::error('SouqListingResource: verifyBankPayment failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                            Notification::make()
+                                ->title('Payment verification failed')
+                                ->body('An error occurred. Please try again or contact support.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('archive')
                     ->label('Archive')

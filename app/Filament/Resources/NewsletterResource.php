@@ -11,9 +11,11 @@ use App\Services\NotificationService;
 use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Log;
 
 class NewsletterResource extends Resource
 {
@@ -134,8 +136,21 @@ class NewsletterResource extends Resource
                     ->modalDescription('This will immediately queue the newsletter for delivery to all targeted recipients.')
                     ->visible(fn (Newsletter $record) => in_array($record->status, ['draft', 'scheduled']))
                     ->action(function (Newsletter $record) {
-                        app(NotificationService::class)->queueNewsletter($record);
-                        AuditLogService::log('newsletter_dispatched', $record, [], ['subject' => $record->subject]);
+                        try {
+                            app(NotificationService::class)->queueNewsletter($record);
+                            AuditLogService::log('newsletter_dispatched', $record, [], ['subject' => $record->subject]);
+                            Notification::make()
+                                ->title('Newsletter queued for delivery')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Log::error('NewsletterResource: send failed', ['error' => $e->getMessage(), 'record_id' => $record->id]);
+                            Notification::make()
+                                ->title('Failed to queue newsletter')
+                                ->body('An error occurred. Please try again or contact support.')
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (Newsletter $record) => in_array($record->status, ['draft', 'failed'])),

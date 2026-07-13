@@ -4,6 +4,7 @@ namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
 use App\Notifications\OnboardingInvitationNotification;
+use App\Services\AuditLogService;
 use Filament\Actions;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -138,6 +139,50 @@ class ViewUser extends ViewRecord
                     } catch (ResendErrorException) {
                         Notification::make()
                             ->title('Email could not be sent — provider quota may be reached. It will not retry automatically from this button.')
+                            ->danger()
+                            ->send();
+                    }
+                }),
+            Actions\Action::make('sendPasswordResetLink')
+                ->label('Send Password Reset Link')
+                ->icon('heroicon-o-key')
+                ->visible(fn (): bool => in_array($this->record->status, ['active', 'onboarding'], true))
+                ->requiresConfirmation()
+                ->modalHeading('Send Password Reset Link')
+                ->modalDescription('This will send a password reset email to '.($this->record->email ?? 'this user').'.')
+                ->modalSubmitActionLabel('Send')
+                ->action(function (): void {
+                    try {
+                        $status = Password::broker('users')->sendResetLink(
+                            ['email' => $this->record->email]
+                        );
+
+                        if ($status === Password::RESET_LINK_SENT) {
+                            AuditLogService::log(
+                                'admin_password_reset_link_sent',
+                                $this->record,
+                                [],
+                                ['sent_by' => auth()->id()],
+                            );
+
+                            Notification::make()
+                                ->title('Password reset link sent')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Could not send reset link — user may not exist or email is invalid.')
+                                ->danger()
+                                ->send();
+                        }
+                    } catch (TransportException) {
+                        Notification::make()
+                            ->title('Email could not be sent — provider quota may be reached.')
+                            ->danger()
+                            ->send();
+                    } catch (ResendErrorException) {
+                        Notification::make()
+                            ->title('Email could not be sent — provider quota may be reached.')
                             ->danger()
                             ->send();
                     }

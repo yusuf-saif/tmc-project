@@ -23,6 +23,8 @@ class MembershipSignupService
         array $data,
         bool $passwordIsHashed = false,
     ): MemberProfile {
+        $email = strtolower(trim($email));
+
         $result = DB::transaction(function () use ($firstName, $lastName, $email, $password, $referralCode, $data, $passwordIsHashed) {
             $referredBy = null;
 

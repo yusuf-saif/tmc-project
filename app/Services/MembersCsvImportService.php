@@ -131,7 +131,7 @@ class MembersCsvImportService
         $hijriDateStr = $this->toUtf8(trim((string) ($data['hijri_date'] ?? '')));
         $name = $this->toUtf8(trim((string) ($data['name'] ?? '')));
         $nickname = $this->toUtf8(trim((string) ($data['nickname'] ?? '')));
-        $email = $this->toUtf8(trim((string) ($data['email'] ?? '')));
+        $email = strtolower($this->toUtf8(trim((string) ($data['email'] ?? ''))));
 
         if (! $membershipId || ! $name || ! $email) {
             $this->errors[] = 'Row skipped: missing required fields';
@@ -145,7 +145,7 @@ class MembersCsvImportService
             return;
         }
 
-        if (User::where('email', $email)->exists()) {
+        if (User::whereEmail($email)->exists()) {
             $this->skipped++;
             $this->skippedEmails[] = $email;
 

@@ -21,6 +21,22 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::saving(function (User $user): void {
+            if ($user->isDirty('email') && $user->email !== null) {
+                $user->email = strtolower($user->email);
+            }
+        });
+    }
+
+    public function scopeWhereEmail($query, string $email)
+    {
+        return $query->whereRaw('LOWER(email) = LOWER(?)', [$email]);
+    }
+
     /**
      * The attributes that are mass assignable.
      *

@@ -83,26 +83,28 @@
                 </div>
 
                 {{-- Payment method toggle --}}
-                <div class="space-y-3">
-                    <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Payment Method</p>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" wire:click="$set('paymentMethod', 'card')"
-                                class="rounded-lg p-3 text-center transition"
-                                style="border: 2px solid {{ $paymentMethod === 'card' ? '#1A6B72' : '#E2E8F0' }}; background: {{ $paymentMethod === 'card' ? '#D6EDEF' : '#FFFFFF' }};">
-                            <p class="text-sm font-semibold text-teal-dk">Pay with Card</p>
-                            <p class="text-[10px] text-ink-soft">via Paystack</p>
-                        </button>
-                        <button type="button" wire:click="$set('paymentMethod', 'bank_transfer')"
-                                class="rounded-lg p-3 text-center transition"
-                                style="border: 2px solid {{ $paymentMethod === 'bank_transfer' ? '#1A6B72' : '#E2E8F0' }}; background: {{ $paymentMethod === 'bank_transfer' ? '#D6EDEF' : '#FFFFFF' }};">
-                            <p class="text-sm font-semibold text-teal-dk">Bank Transfer</p>
-                            <p class="text-[10px] text-ink-soft">Manual payment</p>
-                        </button>
+                @if ($paymentsEnabled)
+                    <div class="space-y-3">
+                        <p class="text-[11px] font-semibold uppercase tracking-[1.5px] text-gold">Payment Method</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" wire:click="$set('paymentMethod', 'card')"
+                                    class="rounded-lg p-3 text-center transition"
+                                    style="border: 2px solid {{ $paymentMethod === 'card' ? '#1A6B72' : '#E2E8F0' }}; background: {{ $paymentMethod === 'card' ? '#D6EDEF' : '#FFFFFF' }};">
+                                <p class="text-sm font-semibold text-teal-dk">Pay with Card</p>
+                                <p class="text-[10px] text-ink-soft">via Paystack</p>
+                            </button>
+                            <button type="button" wire:click="$set('paymentMethod', 'bank_transfer')"
+                                    class="rounded-lg p-3 text-center transition"
+                                    style="border: 2px solid {{ $paymentMethod === 'bank_transfer' ? '#1A6B72' : '#E2E8F0' }}; background: {{ $paymentMethod === 'bank_transfer' ? '#D6EDEF' : '#FFFFFF' }};">
+                                <p class="text-sm font-semibold text-teal-dk">Bank Transfer</p>
+                                <p class="text-[10px] text-ink-soft">Manual payment</p>
+                            </button>
+                        </div>
                     </div>
-                </div>
+                @endif
 
                 {{-- Jannah Coins (only for card payments) --}}
-                @if ($paymentMethod === 'card' && $redemption['eligible'])
+                @if ($paymentsEnabled && $paymentMethod === 'card' && $redemption['eligible'])
                     <div class="rounded-sm border border-teal-lt bg-teal-lt/30 p-4">
                         <label class="flex cursor-pointer items-center gap-3">
                             <input type="checkbox" wire:model.live="applyCoins" class="h-4 w-4 rounded border-teal text-teal focus:ring-teal">
@@ -118,7 +120,7 @@
                 @endif
 
                 {{-- CARD PAYMENT SECTION --}}
-                @if ($paymentMethod === 'card')
+                @if ($paymentsEnabled && $paymentMethod === 'card')
                     <div class="rounded-sm border border-teal bg-white p-5 text-center">
                         <h3 class="text-sm font-semibold text-teal-dk">Pay Online with Card</h3>
                         <p class="mt-1 text-xs text-ink-soft">Secure payment via Paystack</p>
@@ -135,10 +137,42 @@
                     </p>
 
                 {{-- BANK TRANSFER SECTION --}}
-                @else
+                @elseif ($paymentsEnabled && $paymentMethod === 'bank_transfer')
                     <div class="rounded-sm border border-gold bg-ivory p-5">
                         <h3 class="text-sm font-semibold text-teal-dk">Bank Transfer Details</h3>
                         <pre class="mt-3 whitespace-pre-wrap font-body text-sm font-light leading-7 text-ink-md">{{ $bankDetails }}</pre>
+                    </div>
+
+                    <div class="rounded-sm border border-teal bg-white p-5 text-center">
+                        <p class="text-sm font-medium text-teal-dk">After making the transfer, click the button below</p>
+                        <p class="mt-1 text-xs text-ink-soft">Your membership will be activated once the admin confirms your payment.</p>
+                        <button type="button" wire:click="submitBankTransfer" wire:loading.attr="disabled"
+                                class="mt-4 w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
+                            <span wire:loading.remove wire:target="submitBankTransfer">I've Made the Transfer</span>
+                            <span wire:loading wire:target="submitBankTransfer">Submitting...</span>
+                        </button>
+                    </div>
+
+                {{-- MANUAL PAYMENT NOTICE (payments disabled) --}}
+                @elseif (!$paymentsEnabled)
+                    <div class="rounded-sm border border-gold bg-ivory p-5">
+                        <h3 class="text-sm font-semibold text-teal-dk">Manual Payment</h3>
+                        <p class="mt-2 text-xs text-ink-soft">Online payment is temporarily unavailable. Please pay via bank transfer using the details below. Payment will be confirmed by an admin.</p>
+                        @if (config('payments.manual_instructions.bank') || config('payments.manual_instructions.account_name') || config('payments.manual_instructions.account_number'))
+                            <div class="mt-3 space-y-1">
+                                @if (config('payments.manual_instructions.bank'))
+                                    <p class="text-sm text-ink-md"><span class="font-medium">Bank:</span> {{ config('payments.manual_instructions.bank') }}</p>
+                                @endif
+                                @if (config('payments.manual_instructions.account_name'))
+                                    <p class="text-sm text-ink-md"><span class="font-medium">Account Name:</span> {{ config('payments.manual_instructions.account_name') }}</p>
+                                @endif
+                                @if (config('payments.manual_instructions.account_number'))
+                                    <p class="text-sm text-ink-md"><span class="font-medium">Account Number:</span> {{ config('payments.manual_instructions.account_number') }}</p>
+                                @endif
+                            </div>
+                        @else
+                            <pre class="mt-3 whitespace-pre-wrap font-body text-sm font-light leading-7 text-ink-md">{{ $bankDetails }}</pre>
+                        @endif
                     </div>
 
                     <div class="rounded-sm border border-teal bg-white p-5 text-center">
@@ -244,7 +278,7 @@
                     <p class="mt-1 text-sm text-ink-soft">{{ ucfirst($billingCycle) }} billing</p>
                 </div>
 
-                @if ($paymentMethod === 'card' && $redemption['eligible'])
+                @if ($paymentsEnabled && $paymentMethod === 'card' && $redemption['eligible'])
                     <div class="rounded-sm border border-teal-lt bg-teal-lt/30 p-4">
                         <label class="flex cursor-pointer items-center gap-3">
                             <input type="checkbox" wire:model.live="applyCoins" class="h-4 w-4 rounded border-teal text-teal focus:ring-teal">
@@ -259,15 +293,22 @@
                     </div>
                 @endif
 
-                <div class="rounded-sm border border-teal bg-white p-5 text-center">
-                    <h3 class="text-sm font-semibold text-teal-dk">Try Again</h3>
-                    <p class="mt-1 text-xs text-ink-soft">Click below to retry payment via Paystack</p>
-                    <button type="button" wire:click="redirectToPaystack" wire:loading.attr="disabled"
-                            class="mt-4 w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
-                        Retry Payment with Card
-                    </button>
-                    @error('paystack') <p class="mt-2 text-xs text-red-500">{{ $message }}</p> @enderror
-                </div>
+                @if ($paymentsEnabled)
+                    <div class="rounded-sm border border-teal bg-white p-5 text-center">
+                        <h3 class="text-sm font-semibold text-teal-dk">Try Again</h3>
+                        <p class="mt-1 text-xs text-ink-soft">Click below to retry payment via Paystack</p>
+                        <button type="button" wire:click="redirectToPaystack" wire:loading.attr="disabled"
+                                class="mt-4 w-full rounded-sm bg-teal px-4 py-3 text-sm font-medium text-white transition hover:bg-teal-dk disabled:opacity-50">
+                            Retry Payment with Card
+                        </button>
+                        @error('paystack') <p class="mt-2 text-xs text-red-500">{{ $message }}</p> @enderror
+                    </div>
+                @else
+                    <div class="rounded-sm border border-gold bg-ivory p-5">
+                        <h3 class="text-sm font-semibold text-teal-dk">Pay via Bank Transfer</h3>
+                        <p class="mt-2 text-xs text-ink-soft">Online payment is temporarily unavailable. Please pay via bank transfer and submit for admin verification.</p>
+                    </div>
+                @endif
             </div>
 
         {{-- STATE: member — payment confirmed, redirecting --}}
