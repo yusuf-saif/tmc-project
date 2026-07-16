@@ -7,7 +7,7 @@
 - This is one Laravel 11 app with three surfaces: public landing page at `/`, member app on Livewire routes in `routes/web.php`, and Filament admin at `/admin`.
 - `GET /` must keep serving `resources/views/landing.blade.php`. That page is a large inline-styled Blade file, not a normal Vite/Tailwind screen.
 - Member routes are not controller-based by default; most screens are mounted directly as Livewire components from `routes/web.php`.
-- `/onboarding` is behind `auth` only. `/home` and the rest of the member area use the `onboarded` middleware alias from `bootstrap/app.php`.
+- `/onboarding` is behind `auth` only. `/home` and the rest of the member area use the `ensure.user.state` middleware alias from `bootstrap/app.php`.
 
 ## Commands
 - Install deps: `composer install && npm install`
@@ -41,6 +41,29 @@
   php artisan optimize:clear
   php artisan permission:cache-reset
   ```
+
+## Queue Names
+- Canonical queue set: `default`, `membership`, `billing`
+- Worker start command (Procfile): `php artisan queue:work --queue=default,membership,billing --sleep=3 --tries=3 --timeout=600`
+- Queue config: `config/queue.php` (database driver by default)
+- Railway worker must run with the same queue names as defined in Procfile
+
+## Scheduler / Cron
+- Railway cron: `railway.json` defines `* * * * *` → `php artisan schedule:run`
+- Scheduler entries in `routes/console.php`
+- All times are UTC (configurable via `APP_TIMEZONE` env var, default UTC)
+- Railway cron service: create a service in Railway dashboard with:
+  - Start command: `php artisan schedule:run`
+  - Cron schedule: `* * * * *`
+  - Same env vars as the web/worker services
+
+## Queue Health Runbook
+**If emails or notifications are delayed:**
+1. Check worker service logs: `railway logs --service worker`
+2. Check jobs count: `railway run "php artisan tinker --execute=\"echo \\DB::table('jobs')->count();\""`
+3. Check failed jobs: `railway run "php artisan tinker --execute=\"echo \\DB::table('failed_jobs')->count();\""`
+4. Run health sweep manually: `railway run "php artisan queue:health-sweep"`
+5. If worker is down: restart it in Railway dashboard or `railway service restart worker`
 
 ## Auth And Redirects
 - Fortify uses custom Blade views in `resources/views/auth/*`; do not swap in starter-kit assumptions.

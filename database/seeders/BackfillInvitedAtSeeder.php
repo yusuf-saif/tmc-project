@@ -30,7 +30,8 @@ class BackfillInvitedAtSeeder extends Seeder
             return;
         }
 
-        $updated = User::whereIn('email', $emails)
+        $placeholders = implode(', ', array_fill(0, $emailCount, 'LOWER(?)'));
+        $updated = User::whereRaw("LOWER(email) IN ({$placeholders})", $emails)
             ->whereNull('invited_at')
             ->update(['invited_at' => now()]);
 

@@ -188,4 +188,26 @@ class EmailNormalizationTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function test_mixed_case_email_in_db_allows_lowercase_login(): void
+    {
+        $user = User::create([
+            'name' => 'Legacy User',
+            'email' => 'legacy@example.com',
+            'password' => Hash::make('password'),
+            'status' => 'active',
+            'referral_code' => User::generateUniqueReferralCode(),
+        ]);
+
+        // Force-write mixed case via raw DB update, bypassing the model observer
+        \DB::table('users')->where('id', $user->id)->update(['email' => 'Mixed@Case.COM']);
+
+        $response = $this->post('/login', [
+            'email' => 'mixed@case.com',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/home');
+        $this->assertAuthenticatedAs($user);
+    }
 }

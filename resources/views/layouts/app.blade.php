@@ -104,17 +104,12 @@
   <div>
     <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
               font-size: 0.875rem; color: var(--ink); margin: 0;">
-      Add TMC to your home screen
-    </p>
-    <p style="font-family: 'Nunito', sans-serif; font-weight: 300;
-              font-size: 0.75rem; color: var(--ink-soft); margin: 0;">
-      Quick access, just like an app
+      Install The Muhsinat Club on your device for faster access.
     </p>
   </div>
-  <div style="display: flex; gap: 8px;">
+  <div style="display: flex; gap: 8px; flex-shrink: 0;">
     <button @click="installPWA(); show = false" class="btn btn-gold btn-sm">Install</button>
-    <button @click="show = false; localStorage.setItem('tmc_install_dismissed', '1')" style="background:none;
-      border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer;">&times;</button>
+    <button @click="show = false; localStorage.setItem('tmc_install_dismissed', Date.now().toString())" class="btn btn-sm" style="background:transparent;color:var(--ink-soft);border:1px solid var(--border);">Not now</button>
   </div>
 </div>
 
@@ -129,14 +124,14 @@
   <div>
     <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
               font-size: 0.875rem; color: var(--ink); margin: 0;">
-      Add TMC to your home screen
+      Install The Muhsinat Club on your device
     </p>
     <p style="font-family: 'Nunito', sans-serif; font-weight: 300;
               font-size: 0.75rem; color: var(--ink-soft); margin: 0;">
       Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong>
     </p>
   </div>
-  <button @click="show = false; localStorage.setItem('tmc_ios_install_dismissed', '1')" style="background:none;
+  <button @click="show = false; localStorage.setItem('tmc_ios_install_dismissed', Date.now().toString())" style="background:none;
     border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer; flex-shrink: 0;">&times;</button>
 </div>
 
@@ -148,6 +143,18 @@ function urlBase64ToUint8Array(base64String) {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+function isAlreadyStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+}
+
+function isDismissedRecently(key) {
+  const val = localStorage.getItem(key);
+  if (!val) return false;
+  const ts = parseInt(val, 10);
+  if (isNaN(ts)) return false;
+  return (Date.now() - ts) < (30 * 24 * 60 * 60 * 1000);
 }
 
 if ('serviceWorker' in navigator) {
@@ -191,13 +198,16 @@ async function subscribeToPush(reg) {
 
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
+  if (isAlreadyStandalone()) return;
+  if (isDismissedRecently('tmc_install_dismissed')) return;
+
   e.preventDefault();
   deferredPrompt = e;
 
   let installVisits = parseInt(localStorage.getItem('tmc_install_visits') || '0') + 1;
   localStorage.setItem('tmc_install_visits', installVisits);
 
-  if (installVisits >= 3 && !localStorage.getItem('tmc_install_dismissed')) {
+  if (installVisits >= 3) {
     const el = document.getElementById('install-banner');
     if (el && typeof Alpine !== 'undefined') {
       Alpine.$data(el).show = true;
@@ -216,6 +226,14 @@ function installPWA() {
   }
 }
 
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const androidBanner = document.getElementById('install-banner');
+  const iosBanner = document.getElementById('ios-install-banner');
+  if (androidBanner && typeof Alpine !== 'undefined') Alpine.$data(androidBanner).show = false;
+  if (iosBanner && typeof Alpine !== 'undefined') Alpine.$data(iosBanner).show = false;
+});
+
 function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
@@ -224,8 +242,7 @@ function isInStandaloneMode() {
   return ('standalone' in window.navigator) && window.navigator.standalone;
 }
 
-if (isIOS() && !isInStandaloneMode() &&
-    !localStorage.getItem('tmc_ios_install_dismissed')) {
+if (isIOS() && !isInStandaloneMode() && !isAlreadyStandalone() && !isDismissedRecently('tmc_ios_install_dismissed')) {
   let iosVisits = parseInt(localStorage.getItem('tmc_ios_visits') || '0') + 1;
   localStorage.setItem('tmc_ios_visits', iosVisits);
   if (iosVisits >= 2) {

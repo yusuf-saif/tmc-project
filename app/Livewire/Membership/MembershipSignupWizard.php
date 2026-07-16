@@ -5,13 +5,16 @@ namespace App\Livewire\Membership;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\User;
+use App\Notifications\OnboardingInvitationNotification;
 use App\Services\MembershipSignupService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Livewire\Component;
 
 class MembershipSignupWizard extends Component
@@ -55,6 +58,14 @@ class MembershipSignupWizard extends Component
     public array $selectedGoals = [];
 
     public bool $submitting = false;
+
+    public bool $existingMemberDetected = false;
+
+    public string $existingMemberMessage = '';
+
+    public bool $showResendButton = false;
+
+    public string $existingMemberEmail = '';
 
     public array $nigerianStates = [
         'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -123,6 +134,30 @@ class MembershipSignupWizard extends Component
 
     public function nextStep(): void
     {
+        // Check for existing member BEFORE step 1 validation
+        // so the detection can intercept before the unique rule rejects it
+        if ($this->step === 1) {
+            $email = strtolower(trim($this->email));
+            $existingUser = User::query()->whereEmail($email)->first();
+
+            if ($existingUser) {
+                $this->existingMemberEmail = $email;
+
+                if ($existingUser->status === 'pending_onboarding'
+                    || ($existingUser->memberProfile && $existingUser->memberProfile->onboarding_status === 'pending_onboarding')) {
+                    $this->existingMemberMessage = "You're already a member — check your inbox for your invitation.";
+                    $this->showResendButton = true;
+                } else {
+                    $this->existingMemberMessage = 'An account with this email already exists. Please log in or reset your password.';
+                    $this->showResendButton = false;
+                }
+
+                $this->existingMemberDetected = true;
+
+                return;
+            }
+        }
+
         $this->validateCurrentStep();
 
         if ($this->step < 5) {
@@ -133,6 +168,52 @@ class MembershipSignupWizard extends Component
     public function previousStep(): void
     {
         $this->step = max(1, $this->step - 1);
+    }
+
+    public function clearExistingMember(): void
+    {
+        $this->existingMemberDetected = false;
+        $this->existingMemberMessage = '';
+        $this->showResendButton = false;
+        $this->existingMemberEmail = '';
+    }
+
+    public function resendInvitation(): void
+    {
+        $rateKey = 'resend-invite:'.$this->existingMemberEmail;
+
+        if (RateLimiter::tooManyAttempts($rateKey, 1)) {
+            $seconds = RateLimiter::availableIn($rateKey);
+            $this->addError('existingMember', "Please wait {$seconds} seconds before requesting another invitation.");
+
+            return;
+        }
+
+        RateLimiter::hit($rateKey, 3600);
+
+        $user = User::query()->whereEmail($this->existingMemberEmail)->first();
+
+        if (! $user) {
+            $this->addError('existingMember', 'User not found.');
+
+            return;
+        }
+
+        try {
+            $token = Password::broker('onboarding')->createToken($user);
+            $membershipId = $user->member_id ?? $user->memberProfile?->membership_id ?? 'N/A';
+            Notification::send($user, new OnboardingInvitationNotification($token, $membershipId));
+            $user->update(['invited_at' => now()]);
+
+            $this->existingMemberMessage = 'Invitation resent! Check your inbox for the link.';
+            $this->showResendButton = false;
+        } catch (\Throwable $e) {
+            Log::error('MembershipSignupWizard: resend invitation failed', [
+                'email' => $this->existingMemberEmail,
+                'error' => $e->getMessage(),
+            ]);
+            $this->addError('existingMember', 'Failed to resend invitation. Please try again.');
+        }
     }
 
     public function submit(MembershipSignupService $service)
@@ -219,7 +300,7 @@ class MembershipSignupWizard extends Component
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$this->email]))],
-            'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
+            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
             'referralCode' => ['nullable', 'string', 'max:8', function ($attribute, $value, $fail) {
                 if ($value && ! User::where('referral_code', $value)->exists()) {
                     $fail('The referral code is invalid.');
@@ -242,7 +323,7 @@ class MembershipSignupWizard extends Component
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$this->email]))],
-                'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
+                'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],

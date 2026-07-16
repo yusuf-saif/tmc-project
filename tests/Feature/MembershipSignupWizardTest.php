@@ -160,7 +160,8 @@ class MembershipSignupWizardTest extends TestCase
             ->set('password', 'Tmc2024!Sec#Pass99')
             ->set('passwordConfirmation', 'Tmc2024!Sec#Pass99')
             ->call('nextStep')
-            ->assertHasErrors(['email']);
+            ->assertSet('existingMemberDetected', true)
+            ->assertSet('step', 1);
     }
 
     public function test_referral_code_is_resolved(): void

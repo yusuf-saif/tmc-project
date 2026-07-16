@@ -104,3 +104,21 @@ Schedule::command('backup:clean')
 Schedule::command('backup:run')
     ->dailyAt('02:00')
     ->name('database-backup');
+
+// ─── Queue health sweep (alert-only, every 15 min) ─────────────
+Schedule::command('queue:health-sweep --no-drain')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping()
+    ->name('queue-health-sweep-alert');
+
+// ─── Queue health sweep (with drain, daily 1 AM UTC) ───────────
+Schedule::command('queue:health-sweep')
+    ->dailyAt('01:00')
+    ->withoutOverlapping()
+    ->name('queue-health-sweep-drain');
+
+// ─── Send pending invites (daily 1:10 AM UTC) ──────────────────
+Schedule::command('members:send-pending-invites --limit=90')
+    ->dailyAt('01:10')
+    ->withoutOverlapping()
+    ->name('send-daily-pending-invites');

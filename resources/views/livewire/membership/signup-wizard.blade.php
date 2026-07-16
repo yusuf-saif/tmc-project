@@ -49,6 +49,22 @@
                 <label class="tmc-label" for="email">Email Address *</label>
                 <input id="email" type="email" wire:model="email" class="tmc-input" autocomplete="email">
                 @error('email') <p class="tmc-error">{{ $message }}</p> @enderror
+
+                @if ($existingMemberDetected && $step === 1)
+                    <div class="mt-3 rounded-sm bg-teal-lt p-4 text-sm text-teal-dk">
+                        <p style="margin:0;">{{ $existingMemberMessage }}</p>
+                        @error('existingMember') <p class="tmc-error mt-1">{{ $message }}</p> @enderror
+                        @if ($showResendButton)
+                            <button type="button" wire:click="resendInvitation" class="tmc-button-gold mt-3" style="font-size:11px;padding:7px 16px;min-height:auto;">
+                                Resend Invitation
+                            </button>
+                        @else
+                            <a href="{{ route('login') }}" class="tmc-link mt-2 inline-block">Go to Login</a>
+                            <a href="{{ route('password.request') }}" class="tmc-link mt-2 inline-block ml-3">Forgot Password?</a>
+                        @endif
+                        <button type="button" wire:click="clearExistingMember" class="tmc-link mt-2 inline-block ml-3" style="font-size:11px;">Dismiss</button>
+                    </div>
+                @endif
             </div>
 
             <div>

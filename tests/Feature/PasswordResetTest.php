@@ -208,4 +208,23 @@ class PasswordResetTest extends TestCase
             'password_confirmation' => 'DifferentPassword123!',
         ])->assertSessionHasErrors('password');
     }
+
+    public function test_forgot_password_notification_is_queued(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset@example.com',
+            'status' => 'active',
+        ]);
+
+        $this->post('/forgot-password', [
+            'email' => 'reset@example.com',
+        ])->assertSessionHas('status');
+
+        Notification::assertSentTo(
+            $user,
+            SetPasswordNotification::class,
+        );
+    }
 }
