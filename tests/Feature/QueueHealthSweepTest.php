@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Console\Commands\QueueHealthSweep;
 use App\Models\User;
 use App\Notifications\QueueHealthAlertNotification;
 use Database\Seeders\RoleSeeder;

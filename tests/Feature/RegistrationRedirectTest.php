@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\Membership\MembershipSignupWizard;
-use App\Models\Goal;
-use App\Models\Interest;
 use App\Models\User;
 use App\Notifications\OnboardingInvitationNotification;
 use Database\Seeders\GoalSeeder;
@@ -14,15 +12,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
+use Tests\Concerns\FakesHibp;
 use Tests\TestCase;
 
 class RegistrationRedirectTest extends TestCase
 {
+    use FakesHibp;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->fakeHibpWithNoBreach();
 
         $this->seed([
             RoleSeeder::class,

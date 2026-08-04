@@ -15,15 +15,19 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\FakesHibp;
 use Tests\TestCase;
 
 class CsvImportOnboardingTest extends TestCase
 {
+    use FakesHibp;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->fakeHibpWithNoBreach();
 
         $this->seed([
             RoleSeeder::class,

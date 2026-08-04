@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Sentry\Laravel\Facade as Sentry;
+use Sentry\Severity;
 
 class QueueHealthSweep extends Command
 {
@@ -32,7 +33,7 @@ class QueueHealthSweep extends Command
         try {
             Sentry::captureMessage(
                 "{$delayedCount} delayed queue jobs detected",
-                \Sentry\Severity::warning,
+                Severity::warning,
             );
         } catch (\Throwable) {
             // Sentry is best-effort; don't fail the command if it's unavailable

@@ -13,15 +13,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
+use Tests\Concerns\FakesHibp;
 use Tests\TestCase;
 
 class EmailNormalizationTest extends TestCase
 {
+    use FakesHibp;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->fakeHibpWithNoBreach();
 
         $this->seed([
             RoleSeeder::class,

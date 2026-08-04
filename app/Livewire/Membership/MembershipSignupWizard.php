@@ -6,6 +6,7 @@ use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\User;
 use App\Notifications\OnboardingInvitationNotification;
+use App\Rules\ResilientUncompromisedPassword;
 use App\Services\MembershipSignupService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -300,7 +301,7 @@ class MembershipSignupWizard extends Component
             'firstName' => ['required', 'string', 'max:255'],
             'lastName' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$this->email]))],
-            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
+            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols(), new ResilientUncompromisedPassword, 'confirmed:passwordConfirmation'],
             'referralCode' => ['nullable', 'string', 'max:8', function ($attribute, $value, $fail) {
                 if ($value && ! User::where('referral_code', $value)->exists()) {
                     $fail('The referral code is invalid.');
@@ -323,7 +324,7 @@ class MembershipSignupWizard extends Component
                 'firstName' => ['required', 'string', 'max:255'],
                 'lastName' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore(auth()->id())->where(fn ($query) => $query->whereRaw('LOWER(email) = LOWER(?)', [$this->email]))],
-                'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed:passwordConfirmation'],
+                'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols(), new ResilientUncompromisedPassword, 'confirmed:passwordConfirmation'],
             ],
             2 => [
                 'locationCountry' => ['required', 'string', 'max:255'],

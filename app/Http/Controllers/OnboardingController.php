@@ -6,6 +6,7 @@ use App\Events\MemberOnboardingCompleted;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\User;
+use App\Rules\ResilientUncompromisedPassword;
 use App\Services\MembershipIdService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,7 +66,7 @@ class OnboardingController extends Controller
         }
 
         $validated = $request->validate([
-            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols()->uncompromised(), 'confirmed'],
+            'password' => ['required', 'string', PasswordRule::min(8)->mixedCase()->numbers()->symbols(), new ResilientUncompromisedPassword, 'confirmed'],
             'location_country' => ['required', 'string', 'max:255'],
             'location_state' => [Rule::requiredIf(fn () => $request->input('location_country') === 'Nigeria'), 'nullable', 'string', 'max:255'],
             'location_international' => [Rule::requiredIf(fn () => $request->input('location_country') !== 'Nigeria'), 'nullable', 'string', 'max:500'],

@@ -126,7 +126,7 @@ class InAppAnnouncementResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Resend Announcement')
                     ->modalDescription('This will create a copy of this announcement. You can then set new dates and activate it.')
-                    ->action(function (InAppAnnouncement $record) {
+                    ->action(function (InAppAnnouncement $record, $livewire) {
                         $clone = $record->replicate();
                         $clone->status = 'inactive';
                         $clone->start_at = null;
@@ -144,7 +144,7 @@ class InAppAnnouncementResource extends Resource
                             ->success()
                             ->send();
 
-                        $this->redirect(InAppAnnouncementResource::getUrl('edit', ['record' => $clone]));
+                        $livewire->redirect(InAppAnnouncementResource::getUrl('edit', ['record' => $clone]));
                     }),
                 Tables\Actions\DeleteAction::make(),
             ]);

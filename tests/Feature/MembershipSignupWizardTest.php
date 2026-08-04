@@ -12,15 +12,19 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
+use Tests\Concerns\FakesHibp;
 use Tests\TestCase;
 
 class MembershipSignupWizardTest extends TestCase
 {
+    use FakesHibp;
     use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->fakeHibpWithNoBreach();
 
         $this->seed([
             RoleSeeder::class,
