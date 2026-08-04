@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MembershipApplicationResource\Pages;
 
 use App\Filament\Resources\MembershipApplicationResource;
+use App\Filament\Resources\UserResource;
 use App\Models\Setting;
 use App\Services\AuditLogService;
 use App\Services\MembershipStateService;
@@ -142,7 +143,7 @@ class ViewMembershipApplication extends ViewRecord
                 ->label('Verify Bank Payment')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn ($record): bool => $record->payment_status === 'pending_verification' && $record->payment_source === 'bank_transfer')
+                ->visible(fn ($record): bool => $record->payment_status === 'pending_verification' && $record->payment_source === 'bank_transfer' && UserResource::canVerifyPayments(auth()->user()))
                 ->requiresConfirmation()
                 ->modalHeading('Verify bank transfer payment')
                 ->modalDescription(fn ($record): string => "Confirm that {$record->user?->name} has paid ₦".number_format(match ($record->preferred_billing_cycle) {
@@ -160,7 +161,12 @@ class ViewMembershipApplication extends ViewRecord
                             'payment_verified_by' => auth()->id(),
                         ])->saveQuietly();
 
-                        app(MembershipStateService::class)->recordPayment($record, $user, $planLabel);
+                        app(MembershipStateService::class)->recordPayment(
+                            $record,
+                            $user,
+                            $planLabel,
+                            app(MembershipStateService::class)->findOrCreatePaymentRecord($user, $record, provider: 'manual', billingCycle: $planLabel),
+                        );
 
                         $record->refresh();
 

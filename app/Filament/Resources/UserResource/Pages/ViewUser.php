@@ -26,7 +26,7 @@ class ViewUser extends ViewRecord
             Actions\Action::make('suspend')
                 ->label('Suspend')
                 ->color('danger')
-                ->visible(fn (): bool => $this->record->status === 'active')
+                ->visible(fn (): bool => $this->record->status === 'active' && UserResource::canManageUsers(auth()->user()))
                 ->form([
                     Textarea::make('reason')
                         ->label('Reason for suspension')
@@ -40,13 +40,14 @@ class ViewUser extends ViewRecord
                 ->label('Reactivate')
                 ->color('success')
                 ->requiresConfirmation()
-                ->visible(fn (): bool => $this->record->status === 'suspended')
+                ->visible(fn (): bool => $this->record->status === 'suspended' && UserResource::canManageUsers(auth()->user()))
                 ->action(function (): void {
                     UserResource::reactivate($this->record);
                     Notification::make()->title('Member reactivated')->success()->send();
                 }),
             Actions\Action::make('awardBadge')
                 ->label('Award Badge')
+                ->visible(fn (): bool => UserResource::canManageUsers(auth()->user()))
                 ->form([
                     Select::make('badge_id')
                         ->options(UserResource::badgeOptions())
@@ -60,6 +61,7 @@ class ViewUser extends ViewRecord
                 ->label('Change Member Type')
                 ->icon('heroicon-o-identification')
                 ->requiresConfirmation()
+                ->visible(fn (): bool => UserResource::canManageUsers(auth()->user()))
                 ->form([
                     Select::make('new_type')
                         ->label('Membership Type')
@@ -93,6 +95,7 @@ class ViewUser extends ViewRecord
                 }),
             Actions\Action::make('awardCoins')
                 ->label('Award Coins')
+                ->visible(fn (): bool => UserResource::canManageUsers(auth()->user()))
                 ->form([
                     TextInput::make('amount')->numeric()->minValue(1)->required(),
                     Textarea::make('reason')->required(),
@@ -104,6 +107,7 @@ class ViewUser extends ViewRecord
             Actions\Action::make('deductCoins')
                 ->label('Deduct Coins')
                 ->color('danger')
+                ->visible(fn (): bool => UserResource::canManageUsers(auth()->user()))
                 ->form([
                     TextInput::make('amount')->numeric()->minValue(1)->required(),
                     Textarea::make('reason')->required(),

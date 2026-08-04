@@ -17,6 +17,7 @@
 - Format PHP: `./vendor/bin/pint`
 - Full test suite: `php artisan test`
 - Focused auth/onboarding regression: `php artisan test --filter AuthOnboardingTest`
+- Payments regression: `php artisan test --filter "PaymentRecordTest|PaystackWebhookTest|MembershipBillingTest"`
 - Seed local data set: `php artisan migrate --seed`
 - Seed Playwright login user: `php artisan db:seed --class=PlaywrightSeeder`
 - Playwright expects the app at `http://127.0.0.1:8000`: `npm run test:e2e`
@@ -29,6 +30,7 @@
 - Storage: Railway Tigris (S3-compatible) — set `FILESYSTEM_DISK=s3` and AWS env vars
 - Env vars: copy from `.env.example`, fill in all production secrets in Railway dashboard
 - Repo-level env overrides: `railway.json.build.buildCommand` runs `npm ci && npm run build && php artisan storage:link && php artisan optimize` on each deploy
+- Client IP: forwarded headers are NOT trusted by default. The real client IP comes from Railway's `X-Real-IP` header via `App\Http\Middleware\TrustRealIpHeader` (global, in `bootstrap/app.php`). Opt into `X-Forwarded-*` trust for a known proxy only via `TRUSTED_PROXIES` (comma-separated CIDRs, parsed in `bootstrap/app.php`). Railway does not publish stable proxy CIDR ranges — if Railway's infrastructure changes, update `TRUSTED_PROXIES` in the Railway dashboard. Do not re-add `at: '*'` in `bootstrap/app.php`.
 - Remote Artisan: `railway run "php artisan migrate --force"`
 - Remote seed: `railway run "php artisan db:seed --class=RoleSeeder --force"`
 - Remote shell: `railway shell`
@@ -65,6 +67,22 @@
 4. Run health sweep manually: `railway run "php artisan queue:health-sweep"`
 5. If worker is down: restart it in Railway dashboard or `railway service restart worker`
 
+## Vendor Corruption Runbook
+**If the app boots to a white screen, or a deployment crashes right after `composer install`, with a PHP parse/class error from `vendor/`:**
+1. Read the actual error first — it is usually `ParseError`/`Class not found`/`Interface not found` pointing at a specific vendor file (e.g. `intervention/image` `IMAGE_DECODERS`, or a Filament/Laravel class).
+2. The fix is never "patch vendor". Regenerate it: `composer install --no-interaction --prefer-dist --optimize-autoloader`.
+3. If a single package is clearly at fault, pin it to the version that works: `composer require <package>:<known-good-version>` then repeat step 2.
+4. Clear Laravel's compiled caches, which can hold stale class maps: `php artisan optimize:clear`.
+5. On Railway, ephemeral filesystem means vendor is rebuilt every deploy — run the rebuild in Railway dashboard (not locally) after bumping `composer.lock`, and confirm the new commit actually contains the lock bump.
+6. Never commit `vendor/` changes; if the parse error only exists locally, your `vendor/` is stale — run step 2 locally and re-check `git status` is clean.
+
+## Production Mail (Resend)
+- Mailer is `resend` by default (`config/mail.php`); key comes from `RESEND_API_KEY` in `config/services.php` (NOT `RESEND_KEY`).
+- The key must be a full-access Resend API key (or a scoped key with `email:send` permission). A read-only/`email:view` key makes every send fail with a `TransportException`.
+- `MAIL_FROM_ADDRESS` should stay on the `themuhsinatclub.com` domain (default `noreply@themuhsinatclub.com`); the domain must be verified in Resend or sends bounce/fail.
+- Symptom of a bad key/domain: `Symfony\Component\Mailer\Exception\TransportException` ("Failed to send... 401/403") surfacing in the queue worker logs.
+- Fix sequence: update `RESEND_API_KEY` in Railway, then `railway run "php artisan optimize:clear"` and retry a queued notification; check `railway logs --service worker`.
+
 ## Auth And Redirects
 - Fortify uses custom Blade views in `resources/views/auth/*`; do not swap in starter-kit assumptions.
 - Login redirect logic is custom in `app/Http/Responses/FortifyLoginResponse.php`: admin-capable roles go to `/admin`, members without completed onboarding go to `/onboarding`, everyone else goes to `/home`.
@@ -83,6 +101,13 @@
 - Journal privacy is enforced in code: `App\Models\JournalEntry` casts `body` as `encrypted`.
 - Server-side authorization is required. Example: `JournalEntryPolicy` is registered in `app/Providers/AuthServiceProvider.php` and enforced from the Livewire screen.
 - Admin-side mutations are expected to call `App\Services\AuditLogService::log()`; existing Filament resources/pages already follow that pattern.
+
+## Payments
+- Every successful or attempted membership payment creates a row in `payment_records` (`app/Models/PaymentRecord.php`): user, member profile, Paystack `external_reference`, provider (`paystack`|`manual`), `billing_cycle` (immutable — set once at record creation from the declared cycle), channel, `amount_kobo`, currency, status (`pending`|`paid`|`failed`), failure reason, `paid_at`.
+- `App\Services\MembershipStateService::recordPayment()` accepts an optional `PaymentRecord` and marks it `paid` inside a `lockForUpdate()` transaction that checks `status === 'paid'` for idempotency. It uses `transition()` for the state change (`onboarding`/`active`/`suspended` → `member`), sets `current_period_ends_at` from the record's immutable `billing_cycle` (monthly=30, quarterly=90, yearly=365 days), clears `reminder_sent_at` and `grace_period_ends_at`, and syncs user status to `active`.
+- `findOrCreatePaymentRecord()` looks up by `external_reference` first and attaches the profile — the Paystack webhook resolves the profile through this record, falling back to the legacy `member_profiles.paystack_reference` column. The `billing_cycle` parameter is captured once at creation and never mutated afterward.
+- Manual/bank-transfer verification in `app/Filament/Pages/ManagePayments.php` and `ViewMembershipApplication.php` also goes through `recordPayment` so a `manual` record is written. Both paths produce identical end states.
+- Webhook idempotency is enforced by `PaymentRecord.status` + `lockForUpdate()` — not by `payment_verified_at`. A new reference from a renewing member is always processed (extends period, reactivates if suspended), while a duplicate delivery of the same reference no-ops.
 
 ## Tests And Env Gotchas
 - `phpunit.xml` uses in-memory SQLite and forces `QUEUE_CONNECTION=sync` and `SESSION_DRIVER=array`; avoid writing tests that depend on MySQL/Postgres-specific behavior unless necessary.

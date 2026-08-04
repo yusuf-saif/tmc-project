@@ -177,6 +177,16 @@ class UserResource extends Resource
         return $actor->hasRole('super_admin');
     }
 
+    public static function canManageUsers(User $actor): bool
+    {
+        return $actor->hasAnyRole(['super_admin', 'admin']);
+    }
+
+    public static function canVerifyPayments(User $actor): bool
+    {
+        return $actor->hasAnyRole(['super_admin', 'admin']);
+    }
+
     public static function suspend(User $record, string $reason): void
     {
         $record->update([

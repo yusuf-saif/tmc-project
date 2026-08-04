@@ -201,7 +201,12 @@ class PaymentPage extends Component
                 }
             }
 
-            app(MembershipStateService::class)->recordPayment($profile, $user, $planLabel);
+            app(MembershipStateService::class)->recordPayment(
+                $profile,
+                $user,
+                $planLabel,
+                app(MembershipStateService::class)->findOrCreatePaymentRecord($user, $profile, $profile->paystack_reference, 'paystack', $planLabel),
+            );
 
             $profile->refresh();
 
@@ -280,6 +285,14 @@ class PaymentPage extends Component
 
             $url = $paystackService->getAuthorizationUrl($user, $billingCycle, $finalAmountKobo, $extraMetadata);
 
+            app(MembershipStateService::class)->findOrCreatePaymentRecord(
+                $user,
+                $memberProfile,
+                $memberProfile->fresh()->paystack_reference,
+                'paystack',
+                $billingCycle,
+            );
+
             Log::info('PaymentPage: redirecting to Paystack', [
                 'user_id' => $user->id,
                 'profile_id' => $memberProfile->id,
@@ -322,6 +335,8 @@ class PaymentPage extends Component
             'payment_status' => 'pending_verification',
             'payment_submitted_at' => now(),
         ])->saveQuietly();
+
+        app(MembershipStateService::class)->findOrCreatePaymentRecord($user, $memberProfile, provider: 'manual', billingCycle: $this->billingCycle);
 
         AuditLogService::log(
             action: 'manual_payment_submitted',

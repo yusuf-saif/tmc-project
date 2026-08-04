@@ -118,7 +118,12 @@ class ManagePayments extends Page implements HasTable
                                 'payment_verified_by' => auth()->id(),
                             ])->saveQuietly();
 
-                            app(MembershipStateService::class)->recordPayment($record, $user, $planLabel);
+                            app(MembershipStateService::class)->recordPayment(
+                                $record,
+                                $user,
+                                $planLabel,
+                                app(MembershipStateService::class)->findOrCreatePaymentRecord($user, $record, provider: 'manual', billingCycle: $planLabel),
+                            );
 
                             $record->refresh();
 
@@ -158,6 +163,6 @@ class ManagePayments extends Page implements HasTable
     {
         $user = auth()->user();
 
-        return $user?->hasAnyRole(['super_admin', 'admin', 'moderator']) ?? false;
+        return $user?->hasAnyRole(['super_admin', 'admin']) ?? false;
     }
 }

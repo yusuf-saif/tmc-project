@@ -207,6 +207,34 @@ class MembershipBillingTest extends TestCase
         $this->assertNotNull($profile->reminder_sent_at);
     }
 
+    public function test_renewal_reminder_not_resent_when_already_sent_this_period(): void
+    {
+        Notification::fake();
+
+        $user = $this->createMemberUser();
+        $profile = $user->memberProfile;
+        $profile->current_period_ends_at = now()->addDays(3);
+        $profile->reminder_sent_at = now()->subDay();
+        $profile->save();
+
+        $this->artisan('membership:send-renewal-reminders')->assertSuccessful();
+
+        Notification::assertNotSentTo($user, MembershipRenewalReminder::class);
+    }
+
+    public function test_renewal_reminder_resets_after_payment(): void
+    {
+        $user = $this->createMemberUser();
+        $profile = $user->memberProfile;
+        $profile->reminder_sent_at = now()->subDay();
+        $profile->save();
+
+        $this->service->recordPayment($profile, $user, 'monthly');
+
+        $profile->refresh();
+        $this->assertNull($profile->reminder_sent_at);
+    }
+
     // ─── Home banner test ──────────────────────────────────────────
 
     public function test_home_banner_shown_for_free_users_hidden_for_members(): void

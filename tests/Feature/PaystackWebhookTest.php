@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;
+use App\Services\MembershipStateService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
@@ -575,5 +576,178 @@ class PaystackWebhookTest extends TestCase
         $this->assertSame('active', $listing->billing_status);
         $this->assertNotNull($listing->billing_start_date);
         $this->assertNotNull($listing->billing_end_date);
+    }
+
+    public function test_webhook_renewal_extends_period_for_active_member(): void
+    {
+        Setting::create(['key' => 'membership_fee_monthly', 'value' => '5000']);
+
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'member',
+                'payment_status' => 'paid',
+                'payment_verified_at' => now()->subDays(30),
+                'current_period_ends_at' => now()->addDays(5),
+                'preferred_billing_cycle' => 'monthly',
+            ],
+        );
+
+        $profile = $user->memberProfile;
+        $oldPeriodEnd = $profile->current_period_ends_at;
+
+        app(MembershipStateService::class)->findOrCreatePaymentRecord(
+            $user, $profile, 'TMC-RENEWAL-1', 'paystack', 'monthly'
+        );
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'TMC-RENEWAL-1',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'TMC-RENEWAL-1',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'monthly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $profile->refresh();
+        $this->assertTrue($profile->current_period_ends_at->gt($oldPeriodEnd));
+        $days = now()->diffInDays($profile->current_period_ends_at, absolute: true);
+        $this->assertEqualsWithDelta(30, $days, 1);
+    }
+
+    public function test_webhook_reactivates_suspended_member(): void
+    {
+        Setting::create(['key' => 'membership_fee_monthly', 'value' => '5000']);
+
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'suspended']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'suspended',
+                'payment_verified_at' => now()->subDays(60),
+                'current_period_ends_at' => now()->subDays(40),
+                'grace_period_ends_at' => now()->subDays(33),
+                'preferred_billing_cycle' => 'monthly',
+            ],
+        );
+
+        app(MembershipStateService::class)->findOrCreatePaymentRecord(
+            $user, $user->memberProfile, 'TMC-REACTIVATE-1', 'paystack', 'monthly'
+        );
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'TMC-REACTIVATE-1',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'TMC-REACTIVATE-1',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'monthly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $user->refresh();
+        $profile = $user->memberProfile;
+        $this->assertEquals('member', $profile->onboarding_status);
+        $this->assertEquals('active', $user->status);
+        $this->assertNull($profile->grace_period_ends_at);
+        $this->assertNotNull($profile->current_period_ends_at);
+        $this->assertTrue($profile->current_period_ends_at->isFuture());
+    }
+
+    public function test_duplicate_reference_no_ops(): void
+    {
+        Setting::create(['key' => 'membership_fee_monthly', 'value' => '5000']);
+
+        $user = $this->createOnboardingUser('TMC-DUP-REF');
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'TMC-DUP-REF',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'TMC-DUP-REF',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'monthly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response1 = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+        $response1->assertOk();
+        $response1->assertJson(['status' => 'activated']);
+
+        $profile = $user->fresh()->memberProfile;
+        $firstPeriodEnd = $profile->current_period_ends_at;
+
+        $response2 = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+        $response2->assertOk();
+        $response2->assertJson(['status' => 'already_verified']);
+
+        $profile->refresh();
+        $this->assertEquals($firstPeriodEnd->timestamp, $profile->current_period_ends_at->timestamp);
     }
 }

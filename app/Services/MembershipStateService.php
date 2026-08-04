@@ -7,6 +7,7 @@ use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
 use App\Models\MemberProfile;
+use App\Models\PaymentRecord;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class MembershipStateService
 {
     private const ALLOWED_TRANSITIONS = [
         'registered' => ['onboarding'],
-        'onboarding' => ['active'],          // Legacy fallback only
+        'onboarding' => ['active', 'member'],
         'active' => ['member', 'suspended'],
         'member' => ['suspended'],
         'suspended' => ['member', 'active'],
@@ -112,24 +113,95 @@ class MembershipStateService
         return $result;
     }
 
-    public function recordPayment(MemberProfile $profile, User $user, ?string $planLabel = null): void
-    {
-        DB::transaction(function () use ($profile, $user): void {
-            $profile->onboarding_status = 'member';
+    public function findOrCreatePaymentRecord(
+        User $user,
+        ?MemberProfile $profile = null,
+        ?string $reference = null,
+        string $provider = 'manual',
+        ?string $billingCycle = null,
+    ): PaymentRecord {
+        if ($reference) {
+            $record = PaymentRecord::query()
+                ->where('external_reference', $reference)
+                ->first();
+
+            if ($record) {
+                $record->forceFill([
+                    'user_id' => $user->id,
+                    'member_profile_id' => $profile?->id,
+                ])->saveQuietly();
+
+                return $record;
+            }
+        }
+
+        return PaymentRecord::query()->create([
+            'user_id' => $user->id,
+            'member_profile_id' => $profile?->id,
+            'external_reference' => $reference,
+            'provider' => $provider,
+            'billing_cycle' => $billingCycle,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function recordPayment(
+        MemberProfile $profile,
+        User $user,
+        ?string $planLabel = null,
+        ?PaymentRecord $record = null,
+    ): PaymentRecord {
+        $planLabel ??= $record?->billing_cycle ?? $profile->preferred_billing_cycle ?? 'monthly';
+        $record ??= $this->findOrCreatePaymentRecord($user, $profile, billingCycle: $planLabel);
+
+        DB::transaction(function () use ($profile, $user, $planLabel, &$record): void {
+            $lockedRecord = PaymentRecord::query()
+                ->where('id', $record->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($lockedRecord && $lockedRecord->status === 'paid') {
+                return;
+            }
+
+            $cycle = $lockedRecord?->billing_cycle ?? $planLabel;
+
+            if ($profile->onboarding_status !== 'member') {
+                $this->transition($profile, 'member', $user);
+            }
+
             $profile->payment_status = 'paid';
             $profile->payment_verified_at ??= now();
             $profile->first_paid_at ??= now();
-            $profile->current_period_ends_at = now()->addDays((int) Setting::get('membership_billing_cycle_days'));
+            $profile->current_period_ends_at = now()->addDays($this->billingCycleDays($cycle));
             $profile->reminder_sent_at = null;
+            $profile->grace_period_ends_at = null;
             $profile->save();
 
             $user->forceFill(['status' => 'active'])->saveQuietly();
+
+            $lockedRecord->fill([
+                'user_id' => $user->id,
+                'member_profile_id' => $profile->id,
+                'billing_cycle' => $lockedRecord->billing_cycle ?? $cycle,
+                'provider' => $lockedRecord->provider ?: 'manual',
+                'status' => 'paid',
+                'paid_at' => $lockedRecord->paid_at ?? now(),
+            ]);
+
+            if (! $lockedRecord->amount_kobo) {
+                $lockedRecord->amount_kobo = $this->billingCycleAmountKobo($cycle);
+            }
+
+            $lockedRecord->save();
+            $record = $lockedRecord;
         });
 
         Log::info('MembershipStateService: payment recorded', [
             'profile_id' => $profile->id,
             'user_id' => $user->id,
-            'plan_label' => $planLabel ?? 'default',
+            'plan_label' => $planLabel,
+            'record_id' => $record->id,
             'current_period_ends_at' => $profile->fresh()->current_period_ends_at?->toIso8601String(),
         ]);
 
@@ -142,6 +214,28 @@ class MembershipStateService
                 'error' => $e->getMessage(),
             ]);
         }
+
+        return $record->fresh();
+    }
+
+    protected function billingCycleAmountKobo(string $planLabel): int
+    {
+        $amountNaira = match ($planLabel) {
+            'quarterly' => (int) Setting::get('membership_fee_quarterly', 12000),
+            'yearly' => (int) Setting::get('membership_fee_yearly', 40000),
+            default => (int) Setting::get('membership_fee_monthly', 5000),
+        };
+
+        return $amountNaira * 100;
+    }
+
+    public function billingCycleDays(string $planLabel): int
+    {
+        return match ($planLabel) {
+            'quarterly' => 90,
+            'yearly' => 365,
+            default => 30,
+        };
     }
 
     public function checkGracePeriod(MemberProfile $profile): void

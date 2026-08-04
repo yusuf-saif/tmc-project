@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JannahCoinsLedger;
 use App\Models\MemberProfile;
+use App\Models\PaymentRecord;
 use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Services\AuditLogService;
@@ -83,9 +84,15 @@ class PaystackWebhookController extends Controller
             return $this->handleSouqPayment($data, $reference, $metadata, $paystackService);
         }
 
-        // === Existing membership payment flow (unchanged) ===
+        // === Membership payment flow ===
 
-        $profile = MemberProfile::where('paystack_reference', $reference)->first();
+        $paymentRecord = PaymentRecord::query()
+            ->where('external_reference', $reference)
+            ->first();
+
+        $profile = $paymentRecord?->memberProfile
+            ?? ($paymentRecord?->member_profile_id ? MemberProfile::find($paymentRecord->member_profile_id) : null)
+            ?? MemberProfile::where('paystack_reference', $reference)->first();
 
         if (! $profile) {
             Log::warning('PaystackWebhook: no member profile found for reference', [
@@ -102,10 +109,11 @@ class PaystackWebhookController extends Controller
             'payment_verified_at' => $profile->payment_verified_at,
         ]);
 
-        if ($profile->payment_verified_at !== null) {
-            Log::info('PaystackWebhook: payment already verified, skipping (idempotent)', [
+        if ($paymentRecord && $paymentRecord->status === 'paid') {
+            Log::info('PaystackWebhook: payment record already paid, skipping (idempotent)', [
                 'profile_id' => $profile->id,
                 'reference' => $reference,
+                'record_id' => $paymentRecord->id,
             ]);
 
             if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
@@ -128,7 +136,7 @@ class PaystackWebhookController extends Controller
             return response()->json(['status' => 'already_verified']);
         }
 
-        $allowedForWebhook = ['onboarding', 'active', 'suspended'];
+        $allowedForWebhook = ['onboarding', 'active', 'member', 'suspended'];
 
         if (! in_array($profile->onboarding_status, $allowedForWebhook, true)) {
             Log::warning('PaystackWebhook: profile not in approvable state', [
@@ -158,6 +166,16 @@ class PaystackWebhookController extends Controller
                 'paid' => $paidAmount,
             ]);
 
+            $paymentRecord ??= app(MembershipStateService::class)
+                ->findOrCreatePaymentRecord($profile->user, $profile, $reference, 'paystack', $billingCycle);
+
+            $paymentRecord->forceFill([
+                'provider' => 'paystack',
+                'channel' => $verifiedData['channel'] ?? $data['channel'] ?? $paymentRecord->channel,
+                'amount_kobo' => $paidAmount ?: $paymentRecord->amount_kobo,
+                'currency' => $verifiedData['currency'] ?? 'NGN',
+            ])->saveQuietly();
+
             if ($paidAmount < $expectedAmount) {
                 Log::warning('PaystackWebhook: payment amount mismatch', [
                     'reference' => $reference,
@@ -165,6 +183,11 @@ class PaystackWebhookController extends Controller
                     'expected' => $expectedAmount,
                     'paid' => $paidAmount,
                 ]);
+
+                $paymentRecord->forceFill([
+                    'status' => 'failed',
+                    'failure_reason' => "Paid {$paidAmount} instead of {$expectedAmount}",
+                ])->saveQuietly();
 
                 AuditLogService::log(
                     action: 'paystack_amount_mismatch',
@@ -177,7 +200,7 @@ class PaystackWebhookController extends Controller
                 return response()->json(['error' => 'Payment amount does not match billing cycle'], 400);
             }
 
-            app(MembershipStateService::class)->recordPayment($profile, $profile->user, $billingCycle);
+            app(MembershipStateService::class)->recordPayment($profile, $profile->user, $billingCycle, $paymentRecord);
 
             if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
                 app(CoinsService::class)->applyRedemption(

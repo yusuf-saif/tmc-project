@@ -6,6 +6,7 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 use App\Http\Middleware\EnsureNotSuspendedFromRestrictedAreas;
 use App\Http\Middleware\EnsureUserStateRedirect;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrustRealIpHeader;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use Illuminate\Foundation\Application;
@@ -24,13 +25,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->append(SecurityHeaders::class);
 
+        // Do not trust forwarded headers by default. Railway does not publish
+        // stable proxy CIDR ranges, so the real client IP is taken from the
+        // `X-Real-IP` header Railway's edge proxy always sets (see
+        // TrustRealIpHeader). Operators may opt into `X-Forwarded-*` trust for
+        // a known reverse proxy by setting TRUSTED_PROXIES (config/trustedproxy.php).
         $middleware->trustProxies(
-            at: '*',
+            at: array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))),
             headers: Request::HEADER_X_FORWARDED_FOR |
                      Request::HEADER_X_FORWARDED_HOST |
                      Request::HEADER_X_FORWARDED_PORT |
                      Request::HEADER_X_FORWARDED_PROTO,
         );
+
+        $middleware->append(TrustRealIpHeader::class);
 
         $middleware->alias([
             'ensure.user.state' => EnsureUserStateRedirect::class,
