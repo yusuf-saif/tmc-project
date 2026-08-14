@@ -78,7 +78,7 @@ class AdminDashboardTest extends TestCase
         ]);
     }
 
-    public function test_suspended_member_cannot_login(): void
+    public function test_suspended_member_can_log_in_to_renew(): void
     {
         $member = User::factory()->create([
             'email' => 'blocked@example.com',
@@ -97,9 +97,27 @@ class AdminDashboardTest extends TestCase
             'password' => 'Password123!',
         ]);
 
-        $response->assertStatus(302);
-        $this->assertGuest();
-        $this->assertNotEquals(route('home'), $response->headers->get('Location'));
+        $response->assertRedirect(route('membership.payment'));
+        $this->assertAuthenticatedAs($member);
+    }
+
+    public function test_suspended_staff_cannot_access_admin_panel(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'suspendedadmin@example.com',
+            'password' => Hash::make('Password123!'),
+            'status' => 'suspended',
+            'suspended_reason' => 'Pending review.',
+            'referral_code' => 'SUSPADM1',
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('admin');
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertForbidden();
     }
 
     public function test_super_admin_can_change_role(): void

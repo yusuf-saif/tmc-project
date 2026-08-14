@@ -14,6 +14,7 @@ class PaymentRecord extends Model
         'user_id',
         'member_profile_id',
         'external_reference',
+        'idempotency_key',
         'provider',
         'billing_cycle',
         'channel',

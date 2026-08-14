@@ -27,17 +27,25 @@ class EnsureUserStateRedirect
             return $next($request);
         }
 
-        if ($user->status === 'suspended') {
-            auth()->guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        $status = $this->resolveStatus($user);
 
-            return redirect('/login')->withErrors([
-                'email' => 'Your account has been suspended. Please contact support.',
-            ]);
+        if ($user->status === 'suspended') {
+            if (filled($user->suspended_reason)) {
+                auth()->guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect('/login')->withErrors([
+                    'email' => 'Your account has been suspended. Please contact support.',
+                ]);
+            }
+
+            return redirect()->route('membership.payment');
         }
 
-        $status = $this->resolveStatus($user);
+        if ($status === 'suspended') {
+            return redirect()->route('membership.payment');
+        }
 
         if (! $status || $status === 'registered') {
             return redirect()->route('membership.signup');
@@ -48,7 +56,7 @@ class EnsureUserStateRedirect
         }
 
         if ($status === 'pending_onboarding') {
-            return redirect()->route('login');
+            return redirect()->route('membership.signup');
         }
 
         if (in_array($status, ['active', 'member'], true)) {

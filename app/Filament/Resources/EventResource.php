@@ -132,6 +132,7 @@ class EventResource extends Resource
                     ->label('Publish')
                     ->color('success')
                     ->visible(fn (Event $record): bool => $record->status === 'draft')
+                    ->authorize(fn (Event $record): bool => auth()->user()->can('update', $record))
                     ->action(function (Event $record): void {
                         $record->update([
                             'status' => 'published',
@@ -144,6 +145,7 @@ class EventResource extends Resource
                     ->label('Cancel')
                     ->color('danger')
                     ->visible(fn (Event $record): bool => $record->status !== 'cancelled')
+                    ->authorize(fn (Event $record): bool => auth()->user()->can('update', $record))
                     ->action(function (Event $record): void {
                         $old = $record->status;
 
@@ -174,16 +176,6 @@ class EventResource extends Resource
     }
 
     public static function canViewAny(): bool
-    {
-        return static::canAccess();
-    }
-
-    public static function canCreate(): bool
-    {
-        return static::canAccess();
-    }
-
-    public static function canEdit($record): bool
     {
         return static::canAccess();
     }

@@ -50,13 +50,15 @@ class FortifyServiceProvider extends ServiceProvider
             if ($user && Hash::check($request->password, $user->password)) {
                 if ($user->status === 'suspended') {
                     AuditLogService::log(
-                        'login_attempt_suspended_user',
+                        'login_suspended_user',
                         $user,
                         [],
                         ['ip' => $request->ip()],
                     );
 
-                    return null;
+                    if (filled($user->suspended_reason)) {
+                        return null;
+                    }
                 }
 
                 return $user;

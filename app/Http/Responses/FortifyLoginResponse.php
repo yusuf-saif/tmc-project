@@ -21,17 +21,17 @@ class FortifyLoginResponse implements LoginResponseContract
             return '/home';
         }
 
+        $user->refresh();
+
+        if ($user->status === 'suspended') {
+            return route('membership.payment');
+        }
+
         if ($user->hasAnyRole([
             'super_admin',
             'admin',
         ])) {
             return '/admin';
-        }
-
-        $user->refresh();
-
-        if ($user->status === 'suspended') {
-            return '/login';
         }
 
         $memberProfile = $user->memberProfile;
@@ -46,7 +46,7 @@ class FortifyLoginResponse implements LoginResponseContract
         }
 
         if ($status === 'pending_onboarding') {
-            return '/login';
+            return route('membership.signup');
         }
 
         if (in_array($status, ['active', 'member'], true)) {

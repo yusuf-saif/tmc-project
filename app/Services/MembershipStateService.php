@@ -10,6 +10,7 @@ use App\Models\MemberProfile;
 use App\Models\PaymentRecord;
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -119,6 +120,7 @@ class MembershipStateService
         ?string $reference = null,
         string $provider = 'manual',
         ?string $billingCycle = null,
+        ?string $idempotencyKey = null,
     ): PaymentRecord {
         if ($reference) {
             $record = PaymentRecord::query()
@@ -133,16 +135,84 @@ class MembershipStateService
 
                 return $record;
             }
+        } elseif ($idempotencyKey) {
+            $record = PaymentRecord::query()
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($record) {
+                $record->forceFill([
+                    'user_id' => $user->id,
+                    'member_profile_id' => $profile?->id,
+                ])->saveQuietly();
+
+                return $record;
+            }
         }
 
-        return PaymentRecord::query()->create([
-            'user_id' => $user->id,
-            'member_profile_id' => $profile?->id,
-            'external_reference' => $reference,
-            'provider' => $provider,
-            'billing_cycle' => $billingCycle,
-            'status' => 'pending',
-        ]);
+        try {
+            return PaymentRecord::query()->create([
+                'user_id' => $user->id,
+                'member_profile_id' => $profile?->id,
+                'external_reference' => $reference,
+                'idempotency_key' => $idempotencyKey,
+                'provider' => $provider,
+                'billing_cycle' => $billingCycle,
+                'status' => 'pending',
+            ]);
+        } catch (QueryException $e) {
+            if ($reference) {
+                $record = PaymentRecord::query()
+                    ->where('external_reference', $reference)
+                    ->first();
+            } else {
+                $record = PaymentRecord::query()
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->first();
+            }
+
+            if ($record) {
+                return $record;
+            }
+
+            throw $e;
+        }
+    }
+
+    public function findOrCreateManualPaymentRecord(
+        User $user,
+        MemberProfile $profile,
+        ?string $billingCycle = null,
+    ): PaymentRecord {
+        $pending = PaymentRecord::query()
+            ->where('member_profile_id', $profile->id)
+            ->where('provider', 'manual')
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        if ($pending) {
+            if ($billingCycle && $pending->billing_cycle !== $billingCycle) {
+                $pending->forceFill(['billing_cycle' => $billingCycle])->saveQuietly();
+            }
+
+            return $pending;
+        }
+
+        return $this->findOrCreatePaymentRecord(
+            $user,
+            $profile,
+            provider: 'manual',
+            billingCycle: $billingCycle,
+            idempotencyKey: $this->manualIdempotencyKey($profile),
+        );
+    }
+
+    public function manualIdempotencyKey(MemberProfile $profile): string
+    {
+        $submittedAt = $profile->payment_submitted_at?->format('U') ?? 'unknown';
+
+        return 'manual:'.$profile->user_id.':'.$submittedAt;
     }
 
     public function recordPayment(
@@ -155,6 +225,11 @@ class MembershipStateService
         $record ??= $this->findOrCreatePaymentRecord($user, $profile, billingCycle: $planLabel);
 
         DB::transaction(function () use ($profile, $user, $planLabel, &$record): void {
+            $lockedProfile = MemberProfile::query()
+                ->where('id', $profile->id)
+                ->lockForUpdate()
+                ->first() ?? $profile;
+
             $lockedRecord = PaymentRecord::query()
                 ->where('id', $record->id)
                 ->lockForUpdate()
@@ -166,25 +241,34 @@ class MembershipStateService
 
             $cycle = $lockedRecord?->billing_cycle ?? $planLabel;
 
-            if ($profile->onboarding_status !== 'member') {
-                $this->transition($profile, 'member', $user);
+            if ($lockedProfile->onboarding_status !== 'member') {
+                $this->transition($lockedProfile, 'member', $user);
             }
 
-            $profile->payment_status = 'paid';
-            $profile->payment_verified_at ??= now();
-            $profile->first_paid_at ??= now();
-            $profile->current_period_ends_at = now()->addDays($this->billingCycleDays($cycle));
-            $profile->reminder_sent_at = null;
-            $profile->grace_period_ends_at = null;
-            $profile->save();
+            $lockedProfile->payment_status = 'paid';
+            $lockedProfile->payment_verified_at ??= now();
+            $lockedProfile->first_paid_at ??= now();
+
+            $periodBase = ($lockedProfile->onboarding_status === 'member'
+                && $lockedProfile->current_period_ends_at
+                && $lockedProfile->current_period_ends_at->isFuture())
+                ? $lockedProfile->current_period_ends_at
+                : now();
+
+            $lockedProfile->current_period_ends_at = $periodBase->copy()->addDays($this->billingCycleDays($cycle));
+            $lockedProfile->reminder_sent_at = null;
+            $lockedProfile->grace_period_ends_at = null;
+            $lockedProfile->save();
 
             $user->forceFill(['status' => 'active'])->saveQuietly();
 
+            $provider = $lockedRecord->provider ?: 'manual';
+
             $lockedRecord->fill([
                 'user_id' => $user->id,
-                'member_profile_id' => $profile->id,
+                'member_profile_id' => $lockedProfile->id,
                 'billing_cycle' => $lockedRecord->billing_cycle ?? $cycle,
-                'provider' => $lockedRecord->provider ?: 'manual',
+                'provider' => $provider,
                 'status' => 'paid',
                 'paid_at' => $lockedRecord->paid_at ?? now(),
             ]);

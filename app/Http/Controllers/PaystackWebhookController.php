@@ -116,24 +116,21 @@ class PaystackWebhookController extends Controller
                 'record_id' => $paymentRecord->id,
             ]);
 
-            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
-                $alreadyRedeemed = JannahCoinsLedger::query()
-                    ->where('user_id', $profile->user_id)
-                    ->where('reason', 'redemption_membership')
-                    ->where('reference_id', $profile->id)
-                    ->exists();
-
-                if (! $alreadyRedeemed) {
-                    app(CoinsService::class)->applyRedemption(
-                        $profile->user,
-                        (int) $metadata['coins_used'],
-                        'membership',
-                        $profile->id,
-                    );
-                }
-            }
+            $this->applyMembershipRedemption($profile, $metadata);
 
             return response()->json(['status' => 'already_verified']);
+        }
+
+        $user = $profile->user;
+
+        if ($user && $user->status === 'suspended' && filled($user->suspended_reason)) {
+            Log::warning('PaystackWebhook: member manually suspended, payment rejected', [
+                'profile_id' => $profile->id,
+                'user_id' => $user->id,
+                'reference' => $reference,
+            ]);
+
+            return response()->json(['error' => 'Membership suspended by admin'], 400);
         }
 
         $allowedForWebhook = ['onboarding', 'active', 'member', 'suspended'];
@@ -151,7 +148,10 @@ class PaystackWebhookController extends Controller
         try {
             $verifiedData = $paystackService->verifyPayment($reference);
 
-            $billingCycle = $profile->preferred_billing_cycle ?? 'monthly';
+            $billingCycle = $paymentRecord?->billing_cycle
+                ?? ($metadata['billing_cycle'] ?? null)
+                ?? $profile->preferred_billing_cycle
+                ?? 'monthly';
             $expectedAmount = $paystackService->getAmountForBillingCycle($billingCycle) * 100;
 
             if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
@@ -202,14 +202,7 @@ class PaystackWebhookController extends Controller
 
             app(MembershipStateService::class)->recordPayment($profile, $profile->user, $billingCycle, $paymentRecord);
 
-            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
-                app(CoinsService::class)->applyRedemption(
-                    $profile->user,
-                    (int) $metadata['coins_used'],
-                    'membership',
-                    $profile->id,
-                );
-            }
+            $this->applyMembershipRedemption($profile, $metadata);
 
             $profile->refresh();
 
@@ -245,6 +238,50 @@ class PaystackWebhookController extends Controller
         }
     }
 
+    protected function applyMembershipRedemption(MemberProfile $profile, array $metadata): void
+    {
+        if (! ($metadata['redemption_applied'] ?? false) || (int) ($metadata['coins_used'] ?? 0) <= 0) {
+            return;
+        }
+
+        $alreadyRedeemed = JannahCoinsLedger::query()
+            ->where('user_id', $profile->user_id)
+            ->where('reason', 'redemption_membership')
+            ->where('reference_id', $profile->id)
+            ->exists();
+
+        if (! $alreadyRedeemed) {
+            app(CoinsService::class)->applyRedemption(
+                $profile->user,
+                (int) $metadata['coins_used'],
+                'membership',
+                $profile->id,
+            );
+        }
+    }
+
+    protected function applySouqRedemption(SouqListing $listing, array $metadata): void
+    {
+        if (! ($metadata['redemption_applied'] ?? false) || (int) ($metadata['coins_used'] ?? 0) <= 0) {
+            return;
+        }
+
+        $alreadyRedeemed = JannahCoinsLedger::query()
+            ->where('user_id', $listing->user_id)
+            ->where('reason', 'redemption_souq')
+            ->where('reference_id', $listing->id)
+            ->exists();
+
+        if (! $alreadyRedeemed) {
+            app(CoinsService::class)->applyRedemption(
+                $listing->owner,
+                (int) $metadata['coins_used'],
+                'souq',
+                $listing->id,
+            );
+        }
+    }
+
     protected function handleSouqPayment(
         array $data,
         string $reference,
@@ -273,22 +310,7 @@ class PaystackWebhookController extends Controller
                 'reference' => $reference,
             ]);
 
-            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
-                $alreadyRedeemed = JannahCoinsLedger::query()
-                    ->where('user_id', $listing->user_id)
-                    ->where('reason', 'redemption_souq')
-                    ->where('reference_id', $listing->id)
-                    ->exists();
-
-                if (! $alreadyRedeemed) {
-                    app(CoinsService::class)->applyRedemption(
-                        $listing->owner,
-                        (int) $metadata['coins_used'],
-                        'souq',
-                        $listing->id,
-                    );
-                }
-            }
+            $this->applySouqRedemption($listing, $metadata);
 
             return response()->json(['status' => 'already_active']);
         }
@@ -341,14 +363,7 @@ class PaystackWebhookController extends Controller
 
             app(BusinessStateService::class)->activate($listing);
 
-            if (($metadata['redemption_applied'] ?? false) && ($metadata['coins_used'] ?? 0) > 0) {
-                app(CoinsService::class)->applyRedemption(
-                    $listing->owner,
-                    (int) $metadata['coins_used'],
-                    'souq',
-                    $listing->id,
-                );
-            }
+            $this->applySouqRedemption($listing, $metadata);
 
             $listing->refresh();
 

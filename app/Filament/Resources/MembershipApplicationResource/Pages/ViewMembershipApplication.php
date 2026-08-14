@@ -161,11 +161,14 @@ class ViewMembershipApplication extends ViewRecord
                             'payment_verified_by' => auth()->id(),
                         ])->saveQuietly();
 
-                        app(MembershipStateService::class)->recordPayment(
+                        $service = app(MembershipStateService::class);
+                        $paymentRecord = $service->findOrCreateManualPaymentRecord($user, $record, $planLabel);
+
+                        $service->recordPayment(
                             $record,
                             $user,
-                            $planLabel,
-                            app(MembershipStateService::class)->findOrCreatePaymentRecord($user, $record, provider: 'manual', billingCycle: $planLabel),
+                            $paymentRecord->billing_cycle ?? $planLabel,
+                            $paymentRecord,
                         );
 
                         $record->refresh();

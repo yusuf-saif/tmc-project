@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MemberProfile extends Model
 {
@@ -107,5 +108,10 @@ class MemberProfile extends Model
     public function paymentVerifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'payment_verified_by');
+    }
+
+    public function paymentRecords(): HasMany
+    {
+        return $this->hasMany(PaymentRecord::class);
     }
 }

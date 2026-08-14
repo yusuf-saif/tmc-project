@@ -3,6 +3,7 @@
 namespace App\Livewire\Membership;
 
 use App\Models\JannahCoinsLedger;
+use App\Models\PaymentRecord;
 use App\Models\Setting;
 use App\Services\AuditLogService;
 use App\Services\CoinsService;
@@ -159,10 +160,18 @@ class PaymentPage extends Component
             $paystackService = app(PaystackService::class);
             $verifiedData = $paystackService->verifyPayment($profile->paystack_reference);
 
-            $planLabel = $profile->preferred_billing_cycle ?? 'monthly';
+            $verifiedMetadata = $verifiedData['metadata'] ?? [];
+
+            $paymentRecord = PaymentRecord::query()
+                ->where('external_reference', $profile->paystack_reference)
+                ->first();
+
+            $planLabel = $paymentRecord?->billing_cycle
+                ?? ($verifiedMetadata['billing_cycle'] ?? null)
+                ?? $profile->preferred_billing_cycle
+                ?? 'monthly';
             $expectedAmount = $paystackService->getAmountForBillingCycle($planLabel) * 100;
 
-            $verifiedMetadata = $verifiedData['metadata'] ?? [];
             if (($verifiedMetadata['redemption_applied'] ?? false) && ($verifiedMetadata['coins_used'] ?? 0) > 0) {
                 $expectedAmount -= (int) $verifiedMetadata['coins_used'] * CoinsService::coinValueKobo();
             }
@@ -336,7 +345,7 @@ class PaymentPage extends Component
             'payment_submitted_at' => now(),
         ])->saveQuietly();
 
-        app(MembershipStateService::class)->findOrCreatePaymentRecord($user, $memberProfile, provider: 'manual', billingCycle: $this->billingCycle);
+        app(MembershipStateService::class)->findOrCreateManualPaymentRecord($user, $memberProfile, $this->billingCycle);
 
         AuditLogService::log(
             action: 'manual_payment_submitted',

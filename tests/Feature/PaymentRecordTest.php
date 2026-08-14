@@ -231,4 +231,76 @@ class PaymentRecordTest extends TestCase
         $days = now()->diffInDays($profile->current_period_ends_at, absolute: true);
         $this->assertEqualsWithDelta(365, $days, 1);
     }
+
+    public function test_double_verify_manual_submission_extends_period_once(): void
+    {
+        $user = $this->createUserWithProfile('onboarding');
+        $profile = $user->memberProfile;
+        $profile->forceFill([
+            'payment_source' => 'bank_transfer',
+            'payment_status' => 'pending_verification',
+            'payment_submitted_at' => now(),
+            'preferred_billing_cycle' => 'monthly',
+        ])->saveQuietly();
+
+        $first = $this->service->findOrCreateManualPaymentRecord($user, $profile, 'monthly');
+        $this->service->recordPayment($profile, $user, $first->billing_cycle ?? 'monthly', $first);
+
+        $firstPeriodEnd = $profile->fresh()->current_period_ends_at;
+
+        $second = $this->service->findOrCreateManualPaymentRecord($user, $profile, 'monthly');
+        $this->service->recordPayment($profile, $user, $second->billing_cycle ?? 'monthly', $second);
+
+        $profile->refresh();
+        $this->assertSame($first->id, $second->id);
+        $this->assertEquals($firstPeriodEnd->timestamp, $profile->current_period_ends_at->timestamp);
+        $this->assertSame(1, PaymentRecord::query()->where('member_profile_id', $profile->id)->where('status', 'paid')->count());
+        $this->assertSame(1, PaymentRecord::query()->where('member_profile_id', $profile->id)->count());
+    }
+
+    public function test_bank_transfer_submit_reuses_existing_pending_record(): void
+    {
+        $user = $this->createUserWithProfile('onboarding');
+        $profile = $user->memberProfile;
+        $profile->forceFill(['payment_submitted_at' => now()])->saveQuietly();
+
+        $first = $this->service->findOrCreateManualPaymentRecord($user, $profile, 'monthly');
+        $second = $this->service->findOrCreateManualPaymentRecord($user, $profile, 'monthly');
+
+        $this->assertSame($first->id, $second->id);
+        $this->assertSame(1, PaymentRecord::query()->where('member_profile_id', $profile->id)->where('status', 'pending')->count());
+    }
+
+    public function test_manual_record_lookup_by_idempotency_key_returns_same_record(): void
+    {
+        $user = $this->createUserWithProfile('onboarding');
+        $profile = $user->memberProfile;
+        $profile->forceFill(['payment_submitted_at' => now()])->saveQuietly();
+
+        $key = $this->service->manualIdempotencyKey($profile);
+        $this->assertEquals('manual:'.$user->id.':'.$profile->payment_submitted_at->format('U'), $key);
+
+        $this->service->findOrCreatePaymentRecord($user, $profile, provider: 'manual', idempotencyKey: $key);
+        $again = $this->service->findOrCreatePaymentRecord($user, $profile, provider: 'manual', idempotencyKey: $key);
+
+        $this->assertSame(1, PaymentRecord::query()->where('idempotency_key', $key)->count());
+        $this->assertSame(1, PaymentRecord::query()->where('member_profile_id', $profile->id)->where('provider', 'manual')->count());
+        $this->assertEquals($key, $again->idempotency_key);
+    }
+
+    public function test_new_manual_record_created_after_previous_one_is_paid(): void
+    {
+        $user = $this->createUserWithProfile('onboarding');
+        $profile = $user->memberProfile;
+        $profile->forceFill(['payment_submitted_at' => now()])->saveQuietly();
+
+        $first = $this->service->findOrCreateManualPaymentRecord($user, $profile, 'monthly');
+        $this->service->recordPayment($profile, $user, $first->billing_cycle ?? 'monthly', $first);
+
+        $profile->forceFill(['payment_submitted_at' => now()->addDay()])->saveQuietly();
+        $second = $this->service->findOrCreateManualPaymentRecord($user, $profile, 'monthly');
+
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertSame(2, PaymentRecord::query()->where('member_profile_id', $profile->id)->where('provider', 'manual')->count());
+    }
 }

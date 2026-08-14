@@ -147,7 +147,7 @@ class EmailNormalizationTest extends TestCase
         $this->assertSame('newemail@example.com', $user->email);
     }
 
-    public function test_login_rejects_suspended_user(): void
+    public function test_suspended_user_can_log_in_to_renew(): void
     {
         User::create([
             'name' => 'Suspended User',
@@ -162,7 +162,28 @@ class EmailNormalizationTest extends TestCase
             'password' => 'password',
         ]);
 
+        $response->assertRedirect(route('membership.payment'));
+        $this->assertAuthenticated();
+    }
+
+    public function test_manually_suspended_user_cannot_log_in(): void
+    {
+        User::create([
+            'name' => 'Banned User',
+            'email' => 'banned@example.com',
+            'password' => Hash::make('password'),
+            'status' => 'suspended',
+            'suspended_reason' => 'Repeated community guideline breaches.',
+            'referral_code' => User::generateUniqueReferralCode(),
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => 'banned@example.com',
+            'password' => 'password',
+        ]);
+
         $response->assertInvalid(['email' => 'These credentials do not match our records.']);
+        $this->assertGuest();
     }
 
     public function test_admin_can_send_password_reset_link(): void

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\JannahCoinsLedger;
+use App\Models\PaymentRecord;
 use App\Models\Setting;
 use App\Models\SouqListing;
 use App\Models\User;
@@ -516,6 +518,181 @@ class PaystackWebhookTest extends TestCase
         $this->assertNotEquals('active', $user->status);
     }
 
+    public function test_paid_record_billing_cycle_wins_over_mutable_preference(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'yearly',
+                'paystack_reference' => 'REC-MONTHLY',
+            ],
+        );
+
+        PaymentRecord::create([
+            'user_id' => $user->id,
+            'member_profile_id' => $user->memberProfile->id,
+            'external_reference' => 'REC-MONTHLY',
+            'provider' => 'paystack',
+            'billing_cycle' => 'monthly',
+            'status' => 'pending',
+        ]);
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'REC-MONTHLY',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'REC-MONTHLY',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'yearly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $profile = $user->fresh()->memberProfile;
+        $this->assertEquals('member', $profile->onboarding_status);
+        $days = now()->diffInDays($profile->current_period_ends_at, absolute: true);
+        $this->assertEqualsWithDelta(30, $days, 1);
+
+        $this->assertEquals('monthly', $profile->paymentRecords()->first()->billing_cycle);
+        $this->assertEquals('paid', $profile->paymentRecords()->first()->status);
+    }
+
+    public function test_paid_record_yearly_cycle_rejects_monthly_amount(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'monthly',
+                'paystack_reference' => 'REC-YEARLY',
+            ],
+        );
+
+        PaymentRecord::create([
+            'user_id' => $user->id,
+            'member_profile_id' => $user->memberProfile->id,
+            'external_reference' => 'REC-YEARLY',
+            'provider' => 'paystack',
+            'billing_cycle' => 'yearly',
+            'status' => 'pending',
+        ]);
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'REC-YEARLY',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'REC-YEARLY',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertStatus(400);
+        $response->assertJson(['error' => 'Payment amount does not match billing cycle']);
+
+        $this->assertEquals('failed', PaymentRecord::query()->where('external_reference', 'REC-YEARLY')->first()->status);
+    }
+
+    public function test_metadata_billing_cycle_used_when_no_record_exists(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'onboarding']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'onboarding',
+                'membership_id' => 'TMC-M-1447-001',
+                'preferred_billing_cycle' => 'monthly',
+                'paystack_reference' => 'LEGACY-YEARLY',
+            ],
+        );
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'LEGACY-YEARLY',
+                    'amount' => 4000000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'LEGACY-YEARLY',
+                'status' => 'success',
+                'amount' => 4000000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'yearly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['status' => 'activated']);
+
+        $profile = $user->fresh()->memberProfile;
+        $this->assertEquals('member', $profile->onboarding_status);
+        $days = now()->diffInDays($profile->current_period_ends_at, absolute: true);
+        $this->assertEqualsWithDelta(365, $days, 1);
+        $this->assertEquals('yearly', $profile->paymentRecords()->first()->billing_cycle);
+    }
+
     public function test_souq_webhook_activates_approved_unpaid_listing(): void
     {
         $user = User::factory()->create(['email' => 'souq@test.com']);
@@ -637,7 +814,46 @@ class PaystackWebhookTest extends TestCase
         $profile->refresh();
         $this->assertTrue($profile->current_period_ends_at->gt($oldPeriodEnd));
         $days = now()->diffInDays($profile->current_period_ends_at, absolute: true);
-        $this->assertEqualsWithDelta(30, $days, 1);
+        $this->assertEqualsWithDelta(35, $days, 1);
+    }
+
+    public function test_consecutive_renewals_stack_periods_from_prior_end(): void
+    {
+        Setting::create(['key' => 'membership_fee_monthly', 'value' => '5000']);
+
+        $user = User::factory()->create(['email_verified_at' => now(), 'status' => 'active']);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'member',
+                'payment_status' => 'paid',
+                'payment_verified_at' => now()->subDays(30),
+                'current_period_ends_at' => now()->addDays(5),
+                'preferred_billing_cycle' => 'monthly',
+            ],
+        );
+
+        $profile = $user->memberProfile;
+
+        $first = app(MembershipStateService::class)->findOrCreatePaymentRecord(
+            $user, $profile, 'TMC-STACK-1', 'paystack', 'monthly'
+        );
+        app(MembershipStateService::class)->recordPayment($profile, $user, 'monthly', $first);
+
+        $profile->refresh();
+        $afterFirst = $profile->current_period_ends_at;
+        $this->assertEqualsWithDelta(35, now()->diffInDays($afterFirst, absolute: true), 1);
+
+        $second = app(MembershipStateService::class)->findOrCreatePaymentRecord(
+            $user, $profile, 'TMC-STACK-2', 'paystack', 'monthly'
+        );
+        app(MembershipStateService::class)->recordPayment($profile, $user, 'monthly', $second);
+
+        $profile->refresh();
+        $this->assertTrue($profile->current_period_ends_at->gt($afterFirst));
+        $this->assertEqualsWithDelta(65, now()->diffInDays($profile->current_period_ends_at, absolute: true), 1);
     }
 
     public function test_webhook_reactivates_suspended_member(): void
@@ -749,5 +965,122 @@ class PaystackWebhookTest extends TestCase
 
         $profile->refresh();
         $this->assertEquals($firstPeriodEnd->timestamp, $profile->current_period_ends_at->timestamp);
+    }
+
+    public function test_duplicate_redemption_webhook_deducts_coins_only_once(): void
+    {
+        Setting::create(['key' => 'membership_fee_monthly', 'value' => '5000']);
+        Setting::create(['key' => 'coin_value_kobo', 'value' => '100']);
+
+        $user = $this->createOnboardingUser('TMC-REDEEM-1');
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'TMC-REDEEM-1',
+                    'amount' => 499000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'TMC-REDEEM-1',
+                'status' => 'success',
+                'amount' => 499000,
+                'customer' => ['email' => $user->email],
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'billing_cycle' => 'monthly',
+                    'redemption_applied' => true,
+                    'coins_used' => 10,
+                ],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response1 = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+        $response1->assertOk();
+        $response1->assertJson(['status' => 'activated']);
+
+        $response2 = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+        $response2->assertOk();
+        $response2->assertJson(['status' => 'already_verified']);
+
+        $this->assertSame(1, JannahCoinsLedger::query()
+            ->where('user_id', $user->id)
+            ->where('reason', 'redemption_membership')
+            ->count());
+    }
+
+    public function test_webhook_rejects_payment_for_manually_suspended_member(): void
+    {
+        Setting::create(['key' => 'membership_fee_monthly', 'value' => '5000']);
+
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+            'status' => 'suspended',
+            'suspended_reason' => 'Repeated community guideline breaches.',
+        ]);
+        $user->assignRole('member');
+        $user->memberProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'display_name' => $user->name,
+                'onboarding_status' => 'member',
+                'payment_status' => 'paid',
+                'preferred_billing_cycle' => 'monthly',
+                'paystack_reference' => 'TMC-BANNED-1',
+            ],
+        );
+
+        $profile = $user->memberProfile;
+
+        $record = app(MembershipStateService::class)->findOrCreatePaymentRecord(
+            $user, $profile, 'TMC-BANNED-1', 'paystack', 'monthly'
+        );
+
+        Http::fake([
+            config('paystack.paymentUrl').'/transaction/verify/*' => Http::response([
+                'status' => true,
+                'data' => [
+                    'status' => 'success',
+                    'reference' => 'TMC-BANNED-1',
+                    'amount' => 500000,
+                ],
+            ]),
+        ]);
+
+        $payload = [
+            'event' => 'charge.success',
+            'data' => [
+                'reference' => 'TMC-BANNED-1',
+                'status' => 'success',
+                'amount' => 500000,
+                'customer' => ['email' => $user->email],
+                'metadata' => ['user_id' => $user->id, 'billing_cycle' => 'monthly'],
+            ],
+        ];
+
+        $signature = $this->generateSignature($payload);
+
+        $response = $this->postJson(route('webhooks.paystack'), $payload, [
+            'x-paystack-signature' => $signature,
+        ]);
+
+        $response->assertStatus(400);
+        $response->assertJson(['error' => 'Membership suspended by admin']);
+
+        $this->assertSame('suspended', $user->fresh()->status);
+        $this->assertSame('member', $profile->fresh()->onboarding_status);
+        $this->assertSame('pending', $record->fresh()->status);
     }
 }
