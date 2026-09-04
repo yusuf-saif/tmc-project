@@ -144,3 +144,16 @@
 - **Manual run:** `php artisan r2:setup` (or `--cors-only` / `--lifecycle-only` flags).
 - **After deploy:** run `php artisan config:clear` to pick up the new env var.
 - **Test coverage:** `tests/Feature/FileUploadDiskConfigTest.php` verifies config resolution, disk driver, file visibility, and that all 6 R2-targeting FileUpload fields target the correct disk.
+
+## CSP And Direct-To-Cloud Uploads
+- **Symptom:** A Filament FileUpload field fails silently in the UI (generic "failed to upload"; upload never appears). Real cause is only visible in the browser Console — a CSP violation, NOT in server logs, because the browser blocks the request before it is ever sent:
+  ```
+  Refused to connect to 'https://<hash>.r2.cloudflarestorage.com/...' because it violates the following Content Security Policy directive: "connect-src 'self' ..."
+  ```
+- **Root cause:** Direct-to-R2 uploads (enabled via `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=r2`) make a browser-originated `PUT` fetch to the R2 S3 endpoint (`*.r2.cloudflarestorage.com`). The app's `Content-Security-Policy` `connect-src` directive must permit that domain or the browser blocks the connection.
+- **Fix:** Add the cloud storage domain to `connect-src` in `app/Http/Middleware/SecurityHeaders.php`:
+  ```php
+  "connect-src 'self' https://api.paystack.co https://*.sentry.io https://*.r2.cloudflarestorage.com ".
+  ```
+  Do this for **every** new direct-to-cloud upload target. Note: the public bucket URL (`pub-*.r2.dev`, from `AWS_URL`) is only used in `<img>`/`<iframe>`/`<a>` tags (covered by `img-src`/`frame-src`, already permissive) and is never fetched via JS `fetch`, so it does not need to be in `connect-src`.
+- **Test coverage:** `tests/Feature/SecurityHeadersCspTest.php` asserts the CSP header contains `https://*.r2.cloudflarestorage.com`, contains no duplicate, and that it sits inside the `connect-src` directive.

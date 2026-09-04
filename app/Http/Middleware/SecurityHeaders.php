@@ -24,7 +24,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ".
             "font-src 'self' https://fonts.gstatic.com; ".
             "img-src 'self' data: blob: https:; ".
-            "connect-src 'self' https://api.paystack.co https://*.sentry.io ".
+            "connect-src 'self' https://api.paystack.co https://*.sentry.io https://*.r2.cloudflarestorage.com ".
             'https://o4511655906770944.ingest.us.sentry.io; '.
             'frame-src https://js.paystack.co https://checkout.paystack.com; '.
             "worker-src 'self' blob:; ".
