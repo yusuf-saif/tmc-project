@@ -124,3 +124,23 @@
 
 ## Product Docs
 - For feature work, read `docs/BUILD_PHASES.md` first, then `docs/TRD.md`, then the relevant UI doc in `docs/DESIGN_GUIDE.md` or `docs/DESIGN_SYSTEM.md`.
+
+## File Uploads (Direct-to-R2)
+- **Symptom:** Filament FileUpload fields targeting the `r2` disk fail with a 401 on `/livewire/upload-file`, showing a generic "failed to upload" error in the UI. The root cause class is Livewire's local temp-upload flow being fragile in ephemeral container environments (signed URLs depend on `APP_KEY` and local temp files that don't survive redeploys cleanly).
+- **Fix:** Livewire's temporary upload disk is configured via `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK` env var (parsed in `config/livewire.php`). When set to `r2`, Livewire generates a presigned PUT URL and the browser uploads directly to R2 — the file never touches the PHP server. This eliminates the entire 401 failure class.
+- **Env vars:** `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=r2` (set in Railway dashboard) and `FILESYSTEM_DISK=r2` (already set). Both are in `.env.example`.
+- **All R2-targeting FileUpload fields** (fixed by the Livewire config change — no per-field code changes needed):
+  - `EventResource` — `cover_image_path` → `r2`, directory `events/covers`
+  - `SouqListingResource` — `logo_path` → `r2`, directory `souq/logos`
+  - `BadgeResource` — `icon_path` → `r2`, directory `badges/icons`
+  - `CommunitySpaceResource` — `cover_image_path` → `r2`, directory `community/covers`
+  - `ResourceResource` — `file_path` → `r2`, directory `resources/files`
+  - `ResourceResource` — `thumbnail_path` → `r2`, directory `resources/thumbnails`
+  - `ListUsers` — `csv_file` → `local` (correctly stays local; temp goes to R2, final copy to local)
+- **Auto-setup on deploy:** `php artisan r2:setup` runs automatically during Railway deploys (in `railway.json` build command). It configures:
+  - **CORS policy** on the R2 bucket via Cloudflare API (requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in `.env`). Allows `GET, PUT, POST, HEAD` from `APP_URL`, `127.0.0.1:8000`, and `localhost:8000`.
+  - **Lifecycle rule** on `livewire-tmp/` prefix via S3 API — auto-deletes temp files after 24 hours. Idempotent (safe to run on every deploy).
+  - If Cloudflare credentials are not set, CORS is skipped with a warning (not a deploy failure). The lifecycle rule requires only the existing R2/S3 credentials.
+- **Manual run:** `php artisan r2:setup` (or `--cors-only` / `--lifecycle-only` flags).
+- **After deploy:** run `php artisan config:clear` to pick up the new env var.
+- **Test coverage:** `tests/Feature/FileUploadDiskConfigTest.php` verifies config resolution, disk driver, file visibility, and that all 6 R2-targeting FileUpload fields target the correct disk.
