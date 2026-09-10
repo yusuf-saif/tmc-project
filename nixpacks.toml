@@ -1,6 +1,6 @@
 [phases.setup]
 nixPkgs = [
-  "(php84.withExtensions ({ all, ... }: with all; []))",
+  "php84",
   "php84Packages.composer",
   "nodejs-18_x",
   "npm-9_x",
