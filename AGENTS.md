@@ -122,6 +122,14 @@
 - Railway auto-detects Laravel web process via Nixpacks; `Procfile` only defines the queue worker (web process is handled automatically).
 - On first deploy, run the fix sequence in Railway Commands above to seed roles and admin user.
 
+## PHP Version
+- PHP version is pinned via `[phases.setup] nixPkgs` in `nixpacks.toml` (currently `php84`).
+- `composer.json`'s `"php": "^8.4"` must stay in sync with the `nixPkgs` entry.
+- **WARNING:** `[variables] NIXPACKS_PHP_VERSION` does NOT control the Nix package selected — it only sets an environment variable. The Nixpacks PHP provider reads version from `composer.json` OR from explicit `nixPkgs`, never from this variable. Do not rely on it.
+- Default Nix PHP extensions (gd, pdo_pgsql, mbstring, xml, curl, bcmath, zip, opcache, intl, etc.) are all included automatically — no need to list them explicitly in `nixPkgs`.
+- To change PHP version: update both `nixpacks.toml` (`php84` → `php85`, etc.) AND `composer.json` (`"^8.4"` → `"^8.5"`), then clear Railway build cache before deploying.
+- Required by lock file: `symfony/clock` 8.1.0 needs `>=8.4.1`, `intervention/image` 4.1.5 needs `^8.3`, `openspout/openspout` 4.32.0 needs `~8.3.0||~8.4.0||~8.5.0`. PHP 8.4 is the minimum that satisfies all.
+
 ## Product Docs
 - For feature work, read `docs/BUILD_PHASES.md` first, then `docs/TRD.md`, then the relevant UI doc in `docs/DESIGN_GUIDE.md` or `docs/DESIGN_SYSTEM.md`.
 

@@ -1,2 +1,7 @@
-[variables]
-NIXPACKS_PHP_VERSION = "8.3"
+[phases.setup]
+nixPkgs = [
+  "(php84.withExtensions ({ all, ... }: with all; []))",
+  "php84Packages.composer",
+  "nodejs-18_x",
+  "npm-9_x",
+]
