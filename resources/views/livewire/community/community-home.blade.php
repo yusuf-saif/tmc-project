@@ -38,6 +38,23 @@
 
     <section class="space-y-4">
         <div>
+            <p class="text-[11px] uppercase tracking-[1.4px] text-gold">Resources</p>
+            <h2 class="mt-2 text-sm font-semibold text-ink-md">Browse the library</h2>
+        </div>
+
+        <a href="{{ route('resources') }}"
+           class="flex items-center justify-between gap-4 rounded-[8px] bg-white p-5 no-underline transition hover:-translate-y-[2px] hover:shadow-sm"
+           style="border:1px solid var(--border);">
+            <div class="space-y-1">
+                <h3 class="text-sm font-semibold text-ink">Resource Library</h3>
+                <p class="text-[12px] font-light leading-6 text-ink-soft">Duas, pocket guides, audio and more for the sisterhood</p>
+            </div>
+            <span class="inline-flex shrink-0 rounded-full bg-gold-pale px-3 py-1 text-[11px] font-semibold text-gold">Browse →</span>
+        </a>
+    </section>
+
+    <section class="space-y-4">
+        <div>
             <p class="text-[11px] uppercase tracking-[1.4px] text-gold">Get Involved</p>
             <h2 class="mt-2 text-sm font-semibold text-ink-md">Give back to the sisterhood</h2>
         </div>

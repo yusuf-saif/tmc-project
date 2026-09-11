@@ -117,6 +117,24 @@
   </div>
   @endif
 
+  {{-- New resource --}}
+  @if($newResource)
+  <div style="margin-bottom:16px;">
+    <p class="section-label anim-fade-up delay-2">New Resource</p>
+    <div class="page-pad anim-fade-up" style="animation-delay:0.16s;">
+      <a href="{{ route('resources.show', $newResource->slug) }}"
+         class="flex items-center justify-between gap-4 rounded-[8px] bg-white p-4 no-underline transition hover:-translate-y-[2px] hover:shadow-sm"
+         style="border:1px solid var(--border);">
+        <div class="min-w-0 space-y-1">
+          <p class="truncate text-sm font-semibold text-ink">{{ $newResource->title }}</p>
+          <p class="line-clamp-1 text-[12px] font-light text-ink-soft">{{ $newResource->description }}</p>
+        </div>
+        <span class="inline-flex shrink-0 rounded-full bg-teal-lt px-2.5 py-1 text-[11px] font-medium text-teal">{{ $newResource->category?->name ?? 'Resource' }}</span>
+      </a>
+    </div>
+  </div>
+  @endif
+
   {{-- Quick actions --}}
   <p class="section-label anim-fade-up delay-3">Quick Actions</p>
   <div class="quick-actions anim-fade-up delay-3">

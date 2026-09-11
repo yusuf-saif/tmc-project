@@ -3,6 +3,7 @@
 namespace App\Livewire\Home;
 
 use App\Models\Event;
+use App\Models\Resource;
 use App\Services\CoinsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -54,6 +55,21 @@ class HomeDashboard extends Component
             ->all();
     }
 
+    protected function newlyPublishedResource(): ?Resource
+    {
+        if (! Schema::hasTable('resources')) {
+            return null;
+        }
+
+        return Resource::query()
+            ->published()
+            ->with('category')
+            ->where('created_at', '>=', now()->subHours(48))
+            ->orderByDesc('created_at')
+            ->limit(1)
+            ->first();
+    }
+
     public function render()
     {
         $user = Auth::user();
@@ -63,6 +79,7 @@ class HomeDashboard extends Component
             'dailyPhrase' => $this->getDailyPhrase(),
             'balance' => $user ? CoinsService::getBalance($user) : 0,
             'events' => $this->upcomingEvents(),
+            'newResource' => $this->newlyPublishedResource(),
             'onboardingStatus' => $user->profile?->onboarding_status,
             'hasPushEnabled' => $user ? $user->pushSubscriptions()->exists() : false,
         ])->layout('layouts.app', [

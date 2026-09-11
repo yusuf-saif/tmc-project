@@ -1019,3 +1019,20 @@ STEP 5 — Post-deploy smoke test
 | 8 | Push Notifications & PWA | 3–4 |
 | 9 | QA & Deployment | 5–7 |
 | **Total** | | **41–55 days** |
+
+---
+
+## Backlog / Future Work
+
+Small, well-scoped items found during implementation that are worth tracking but
+were out of scope for the build that surfaced them.
+
+- **Resources — add `published_at` column stamped on publish.** The 48-hour "New
+  Resource" Home widget (and any future "recently published" surfacing) triggers
+  off `resources.created_at`, because no separate publish timestamp exists — the
+  `resources` table has only `created_at`/`updated_at` and "published" is a plain
+  `status` string (`draft|published|archived`). A resource drafted weeks before
+  its Published status is set will therefore never appear in the widget's 48h
+  window. Fix: add a nullable `published_at` to `resources`, stamp it in the
+  Filament `ResourceResource` when `status` transitions to `published`, and switch
+  the `HomeDashboard::newlyPublishedResource()` query to use it.
