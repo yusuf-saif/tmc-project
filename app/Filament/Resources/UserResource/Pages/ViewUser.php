@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\UserResource\Pages;
 
 use App\Filament\Resources\UserResource;
+use App\Models\Badge;
+use App\Models\MemberProfile;
 use App\Notifications\OnboardingInvitationNotification;
 use App\Services\AuditLogService;
 use Filament\Actions;
@@ -47,15 +49,29 @@ class ViewUser extends ViewRecord
                 }),
             Actions\Action::make('awardBadge')
                 ->label('Award Badge')
-                ->visible(fn (): bool => UserResource::canManageUsers(auth()->user()))
+                ->visible(fn (): bool => UserResource::canManageUsers(auth()->user()) && UserResource::badgeOptions($this->record) !== [])
                 ->form([
                     Select::make('badge_id')
-                        ->options(UserResource::badgeOptions())
+                        ->options(fn (): array => UserResource::badgeOptions($this->record))
                         ->required(),
                 ])
                 ->action(function (array $data): void {
-                    UserResource::awardBadge($this->record, (int) $data['badge_id']);
-                    Notification::make()->title('Badge awarded')->success()->send();
+                    if (! UserResource::awardBadge($this->record, (int) $data['badge_id'])) {
+                        Notification::make()
+                            ->title('This member already has this badge')
+                            ->warning()
+                            ->send();
+
+                        return;
+                    }
+
+                    $badgeName = Badge::find((int) $data['badge_id'])?->name;
+
+                    Notification::make()
+                        ->title('Badge awarded')
+                        ->body($badgeName ? sprintf('Badge "%s" granted to %s.', $badgeName, $this->record->name) : null)
+                        ->success()
+                        ->send();
                 }),
             Actions\Action::make('changeMembershipType')
                 ->label('Change Member Type')
@@ -66,9 +82,9 @@ class ViewUser extends ViewRecord
                     Select::make('new_type')
                         ->label('Membership Type')
                         ->options([
-                            'M' => 'Member (M)',
-                            'SM' => 'SixtenMember (SM)',
-                            'E' => 'Executive (E)',
+                            'M' => MemberProfile::membershipTypeLabel('M'),
+                            'SM' => MemberProfile::membershipTypeLabel('SM'),
+                            'E' => MemberProfile::membershipTypeLabel('E'),
                         ])
                         ->default(fn () => $this->record->memberProfile?->membership_type ?? 'M')
                         ->required(),

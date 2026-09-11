@@ -6,7 +6,7 @@ Your membership application has been approved! Welcome to The Muhsinat Club.
 
 **Membership ID:** {{ $membershipId }}
 
-**Membership Type:** {{ $membershipType }}
+**Membership Type:** {{ \App\Models\MemberProfile::membershipTypeLabel($membershipType) }}
 
 Your legacy card is ready:
 

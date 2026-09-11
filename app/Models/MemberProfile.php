@@ -90,6 +90,24 @@ class MemberProfile extends Model
         ];
     }
 
+    /**
+     * The single source of truth for how a membership type code is
+     * displayed to members. Any surface that shows a membership type
+     * must read from here — never hardcode the labels elsewhere.
+     *
+     * Falls back to "Member" for null/unknown codes, consistent with
+     * the MembershipIdService::normalizeType() default.
+     */
+    public static function membershipTypeLabel(?string $membershipType): string
+    {
+        return match ($membershipType) {
+            'M' => 'Member',
+            'SM' => 'SixteenMember',
+            'E' => 'Executive',
+            default => 'Member',
+        };
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

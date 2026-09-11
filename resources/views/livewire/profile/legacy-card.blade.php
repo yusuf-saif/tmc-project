@@ -1,4 +1,5 @@
 @php($displayName = auth()->user()->profile?->display_name ?? auth()->user()->name)
+@php($membershipTypeLabel = \App\Models\MemberProfile::membershipTypeLabel(auth()->user()->profile?->membership_type))
 @php($goldGradient = 'linear-gradient(135deg, #C8A84B 35%, #DCC182 100%)')
 
 @if (auth()->user()->profile)
@@ -16,7 +17,7 @@
                     <div class="mx-auto mb-5 mt-3 h-[1.5px] w-10 rounded-full" style="background: linear-gradient(90deg, transparent, #C8A84B, transparent);"></div>
 
                     <p class="font-display text-[1.6rem] font-semibold" style="color:#0f6b73; letter-spacing:0.01em;">{{ $displayName }}</p>
-                    <p class="mt-2 text-[11px] uppercase tracking-[2px] font-medium" style="color:#4a6361;">TMC Member</p>
+                    <p class="mt-2 text-[11px] uppercase tracking-[2px] font-medium" style="color:#4a6361;" data-membership-type="{{ auth()->user()->profile?->membership_type }}">{{ $membershipTypeLabel }}</p>
                     <p class="mb-5 mt-2 text-[12px] font-light" style="color:#5f7876;">Member since {{ $this->memberSince }}</p>
 
                     <div class="h-[1px] w-full" style="background: linear-gradient(90deg, transparent, rgba(200,168,75,0.25), transparent);"></div>

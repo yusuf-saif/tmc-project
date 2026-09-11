@@ -1565,6 +1565,30 @@ textarea.input { resize: vertical; min-height: 120px; }
   letter-spacing: 1px;
 }
 
+.profile-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px dashed var(--gold);
+  background: transparent;
+  color: var(--gold);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.profile-type-kicker {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: var(--gold-lt);
+  text-transform: uppercase;
+}
+
 .wallet-history {
   padding: 16px;
   border-radius: var(--radius-md);

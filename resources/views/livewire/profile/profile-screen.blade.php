@@ -1,5 +1,6 @@
 @php($roleBadge = $this->roleBadge())
 @php($displayName = $this->profile?->display_name ?: auth()->user()->name)
+@php($membershipTypeLabel = \App\Models\MemberProfile::membershipTypeLabel($this->profile?->membership_type))
 
 <div class="anim-fade-in" x-data="{ activeTab: @js($tab) }" x-effect="$wire.tab = activeTab">
 
@@ -19,6 +20,10 @@
     <span class="profile-badge {{ $roleBadge['class'] ?? '' }}"
           style="{{ $roleBadge['style'] }}">
       {{ $roleBadge['label'] }}
+    </span>
+    <span class="profile-type-badge" data-membership-type="{{ $this->profile?->membership_type }}">
+      <span class="profile-type-kicker">Membership</span>
+      <span>{{ $membershipTypeLabel }}</span>
     </span>
   </div>
 
@@ -198,6 +203,15 @@
   {{-- ═══════════ TAB: MEMBERSHIP ═══════════ --}}
   @elseif($tab === 'membership')
   <div id="membership" class="anim-fade-up page-pad" style="padding-top:16px;padding-bottom:16px;">
+
+    {{-- Membership Type --}}
+    <div style="margin-bottom:20px;text-align:center;">
+      <p class="section-label profile-section-label">Membership Type</p>
+      <span class="profile-type-badge" style="margin-top:8px;"
+            data-membership-type="{{ $this->profile?->membership_type }}">
+        {{ $membershipTypeLabel }}
+      </span>
+    </div>
 
     {{-- Membership Status --}}
     <div style="margin-bottom:20px;text-align:center;">

@@ -19,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
 
 class UserResource extends Resource
 {
@@ -209,14 +210,29 @@ class UserResource extends Resource
         AuditLogService::log('user_reactivated', $record, ['status' => 'suspended'], ['status' => 'active']);
     }
 
-    public static function awardBadge(User $record, int $badgeId): void
+    public static function awardBadge(User $record, int $badgeId): bool
     {
-        UserBadge::query()->create([
-            'user_id' => $record->id,
-            'badge_id' => $badgeId,
-            'awarded_at' => now(),
-            'awarded_by' => auth()->id(),
-        ]);
+        if (UserBadge::query()
+            ->where('user_id', $record->id)
+            ->where('badge_id', $badgeId)
+            ->exists()) {
+            return false;
+        }
+
+        try {
+            UserBadge::query()->create([
+                'user_id' => $record->id,
+                'badge_id' => $badgeId,
+                'awarded_at' => now(),
+                'awarded_by' => auth()->id(),
+            ]);
+        } catch (QueryException $e) {
+            if (! str_contains($e->getMessage(), 'UNIQUE')) {
+                throw $e;
+            }
+
+            return false;
+        }
 
         $badge = Badge::find($badgeId);
 
@@ -230,6 +246,8 @@ class UserResource extends Resource
         }
 
         AuditLogService::log('badge_awarded', $record, [], ['badge_id' => $badgeId]);
+
+        return true;
     }
 
     public static function changeRole(User $record, string $newRole, ?string $reason = null): void
@@ -295,9 +313,15 @@ class UserResource extends Resource
         );
     }
 
-    public static function badgeOptions(): array
+    public static function badgeOptions(?User $user = null): array
     {
-        return Badge::query()->where('is_active', true)->pluck('name', 'id')->all();
+        $query = Badge::query()->where('is_active', true);
+
+        if ($user) {
+            $query->whereNotIn('id', $user->userBadges()->pluck('badge_id'));
+        }
+
+        return $query->pluck('name', 'id')->all();
     }
 
     public static function roleOptions(): array

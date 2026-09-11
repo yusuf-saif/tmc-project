@@ -37,6 +37,7 @@ class LegacyCardTest extends TestCase
         $user->assignRole('member');
         $user->memberProfile()->create([
             'display_name' => 'Aisha Cardholder',
+            'membership_type' => 'M',
             'onboarding_status' => 'active',
         ]);
 
@@ -44,7 +45,8 @@ class LegacyCardTest extends TestCase
             ->get('/profile/legacy-card')
             ->assertOk()
             ->assertSee('Aisha Cardholder')
-            ->assertSee('TMC Member')
+            ->assertSeeHtml('data-membership-type="M"')
+            ->assertDontSee('TMC Member')
             ->assertDontSee('Membership details unavailable');
     }
 }
