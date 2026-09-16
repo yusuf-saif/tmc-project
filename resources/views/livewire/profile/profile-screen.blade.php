@@ -261,7 +261,7 @@
           @foreach ($this->badges as $userBadge)
             <div class="badge-item">
               @if ($userBadge->badge?->icon_path)
-                <img src="{{ Storage::url($userBadge->badge->icon_path) }}"
+                <img src="{{ $userBadge->badge->icon_url }}"
                      alt="{{ $userBadge->badge->name }}"
                      class="badge-icon">
               @else

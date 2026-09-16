@@ -33,9 +33,23 @@ class BadgeResource extends Resource
                 ->imageResizeMode('cover')
                 ->imageResizeTargetWidth(200)
                 ->imageResizeUpscale(false)
+                ->maxSize(1024)
                 ->disk('r2')
                 ->directory('badges/icons')
-                ->image(),
+                ->deletable(true)
+                ->downloadable(true)
+                ->formatStateUsing(function ($state) {
+                    if (! $state) {
+                        return null;
+                    }
+                    if (str_starts_with($state, 'http')) {
+                        $parsed = parse_url($state);
+
+                        return ltrim($parsed['path'] ?? $state, '/');
+                    }
+
+                    return $state;
+                }),
             Forms\Components\Textarea::make('criteria')->required()->columnSpanFull(),
             Forms\Components\TextInput::make('coin_reward')
                 ->label('Coin Reward')
@@ -50,6 +64,24 @@ class BadgeResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('icon_path')
+                    ->label('Icon')
+                    ->disk('r2')
+                    ->circular()
+                    ->size(40)
+                    ->getStateUsing(function ($record) {
+                        $path = $record->icon_path;
+                        if (! $path) {
+                            return null;
+                        }
+                        if (str_starts_with($path, 'http')) {
+                            $parsed = parse_url($path);
+
+                            return ltrim($parsed['path'] ?? $path, '/');
+                        }
+
+                        return $path;
+                    }),
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('coin_reward')
                     ->label('Coin Reward')
