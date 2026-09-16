@@ -37,7 +37,19 @@ class BadgeResource extends Resource
                 ->disk('r2')
                 ->directory('badges/icons')
                 ->deletable(true)
-                ->downloadable(true),
+                ->downloadable(true)
+                ->formatStateUsing(function ($state) {
+                    if (! $state) {
+                        return null;
+                    }
+                    if (str_starts_with((string) $state, 'http')) {
+                        $parsed = parse_url((string) $state);
+
+                        return ltrim(($parsed['path'] ?? $state), '/');
+                    }
+
+                    return $state;
+                }),
             Forms\Components\Textarea::make('criteria')->required()->columnSpanFull(),
             Forms\Components\TextInput::make('coin_reward')
                 ->label('Coin Reward')
