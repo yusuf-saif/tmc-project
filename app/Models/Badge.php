@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,21 +28,23 @@ class Badge extends Model
         ];
     }
 
-    protected function iconUrl(): Attribute
+    public function getIconUrlAttribute(): ?string
     {
-        return Attribute::get(function () {
-            $path = $this->icon_path;
+        $path = $this->icon_path;
 
-            if (! $path) {
-                return null;
-            }
+        if (! $path) {
+            return null;
+        }
 
-            if (str_starts_with($path, 'http')) {
-                return $path;
-            }
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
 
+        try {
             return Storage::disk('r2')->url($path);
-        });
+        } catch (\Throwable) {
+            return $path;
+        }
     }
 
     public function userBadges(): HasMany

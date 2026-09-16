@@ -263,7 +263,7 @@
               @if ($userBadge->badge?->icon_path)
                 <img src="{{ $userBadge->badge->icon_url }}"
                      alt="{{ $userBadge->badge->name }}"
-                     class="badge-icon">
+                     class="badge-icon" loading="lazy">
               @else
                 <div class="badge-icon-placeholder">✦</div>
               @endif
