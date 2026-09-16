@@ -1,15 +1,22 @@
-const CACHE_NAME = 'tmc-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/home',
-  '/offline',
+const CACHE_NAME = 'tmc-v2';
+const PRECACHE_ASSETS = [
   '/manifest.json',
   '/images/img1.png',
+  '/images/img1-192.png',
+  '/images/img1-512.png',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(
+        PRECACHE_ASSETS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('SW: failed to precache', url, err);
+          })
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -29,9 +36,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
 
+  if (request.url.includes('/livewire/')) {
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/offline'))
+      fetch(request).catch(() =>
+        caches.match('/offline.html').then((cached) => cached || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } }))
+      )
     );
     return;
   }
