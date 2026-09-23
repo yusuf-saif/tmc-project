@@ -113,25 +113,19 @@
   </div>
 </div>
 
-<div id="ios-install-banner" x-data="{ show: false }" :class="{ 'hidden': !show }" style="
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  max-width: 440px; width: calc(100% - 32px);
-  background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border); border-radius: 16px;
-  padding: 14px 16px; z-index: 90;
-  align-items: center; justify-content: space-between;
-  box-shadow: var(--shadow-md);">
+<div id="ios-install-banner" x-data="{ show: false }"
+  :class="{ 'hidden': !show }"
+  @open-ios-install-instructions.window="show = true"
+  style="
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    max-width: 440px; width: calc(100% - 32px);
+    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border); border-radius: 16px;
+    padding: 14px 16px; z-index: 90;
+    align-items: center; justify-content: space-between;
+    box-shadow: var(--shadow-md);">
   <div>
-    <p style="font-family: 'Nunito', sans-serif; font-weight: 600;
-              font-size: 0.875rem; color: var(--ink); margin: 0;">
-      Install The Muhsinat Club
-    </p>
-    <p style="font-family: 'Nunito', sans-serif; font-weight: 300;
-              font-size: 0.75rem; color: var(--ink-soft); margin: 0; line-height: 1.6;">
-      Tap the <strong>Share</strong> button
-      <svg style="display:inline;width:14px;height:14px;vertical-align:middle;margin:0 2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-      then <strong>Add to Home Screen</strong>
-    </p>
+    @include('partials.ios-install-instructions')
   </div>
   <button @click="show = false; localStorage.setItem('tmc_ios_install_dismissed', Date.now().toString())" style="background:none;
     border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer; flex-shrink: 0;">&times;</button>

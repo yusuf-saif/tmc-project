@@ -52,7 +52,48 @@
   </div>
   @endif
 
+  {{-- PWA install card --}}
+  <div
+    id="home-install-card"
+    x-data="{
+      show: false,
+      isIos: false,
+      init() {
+        this.isIos = isIOS() && !isInStandaloneMode();
+        this.evaluate();
+        window.addEventListener('beforeinstallprompt', () => setTimeout(() => this.evaluate(), 0));
+        window.addEventListener('appinstalled', () => { this.show = false; });
+      },
+      evaluate() {
+        if (isAlreadyStandalone()) { this.show = false; return; }
+        this.show = !!deferredPrompt || this.isIos;
+      },
+      handleClick() {
+        if (this.isIos) {
+          this.$dispatch('open-ios-install-instructions');
+        } else {
+          installPWA();
+        }
+      }
+    }"
+    x-show="show"
+    x-cloak
+    x-transition.opacity.duration.300ms
+    style="margin-bottom:12px;background:var(--ivory);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:16px;flex-shrink:0;">📲</span>
+    <p style="flex:1;font-size:13px;font-weight:500;color:var(--teal-dk);line-height:1.4;margin:0;">
+      Install The Muhsinat Club for faster, app-like access.
+    </p>
+    <button
+      @click="handleClick()"
+      class="btn btn-gold btn-sm"
+      style="flex-shrink:0;">
+      Install
+    </button>
+  </div>
+
   {{-- Coins card --}}
+
   <a href="{{ url('/profile?tab=wallet') }}" class="coins-card anim-fade-up delay-1">
     <div style="display:flex;align-items:center;gap:10px;">
       <div class="coins-icon">
