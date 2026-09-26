@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\MemberOnboardingCompleted;
 use App\Models\Goal;
 use App\Models\Interest;
+use App\Models\Setting;
 use App\Models\User;
 use App\Rules\ResilientUncompromisedPassword;
 use App\Services\MembershipIdService;
@@ -137,6 +138,11 @@ class OnboardingController extends Controller
             });
 
             Password::broker('onboarding')->deleteToken($user);
+
+            $welcomeCoins = (int) Setting::get('starter_coins_amount', 0);
+            if ($welcomeCoins > 0) {
+                session()->flash('welcome_coins_awarded', $welcomeCoins);
+            }
 
             MemberOnboardingCompleted::dispatch($user, $memberId);
 

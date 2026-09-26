@@ -1,4 +1,11 @@
 @php($profile = auth()->user()->profile)
+@php
+    $hasAvatar = false;
+    if ($profile?->avatar_path) {
+        try { $hasAvatar = \Illuminate\Support\Facades\Storage::disk('r2')->exists($profile->avatar_path); }
+        catch (\Throwable) { $hasAvatar = false; }
+    }
+@endphp
 
 <div class="space-y-6">
     @push('backButton')
@@ -8,7 +15,7 @@
 
     <section class="space-y-5 rounded-[8px] bg-white p-5" style="border: 1px solid var(--border);">
         <div class="flex items-center gap-4">
-            @if ($profile?->avatar_path && Storage::disk('r2')->exists($profile->avatar_path))
+            @if ($hasAvatar)
                 <img src="{{ Storage::url($profile->avatar_path) }}" alt="Avatar" class="h-15 w-15 h-[60px] w-[60px] rounded-full object-cover">
             @else
                 <div class="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-teal text-white">

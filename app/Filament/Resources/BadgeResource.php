@@ -30,9 +30,7 @@ class BadgeResource extends Resource
             Forms\Components\Textarea::make('description')->required()->columnSpanFull(),
             Forms\Components\FileUpload::make('icon_path')
                 ->image()
-                ->imageResizeMode('cover')
-                ->imageResizeTargetWidth(200)
-                ->imageResizeUpscale(false)
+                ->imageResizeMode(null)
                 ->maxSize(1024)
                 ->disk('r2')
                 ->directory('badges/icons')

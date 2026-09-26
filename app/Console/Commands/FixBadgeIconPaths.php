@@ -38,8 +38,7 @@ class FixBadgeIconPaths extends Command
         $this->line("Found {$needsFix->count()} badge(s) with full URLs in icon_path.");
 
         $rows = $needsFix->map(function (Badge $badge) {
-            $parsed = parse_url($badge->icon_path);
-            $relative = ltrim($parsed['path'] ?? $badge->icon_path, '/');
+            $relative = Badge::normalizeIconPath($badge->icon_path);
 
             return [
                 $badge->id,
@@ -58,9 +57,7 @@ class FixBadgeIconPaths extends Command
         }
 
         foreach ($needsFix as $badge) {
-            $parsed = parse_url($badge->icon_path);
-            $relative = ltrim($parsed['path'] ?? $badge->icon_path, '/');
-            $badge->update(['icon_path' => $relative]);
+            $badge->update(['icon_path' => Badge::normalizeIconPath($badge->icon_path)]);
         }
 
         $this->info("Fixed {$needsFix->count()} badge icon_path value(s).");

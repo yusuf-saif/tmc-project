@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#1A6B72">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>{{ $title ?? 'The Muhsinat Club' }}</title>
   <link rel="icon" href="{{ asset('images/img1.png') }}">
   <link rel="apple-touch-icon" href="{{ asset('images/img1.png') }}">
@@ -109,7 +110,7 @@
   </div>
   <div style="display: flex; gap: 8px; flex-shrink: 0;">
     <button @click="installPWA(); show = false" class="btn btn-gold btn-sm">Install</button>
-    <button @click="show = false; localStorage.setItem('tmc_install_dismissed', Date.now().toString())" class="btn btn-sm" style="background:transparent;color:var(--ink-soft);border:1px solid var(--border);">Not now</button>
+    <button @click="show = false; localStorage.setItem('tmc_install_dismissed_v2', Date.now().toString())" class="btn btn-sm" style="background:transparent;color:var(--ink-soft);border:1px solid var(--border);">Not now</button>
   </div>
 </div>
 
@@ -127,12 +128,14 @@
   <div>
     @include('partials.ios-install-instructions')
   </div>
-  <button @click="show = false; localStorage.setItem('tmc_ios_install_dismissed', Date.now().toString())" style="background:none;
+  <button @click="show = false; localStorage.setItem('tmc_ios_install_dismissed_v2', Date.now().toString())" style="background:none;
     border:none; color: var(--ink-soft); font-size: 18px; cursor: pointer; flex-shrink: 0;">&times;</button>
 </div>
 
-<script>
+<script data-navigate-once>
 const VAPID_PUBLIC_KEY = '{{ config('services.webpush.public_key') }}';
+
+window.__tmcInstall = window.__tmcInstall || { prompt: null, available: false };
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -153,6 +156,14 @@ function isDismissedRecently(key) {
   return (Date.now() - ts) < (30 * 24 * 60 * 60 * 1000);
 }
 
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+  return ('standalone' in window.navigator) && window.navigator.standalone;
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then(reg => {
     let visits = parseInt(localStorage.getItem('tmc_visits') || '0') + 1;
@@ -163,7 +174,7 @@ if ('serviceWorker' in navigator) {
     } else if (Notification.permission === 'granted') {
       subscribeToPush(reg);
     }
-  });
+  }).catch(() => {});
 }
 
 async function requestPushPermission(reg) {
@@ -192,13 +203,14 @@ async function subscribeToPush(reg) {
   }
 }
 
-let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   if (isAlreadyStandalone()) return;
-  if (isDismissedRecently('tmc_install_dismissed')) return;
 
   e.preventDefault();
-  deferredPrompt = e;
+  window.__tmcInstall.prompt = e;
+  window.__tmcInstall.available = true;
+
+  if (isDismissedRecently('tmc_install_dismissed_v2')) return;
 
   let installVisits = parseInt(localStorage.getItem('tmc_install_visits') || '0') + 1;
   localStorage.setItem('tmc_install_visits', installVisits);
@@ -212,44 +224,44 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 function installPWA() {
-  if (!deferredPrompt) {
+  if (!window.__tmcInstall.prompt) {
+    console.warn('installPWA: deferredPrompt not captured — app may not be installable (check manifest icons, HTTPS, service worker).');
     const el = document.getElementById('install-banner');
     if (el && typeof Alpine !== 'undefined') Alpine.$data(el).show = false;
     return;
   }
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then((choice) => {
-    deferredPrompt = null;
+  window.__tmcInstall.prompt.prompt();
+  window.__tmcInstall.prompt.userChoice.then(() => {
+    window.__tmcInstall.prompt = null;
+    window.__tmcInstall.available = false;
     const el = document.getElementById('install-banner');
     if (el && typeof Alpine !== 'undefined') Alpine.$data(el).show = false;
   }).catch(() => {
-    deferredPrompt = null;
+    window.__tmcInstall.prompt = null;
+    window.__tmcInstall.available = false;
   });
 }
 
 window.addEventListener('appinstalled', () => {
-  deferredPrompt = null;
+  window.__tmcInstall.prompt = null;
+  window.__tmcInstall.available = false;
   const androidBanner = document.getElementById('install-banner');
   const iosBanner = document.getElementById('ios-install-banner');
   if (androidBanner && typeof Alpine !== 'undefined') Alpine.$data(androidBanner).show = false;
   if (iosBanner && typeof Alpine !== 'undefined') Alpine.$data(iosBanner).show = false;
 });
 
-function isIOS() {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-
-function isInStandaloneMode() {
-  return ('standalone' in window.navigator) && window.navigator.standalone;
-}
-
-if (isIOS() && !isInStandaloneMode() && !isAlreadyStandalone() && !isDismissedRecently('tmc_ios_install_dismissed')) {
-  let iosVisits = parseInt(localStorage.getItem('tmc_ios_visits') || '0') + 1;
-  localStorage.setItem('tmc_ios_visits', iosVisits);
-  if (iosVisits >= 2) {
-    const el = document.getElementById('ios-install-banner');
-    if (el && typeof Alpine !== 'undefined') {
-      Alpine.$data(el).show = true;
+if (isIOS() && !isInStandaloneMode() && !isAlreadyStandalone()) {
+  if (isDismissedRecently('tmc_ios_install_dismissed_v2')) {
+    // dismissed — do nothing
+  } else {
+    let iosVisits = parseInt(localStorage.getItem('tmc_ios_visits') || '0') + 1;
+    localStorage.setItem('tmc_ios_visits', iosVisits);
+    if (iosVisits >= 2) {
+      const el = document.getElementById('ios-install-banner');
+      if (el && typeof Alpine !== 'undefined') {
+        Alpine.$data(el).show = true;
+      }
     }
   }
 }

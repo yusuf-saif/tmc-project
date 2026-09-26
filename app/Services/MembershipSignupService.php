@@ -6,6 +6,7 @@ use App\Events\MembershipActivated;
 use App\Models\Goal;
 use App\Models\Interest;
 use App\Models\MemberProfile;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -104,6 +105,11 @@ class MembershipSignupService
         ]);
 
         try {
+            $welcomeCoins = (int) Setting::get('starter_coins_amount', 0);
+            if ($welcomeCoins > 0) {
+                session()->flash('welcome_coins_awarded', $welcomeCoins);
+            }
+
             MembershipActivated::dispatch($user, $profile->membership_id ?? 'N/A', $user);
         } catch (\Throwable $e) {
             Log::error('MembershipSignupService: failed to dispatch activated event', [

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'tmc-v2';
+const CACHE_NAME = 'tmc-v3';
 const PRECACHE_ASSETS = [
   '/manifest.json',
   '/images/img1.png',
   '/images/img1-192.png',
   '/images/img1-512.png',
+  '/offline.html',
 ];
 
 self.addEventListener('install', (event) => {
@@ -49,7 +50,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (request.url.match(/\.(css|js|png|jpg|jpeg|svg|woff2?)$/)) {
+  if (request.url.match(/\.(css|js|png|jpg|jpeg|svg|woff2?|html)$/)) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request))
     );

@@ -12,6 +12,29 @@
     </div>
   </div>
 
+  {{-- Welcome coins celebration --}}
+  @if(session('welcome_coins_awarded'))
+  <div x-data="{ show: true }" x-show="show" x-transition.opacity.duration.500ms
+       class="anim-fade-up"
+       style="margin-bottom:16px;background:linear-gradient(135deg, #F5E6C8 0%, #E8D5A3 100%);border:1px solid var(--gold);border-radius:12px;padding:20px 16px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">✦</div>
+    <p style="font-family:'Nunito',sans-serif;font-size:18px;font-weight:700;color:var(--teal-dk);margin:0 0 4px 0;">
+      You've earned {{ number_format(session('welcome_coins_awarded')) }} Jannah Coins
+    </p>
+    <p style="font-family:'Nunito',sans-serif;font-size:13px;color:var(--ink-soft);margin:0 0 12px 0;">
+      Welcome to The Muhsinat Club!
+    </p>
+    <a href="{{ route('profile', ['tab' => 'wallet']) }}" wire:navigate
+       style="display:inline-block;background:var(--gold);color:var(--teal-dk);padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+      View Your Wallet →
+    </a>
+    <button @click="show = false"
+            style="display:block;margin:12px auto 0;background:none;border:none;color:var(--ink-soft);font-size:12px;cursor:pointer;text-decoration:underline;">
+      Dismiss
+    </button>
+  </div>
+  @endif
+
   {{-- Free-plan banner --}}
   @if($onboardingStatus === 'active')
   <div x-data="{ dismissed: false }" x-show="!dismissed"
@@ -66,7 +89,7 @@
       },
       evaluate() {
         if (isAlreadyStandalone()) { this.show = false; return; }
-        this.show = !!deferredPrompt || this.isIos;
+        this.show = !!(window.__tmcInstall && window.__tmcInstall.available) || this.isIos;
       },
       handleClick() {
         if (this.isIos) {

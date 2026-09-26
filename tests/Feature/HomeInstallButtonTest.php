@@ -135,7 +135,8 @@ class HomeInstallButtonTest extends TestCase
     {
         $response = $this->actingAs($this->createActiveMember())->get(route('home'));
 
-        $response->assertSee('let deferredPrompt', escape: false);
+        $response->assertSee('window.__tmcInstall', escape: false);
+        $response->assertSee('data-navigate-once', escape: false);
     }
 
     // ── 3. iOS install instructions partial ──────────────────────────────────

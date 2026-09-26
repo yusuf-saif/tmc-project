@@ -6,6 +6,7 @@ use App\Events\MembershipActivated;
 use App\Events\MembershipApproved;
 use App\Events\MembershipNeedsCorrection;
 use App\Events\MembershipRejected;
+use App\Models\JannahCoinsLedger;
 use App\Models\MemberProfile;
 use App\Models\PaymentRecord;
 use App\Models\Setting;
@@ -405,7 +406,15 @@ class MembershipStateService
             }
 
             if ($coinReward > 0 && $profile->user) {
-                CoinsService::award($profile->user, $coinReward, 'manual', null, "Membership approval ({$membershipType})");
+                $alreadyAwarded = JannahCoinsLedger::query()
+                    ->where('user_id', $profile->user->id)
+                    ->where('reason', 'membership_approval')
+                    ->where('reference_id', $profile->id)
+                    ->exists();
+
+                if (! $alreadyAwarded) {
+                    CoinsService::award($profile->user, $coinReward, 'membership_approval', $profile->id, "Membership approval ({$membershipType})");
+                }
             }
         });
 

@@ -1,13 +1,19 @@
 @php($roleBadge = $this->roleBadge())
 @php($displayName = $this->profile?->display_name ?: auth()->user()->name)
 @php($membershipTypeLabel = \App\Models\MemberProfile::membershipTypeLabel($this->profile?->membership_type))
+@php($hasAvatar = (function () {
+    $path = $this->profile?->avatar_path;
+    if (! $path) { return false; }
+    try { return \Illuminate\Support\Facades\Storage::disk('r2')->exists($path); }
+    catch (\Throwable) { return false; }
+})->call($this))
 
 <div class="anim-fade-in" x-data="{ activeTab: @js($tab) }" x-effect="$wire.tab = activeTab">
 
   {{-- Profile Header --}}
   <div class="profile-banner"></div>
   <div class="profile-avatar-wrap anim-scale-in">
-    @if ($this->profile?->avatar_path && Storage::disk('r2')->exists($this->profile->avatar_path))
+    @if ($hasAvatar)
       <img src="{{ Storage::url($this->profile->avatar_path) }}"
            alt="{{ $displayName }}"
            class="profile-avatar">
@@ -185,9 +191,15 @@
             <span>{{ $row->created_at->hijri('d M Y') }}</span>
             <span>{{ match ($row->reason) {
                 'onboarding' => 'Welcome gift',
+                'welcome' => 'Welcome bonus',
                 'referral' => 'Referral bonus',
                 'manual' => 'Admin award',
                 'admin_adjustment' => 'Adjustment',
+                'badge_reward' => 'Badge reward',
+                'event_attendance' => 'Event attendance',
+                'membership_approval' => 'Membership approved',
+                'redemption_membership' => 'Membership discount',
+                'redemption_souq' => 'Souq fee discount',
                 default => ucfirst(str_replace('_', ' ', $row->reason)),
             } }}</span>
             <span class="wallet-history-amount {{ $row->amount >= 0 ? 'wallet-history-positive' : 'wallet-history-negative' }}">

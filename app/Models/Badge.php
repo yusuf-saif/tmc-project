@@ -28,6 +28,21 @@ class Badge extends Model
         ];
     }
 
+    public static function normalizeIconPath(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        if (! str_starts_with($value, 'http')) {
+            return $value;
+        }
+
+        $parsed = parse_url($value);
+
+        return ltrim($parsed['path'] ?? $value, '/');
+    }
+
     public function getIconUrlAttribute(): ?string
     {
         $path = $this->icon_path;

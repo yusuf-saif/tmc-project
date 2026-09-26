@@ -31,7 +31,6 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => view('landing'))->name('landing');
-Route::get('/offline', fn () => view('offline'))->name('offline');
 
 // Onboarding for CSV-imported members — no auth (token-gated)
 Route::get('/onboarding', [OnboardingController::class, 'showForm'])->name('onboarding.form');

@@ -104,6 +104,7 @@ class SettingsPage extends Page implements HasForms
                 ->label($label)
                 ->numeric()
                 ->integer()
+                ->minValue(0)
                 ->helperText($description),
             'string' => TextInput::make($key)
                 ->label($label)
@@ -130,6 +131,12 @@ class SettingsPage extends Page implements HasForms
 
         foreach ($data as $key => $value) {
             if (! SettingsRegistry::has($key)) {
+                continue;
+            }
+
+            $currentValue = Setting::get($key);
+
+            if ($currentValue === $value) {
                 continue;
             }
 

@@ -24,10 +24,16 @@ class ReceiptDownloadController
             abort(404, 'No receipt found');
         }
 
-        if (! Storage::disk('r2')->exists($memberProfile->payment_proof_path)) {
+        try {
+            if (! Storage::disk('r2')->exists($memberProfile->payment_proof_path)) {
+                abort(404, 'Receipt file not found');
+            }
+
+            return Storage::disk('r2')->download($memberProfile->payment_proof_path);
+        } catch (StreamedResponse $response) {
+            return $response;
+        } catch (\Throwable) {
             abort(404, 'Receipt file not found');
         }
-
-        return Storage::disk('r2')->download($memberProfile->payment_proof_path);
     }
 }

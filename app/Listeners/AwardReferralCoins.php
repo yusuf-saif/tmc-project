@@ -45,6 +45,10 @@ class AwardReferralCoins
 
             $amount = (int) Setting::get('referral_coins_amount');
 
+            if ($amount <= 0) {
+                return;
+            }
+
             JannahCoinsLedger::query()->create([
                 'user_id' => $referrer->id,
                 'type' => 'earned',
