@@ -34,8 +34,11 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -116,7 +119,33 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(Failed::class, LogFailedLogin::class);
 
+        $this->registerBrevoMailTransport();
+
         $this->validateDatabaseConnection();
+    }
+
+    /**
+     * Laravel's MailManager has no built-in driver for Brevo, so bridge the
+     * Symfony Mailer Brevo factory into the 'brevo' mailer transport.
+     *
+     * Brevo is driven over its HTTPS API (brevo+api), not SMTP, because
+     * outbound SMTP ports are blocked on this platform's network.
+     */
+    protected function registerBrevoMailTransport(): void
+    {
+        Mail::extend('brevo', function (array $config) {
+            $key = $config['key'] ?? null;
+
+            if (blank($key)) {
+                throw new \RuntimeException(
+                    'The "brevo" mailer requires BREVO_API_KEY to be set.'
+                );
+            }
+
+            return (new BrevoTransportFactory)->create(
+                new Dsn('brevo+api', 'default', $key)
+            );
+        });
     }
 
     protected function validateDatabaseConnection(): void

@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'resend'),
+    'default' => env('MAIL_MAILER', 'brevo'),
 
     /*
     |--------------------------------------------------------------------------
@@ -32,6 +32,9 @@ return [
     | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
     |            "postmark", "resend", "log", "array",
     |            "failover", "roundrobin"
+    |
+    | The "brevo" mailer is registered as a custom transport creator in
+    | App\Providers\AppServiceProvider and speaks Brevo's HTTPS API.
     |
     */
 
@@ -63,6 +66,11 @@ return [
 
         'resend' => [
             'transport' => 'resend',
+        ],
+
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
         ],
 
         'sendmail' => [
@@ -109,7 +117,7 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'noreply@themuhsinatclub.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'info@themuhsinatclub.com'),
         'name' => env('MAIL_FROM_NAME', 'The Muhsinat Club'),
     ],
 

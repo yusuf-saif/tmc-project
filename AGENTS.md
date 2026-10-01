@@ -76,12 +76,15 @@
 5. On Railway, ephemeral filesystem means vendor is rebuilt every deploy — run the rebuild in Railway dashboard (not locally) after bumping `composer.lock`, and confirm the new commit actually contains the lock bump.
 6. Never commit `vendor/` changes; if the parse error only exists locally, your `vendor/` is stale — run step 2 locally and re-check `git status` is clean.
 
-## Production Mail (Resend)
-- Mailer is `resend` by default (`config/mail.php`); key comes from `RESEND_API_KEY` in `config/services.php` (NOT `RESEND_KEY`).
-- The key must be a full-access Resend API key (or a scoped key with `email:send` permission). A read-only/`email:view` key makes every send fail with a `TransportException`.
-- `MAIL_FROM_ADDRESS` should stay on the `themuhsinatclub.com` domain (default `noreply@themuhsinatclub.com`); the domain must be verified in Resend or sends bounce/fail.
-- Symptom of a bad key/domain: `Symfony\Component\Mailer\Exception\TransportException` ("Failed to send... 401/403") surfacing in the queue worker logs.
-- Fix sequence: update `RESEND_API_KEY` in Railway, then `railway run "php artisan optimize:clear"` and retry a queued notification; check `railway logs --service worker`.
+## Production Mail (Brevo, HTTPS API)
+- Mailer is `brevo` by default (`config/mail.php`); key comes from `BREVO_API_KEY`. Do NOT reintroduce `MAIL_HOST` / `MAIL_PORT` / `MAIL_USERNAME` / `MAIL_PASSWORD` / `MAIL_ENCRYPTION` — they are SMTP-only and unused.
+- **SMTP is blocked on this platform's network** (verified via direct `nc`/`curl` tests against ports 587, 465, and 25 on 2026-10-01 — all time out at the TCP level). Any future mail provider **must** support an HTTPS API, not an SMTP relay. This rules out every SMTP-relay provider regardless of credentials.
+- Laravel's `MailManager` has no native Brevo driver. `App\Providers\AppServiceProvider::registerBrevoMailTransport()` registers it via `Mail::extend('brevo', ...)`, bridging `Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory` with the `brevo+api` DSN scheme. The API key is passed in the DSN **user** position and sent as the `api-key` header.
+- Runtime deps: `symfony/brevo-mailer` **and** `symfony/http-client`. Without the latter the transport throws `LogicException: You cannot use "Symfony\Component\Mailer\Transport\AbstractHttpTransport" as the HttpClient component is not installed`.
+- Notification classes, queue retry/backoff logic, and the `TransportException` catch block are transport-agnostic — do not add provider-specific branching to them.
+- `MAIL_FROM_ADDRESS` should stay on the `themuhsinatclub.com` domain (default `info@themuhsinatclub.com`); the domain must be verified in Brevo or sends bounce/fail.
+- Symptom of a bad key/domain: `Symfony\Component\Mailer\Exception\HttpTransportException` ("Could not reach the remote Brevo server" / 4xx) surfacing in the queue worker logs. A missing key fails fast with `The "brevo" mailer requires BREVO_API_KEY to be set.`
+- Fix sequence: update `BREVO_API_KEY` in Railway, then `railway run "php artisan optimize:clear"` and retry a queued notification; check `railway logs --service worker`.
 
 ## Auth And Redirects
 - Fortify uses custom Blade views in `resources/views/auth/*`; do not swap in starter-kit assumptions.
