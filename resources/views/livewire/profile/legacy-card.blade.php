@@ -1,5 +1,6 @@
 @php($displayName = auth()->user()->profile?->display_name ?? auth()->user()->name)
 @php($membershipTypeLabel = \App\Models\MemberProfile::membershipTypeLabel(auth()->user()->profile?->membership_type))
+@php($membershipNumber = auth()->user()->profile?->membership_id)
 @php($goldGradient = 'linear-gradient(135deg, #C8A84B 35%, #DCC182 100%)')
 
 @if (auth()->user()->profile)
@@ -18,7 +19,14 @@
 
                     <p class="font-display text-[1.6rem] font-semibold" style="color:#0f6b73; letter-spacing:0.01em;">{{ $displayName }}</p>
                     <p class="mt-2 text-[11px] uppercase tracking-[2px] font-medium" style="color:#4a6361;" data-membership-type="{{ auth()->user()->profile?->membership_type }}">{{ $membershipTypeLabel }}</p>
-                    <p class="mb-5 mt-2 text-[12px] font-light" style="color:#5f7876;">Member since {{ $this->memberSince }}</p>
+                    <p class="mt-2 {{ $membershipNumber ? '' : 'mb-5' }} text-[12px] font-light" style="color:#5f7876;">Member since {{ $this->memberSince }}</p>
+
+                    @if($membershipNumber)
+                        <div class="mt-3 mb-5">
+                            <p class="text-[15px] font-semibold tracking-[2px]" style="font-family:'Amiri',serif; background: {{ $goldGradient }}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">{{ $membershipNumber }}</p>
+                            <p class="mt-0.5 text-[9px] uppercase tracking-[2px] font-medium" style="color:#8a9d9b;">Membership Number</p>
+                        </div>
+                    @endif
 
                     <div class="h-[1px] w-full" style="background: linear-gradient(90deg, transparent, rgba(200,168,75,0.25), transparent);"></div>
 

@@ -31,6 +31,12 @@
       <span class="profile-type-kicker">Membership</span>
       <span>{{ $membershipTypeLabel }}</span>
     </span>
+    @if($this->profile?->membership_id)
+      <p class="profile-membership-id" data-membership-id="{{ $this->profile->membership_id }}">
+        <span class="profile-membership-id-kicker">Membership Number</span>
+        <span class="profile-membership-id-value">{{ $this->profile->membership_id }}</span>
+      </p>
+    @endif
   </div>
 
   {{-- Tab Navigation --}}
@@ -225,6 +231,15 @@
       </span>
     </div>
 
+    {{-- Membership Number --}}
+    @if($this->profile?->membership_id)
+      <div style="margin-bottom:20px;text-align:center;">
+        <p class="section-label profile-section-label">Membership Number</p>
+        <p class="profile-membership-id-value" style="margin-top:8px;"
+           data-membership-id="{{ $this->profile->membership_id }}">{{ $this->profile->membership_id }}</p>
+      </div>
+    @endif
+
     {{-- Membership Status --}}
     <div style="margin-bottom:20px;text-align:center;">
       <p class="section-label profile-section-label">Membership Status</p>
@@ -295,6 +310,9 @@
         <div class="membership-legacy-header">
           <img src="{{ asset('images/img1.png') }}" alt="TMC" class="membership-legacy-logo">
           <p class="membership-legacy-name">{{ $displayName }}</p>
+          @if($this->profile?->membership_id)
+            <p class="membership-legacy-id">{{ $this->profile->membership_id }}</p>
+          @endif
           <p class="membership-legacy-coins">{{ number_format($this->coinsBalance) }} coins</p>
         </div>
       </div>

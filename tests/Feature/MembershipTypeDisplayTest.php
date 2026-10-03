@@ -69,6 +69,62 @@ class MembershipTypeDisplayTest extends TestCase
         $this->assertStringContainsString($label, $html);
     }
 
+    // ─── Membership number on profile surfaces ─────────────────────
+
+    #[DataProvider('membershipTypeProvider')]
+    public function test_profile_header_shows_membership_number(string $type, string $label): void
+    {
+        $user = $this->createMemberUser($type, "TMC-{$type}-1448-001");
+
+        $html = Livewire::actingAs($user)->test(ProfileScreen::class)->html();
+
+        $this->assertStringContainsString('profile-membership-id', $html);
+        $this->assertStringContainsString('Membership Number</span>', $html);
+        $this->assertStringContainsString("TMC-{$type}-1448-001", $html);
+    }
+
+    #[DataProvider('membershipTypeProvider')]
+    public function test_profile_membership_tab_shows_membership_number(string $type, string $label): void
+    {
+        $user = $this->createMemberUser($type, "TMC-{$type}-1448-001");
+
+        $component = Livewire::actingAs($user)->test(ProfileScreen::class);
+        $component->set('tab', 'membership');
+
+        $html = $component->html();
+        $this->assertStringContainsString('Membership Number</p>', $html);
+        $this->assertStringContainsString("TMC-{$type}-1448-001", $html);
+    }
+
+    #[DataProvider('membershipTypeProvider')]
+    public function test_profile_legacy_card_preview_shows_membership_number(string $type, string $label): void
+    {
+        $user = $this->createMemberUser($type, "TMC-{$type}-1448-001");
+
+        $component = Livewire::actingAs($user)->test(ProfileScreen::class);
+        $component->set('tab', 'membership');
+
+        $html = $component->html();
+        $this->assertStringContainsString('membership-legacy-id', $html);
+        $this->assertStringContainsString("TMC-{$type}-1448-001", $html);
+    }
+
+    #[DataProvider('membershipTypeProvider')]
+    public function test_profile_omits_membership_number_when_absent(string $type, string $label): void
+    {
+        $user = $this->createMemberUser($type);
+
+        $component = Livewire::actingAs($user)->test(ProfileScreen::class);
+        $html = $component->html();
+
+        $component->set('tab', 'membership');
+        $html .= $component->html();
+
+        $this->assertStringNotContainsString('profile-membership-id', $html);
+        $this->assertStringNotContainsString('membership-legacy-id', $html);
+        $this->assertStringNotContainsString('Membership Number', $html);
+    }
+
     public function test_profile_header_keeps_app_role_badge_next_to_type_badge(): void
     {
         $user = $this->createMemberUser('M');
@@ -159,7 +215,7 @@ class MembershipTypeDisplayTest extends TestCase
         ];
     }
 
-    protected function createMemberUser(string $membershipType = 'M'): User
+    protected function createMemberUser(string $membershipType = 'M', ?string $membershipId = null): User
     {
         $user = User::factory()->create([
             'email_verified_at' => now(),
@@ -171,6 +227,7 @@ class MembershipTypeDisplayTest extends TestCase
             [
                 'display_name' => $user->name,
                 'membership_type' => $membershipType,
+                'membership_id' => $membershipId,
                 'onboarding_status' => 'member',
             ],
         );
